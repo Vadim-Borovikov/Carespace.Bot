@@ -1,0 +1,10 @@
+﻿@model Telegram.Bot.Types.User
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">@Model.FirstName</h1>
+    <p><a href="https://t.me/@Model.Username">@@@Model.Username</a> проснулся!</p>
+</div>
