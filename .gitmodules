@@ -1,0 +1,3 @@
+[submodule "GoogleDocumentsUnifier"]
+	path = GoogleDocumentsUnifier
+	url = https://github.com/Vadim-Borovikov/GoogleDocumentsUnifier
