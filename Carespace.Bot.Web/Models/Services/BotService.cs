@@ -25,7 +25,7 @@ namespace Carespace.Bot.Web.Models.Services
 
             Client = new TelegramBotClient(_config.Token);
 
-            if (_config.GoogleCredentialsJson == null)
+            if (string.IsNullOrWhiteSpace(_config.GoogleCredentialsJson))
             {
                 _config.GoogleCredentialsJson = JsonConvert.SerializeObject(_config.GoogleCredentials);
             }
