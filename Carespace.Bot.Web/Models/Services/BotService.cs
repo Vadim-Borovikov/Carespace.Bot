@@ -29,17 +29,21 @@ namespace Carespace.Bot.Web.Models.Services
             {
                 _config.GoogleCredentialsJson = JsonConvert.SerializeObject(_config.GoogleCredentials);
             }
-            _googleDataManager = new DataManager(_config.GoogleCredentialsJson);
+            _googleDriveDataManager = new DataManager(_config.GoogleCredentialsJson);
+            _googleSheetsDataManager =
+                new GoogleSheetsReader.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
             var commands = new List<Command>
             {
-                new CustomCommand(_config.DocumentIds, _config.PdfFolderPath, _googleDataManager),
-                new UpdateCommand(_config.DocumentIds, _config.PdfFolderId, _config.PdfFolderPath, _googleDataManager),
+                new CustomCommand(_config.DocumentIds, _config.PdfFolderPath, _googleDriveDataManager),
+                new UpdateCommand(_config.DocumentIds, _config.PdfFolderId, _config.PdfFolderPath,
+                _googleDriveDataManager),
                 new CheckListCommand(_config.CheckList),
                 new ExercisesCommand(_config.Template, _config.ExersisesLinks),
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
-                new ThanksCommand(_config.Payees, _config.Banks)
+                new ThanksCommand(_config.Payees, _config.Banks),
+                new WeekEventsCommand(_googleSheetsDataManager, _config.GoogleEventsRange, _config.EventsChannelLogin)
             };
 
             Commands = commands.AsReadOnly();
@@ -62,7 +66,8 @@ namespace Carespace.Bot.Web.Models.Services
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _googleDataManager.Dispose();
+            _googleDriveDataManager.Dispose();
+            _googleSheetsDataManager.Dispose();
             _periodicCancellationSource.Cancel();
             _ping.Dispose();
             _periodicCancellationSource.Dispose();
@@ -79,7 +84,8 @@ namespace Carespace.Bot.Web.Models.Services
 
         private readonly BotConfiguration _config;
 
-        private readonly DataManager _googleDataManager;
+        private readonly DataManager _googleDriveDataManager;
+        private readonly GoogleSheetsReader.DataManager _googleSheetsDataManager;
 
         private CancellationTokenSource _periodicCancellationSource;
         private Ping _ping;

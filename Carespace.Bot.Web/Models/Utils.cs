@@ -93,6 +93,14 @@ namespace Carespace.Bot.Web.Models
             return SendPhotoAsync(client, chat, payee.PhotoPath, caption, ParseMode.Markdown);
         }
 
+        internal static DateTime GetMonday(DateTime today)
+        {
+            int diff = (today.DayOfWeek - DayOfWeek.Monday) % 7;
+            return today.AddDays(-diff);
+        }
+
+        internal static bool IsWithin(DateTime date, DateTime start, DateTime end) => (date >= start) && (date < end);
+
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, Chat chat, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
         {

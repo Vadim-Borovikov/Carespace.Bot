@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GoogleDocumentsUnifier\GoogleDocumentsUnifier.Logic\GoogleDocumentsUnifier.Logic.csproj" />
+    <ProjectReference Include="..\GoogleSheetsReader\GoogleSheetsReader.csproj" />
   </ItemGroup>
 
   <ItemGroup>

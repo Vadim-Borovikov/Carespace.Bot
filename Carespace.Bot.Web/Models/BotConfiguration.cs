@@ -69,5 +69,11 @@ namespace Carespace.Bot.Web.Models
         public List<Payee> Payees { get; set; }
 
         public Dictionary<string, Link> Banks { get; set; }
+
+        public string GoogleSheetId { get; set; }
+
+        public string GoogleEventsRange { get; set; }
+
+        public string EventsChannelLogin { get; set; }
     }
 }
