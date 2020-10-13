@@ -5,7 +5,7 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 
-namespace GoogleSheetsReader
+namespace GoogleSheetsManager
 {
     internal sealed class GoogleSheetsProvider : IDisposable
     {
@@ -35,6 +35,16 @@ namespace GoogleSheetsReader
                 SpreadsheetsResource.ValuesResource.GetRequest.DateTimeRenderOptionEnum.SERIALNUMBER;
             ValueRange response = request.Execute();
             return response.Values;
+        }
+
+        internal void UpdateValues(string range, IList<IList<object>> values)
+        {
+            var valueRange = new ValueRange { Values = values };
+            SpreadsheetsResource.ValuesResource.UpdateRequest request =
+                _service.Spreadsheets.Values.Update(valueRange, _sheetId, range);
+            request.ValueInputOption =
+                SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            request.Execute();
         }
 
         private static readonly string[] Scopes = { SheetsService.Scope.Drive };

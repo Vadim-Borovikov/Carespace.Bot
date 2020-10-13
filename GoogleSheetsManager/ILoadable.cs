@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace GoogleSheetsReader
+namespace GoogleSheetsManager
 {
     public interface ILoadable
     {

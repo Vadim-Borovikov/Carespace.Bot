@@ -99,7 +99,10 @@ namespace Carespace.Bot.Web.Models
             return today.AddDays(-diff);
         }
 
-        internal static bool IsWithin(DateTime date, DateTime start, DateTime end) => (date >= start) && (date < end);
+        /*internal static int? GetPinId(GoogleSheetsManager.DataManager manager)
+        {
+            manager.GetValues<>()
+        }*/
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, Chat chat, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
