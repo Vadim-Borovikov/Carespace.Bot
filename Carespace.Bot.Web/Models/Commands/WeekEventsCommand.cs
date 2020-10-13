@@ -40,6 +40,10 @@ namespace Carespace.Bot.Web.Models.Commands
                 Message eventMessage = await client.SendTextMessageAsync($"@{_channel}", text, ParseMode.Markdown,
                     disableNotification: true);
 
+                DateTime notificationTime = e.Start - NotificationBefore;
+                string notificationText = string.Format(NotificationFormat, ShowTitle(e), NotificationBefore);
+                SceduleMessage(notificationTime, client, notificationText, eventMessage.MessageId);
+
                 if (e.Start.Date > date)
                 {
                     if (scheduleBuilder.Length > 0)
@@ -60,11 +64,19 @@ namespace Carespace.Bot.Web.Models.Commands
             await client.PinChatMessageAsync($"@{_channel}", scheduleMessage.MessageId, true);
         }
 
+        private async void SceduleMessage(DateTime dateTime, ITelegramBotClient client, string text,
+            int parentMessageId)
+        {
+            await Task.Delay(dateTime - DateTime.Now);
+            await client.SendTextMessageAsync($"@{_channel}", text, ParseMode.Markdown,
+                replyToMessageId: parentMessageId);
+        }
+
         private static string GetMessageText(Event e)
         {
             var builder = new StringBuilder();
 
-            builder.AppendLine(e.Uri != null ? $"[{e.Name}]({e.Uri})" : $"*{e.Name}*");
+            builder.AppendLine(ShowTitle(e));
 
             builder.AppendLine();
             builder.AppendLine(e.Description);
@@ -89,6 +101,8 @@ namespace Carespace.Bot.Web.Models.Commands
             return builder.ToString();
         }
 
+        private static string ShowTitle(Event e) => e.Uri != null ? $"[{e.Name}]({e.Uri})" : $"*{e.Name}*";
+
         private static string ShowDate(DateTime date)
         {
             string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
@@ -96,5 +110,7 @@ namespace Carespace.Bot.Web.Models.Commands
         }
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
+        private const string NotificationFormat = "{0}: начинаем через *{1:%m} минут*";
+        private static readonly TimeSpan NotificationBefore = TimeSpan.FromMinutes(15);
     }
 }
