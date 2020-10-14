@@ -17,8 +17,8 @@ namespace Carespace.Bot.Web.Models
 {
     internal static class Utils
     {
-        internal static async Task<Message> FinalizeStatusMessageAsync(Message message, ITelegramBotClient client,
-            string postfix = "")
+        internal static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
+            Message message, string postfix = "")
         {
             Chat chat = message.Chat;
             string text = $"_{message.Text}_ Готово.{postfix}";
@@ -74,7 +74,7 @@ namespace Carespace.Bot.Web.Models
             }
         }
 
-        internal static Task SendMessage(BotConfiguration.Link link, Chat chat, ITelegramBotClient client)
+        internal static Task SendMessage(this ITelegramBotClient client, BotConfiguration.Link link, Chat chat)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
             {
@@ -86,23 +86,19 @@ namespace Carespace.Bot.Web.Models
             return SendPhotoAsync(client, chat, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        internal static Task SendMessage(BotConfiguration.Payee payee,
-            IReadOnlyDictionary<string, BotConfiguration.Link> banks, Chat chat, ITelegramBotClient client)
+        internal static Task SendMessage(this ITelegramBotClient client, BotConfiguration.Payee payee,
+            IReadOnlyDictionary<string, BotConfiguration.Link> banks, Chat chat)
         {
             string caption = GetCaption(payee.Name, payee.Accounts, banks);
-            return SendPhotoAsync(client, chat, payee.PhotoPath, caption, ParseMode.Markdown);
+            return client.SendPhotoAsync(chat, payee.PhotoPath, caption, ParseMode.Markdown);
         }
 
-        internal static DateTime GetMonday(DateTime today)
+        internal static DateTime GetMonday()
         {
+            DateTime today = DateTime.Today;
             int diff = (today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
-
-        /*internal static int? GetPinId(GoogleSheetsManager.DataManager manager)
-        {
-            manager.GetValues<>()
-        }*/
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, Chat chat, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)

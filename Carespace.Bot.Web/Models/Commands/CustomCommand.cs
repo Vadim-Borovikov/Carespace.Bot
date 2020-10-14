@@ -85,17 +85,17 @@ namespace Carespace.Bot.Web.Models.Commands
 
             if (filesToUpdate.Any())
             {
-                await Utils.FinalizeStatusMessageAsync(checkingMessage, client);
+                await client.FinalizeStatusMessageAsync(checkingMessage);
                 Message updatingMessage = await client.SendTextMessageAsync(chat, "_Обновляю…_", ParseMode.Markdown,
                     disableNotification: true);
 
                 await Utils.CreateOrUpdateAsync(filesToUpdate, CreateOrUpdateLocal);
 
-                await Utils.FinalizeStatusMessageAsync(updatingMessage, client);
+                await client.FinalizeStatusMessageAsync(updatingMessage);
             }
             else
             {
-                await Utils.FinalizeStatusMessageAsync(checkingMessage, client, " Раздатки уже актуальны.");
+                await client.FinalizeStatusMessageAsync(checkingMessage, " Раздатки уже актуальны.");
             }
         }
 
@@ -173,7 +173,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
             using (TempFile temp = DataManager.Unify(requests))
             {
-                await Utils.FinalizeStatusMessageAsync(unifyingMessage, client);
+                await client.FinalizeStatusMessageAsync(unifyingMessage);
                 await client.SendChatActionAsync(chatId, ChatAction.UploadDocument);
                 using (var fileStream = new FileStream(temp.Path, FileMode.Open))
                 {

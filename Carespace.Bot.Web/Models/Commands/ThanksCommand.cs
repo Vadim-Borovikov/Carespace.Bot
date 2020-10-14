@@ -22,7 +22,7 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             foreach (BotConfiguration.Payee payee in _payees)
             {
-                await Utils.SendMessage(payee, _banks, message.Chat, client);
+                await client.SendMessage(payee, _banks, message.Chat);
             }
         }
 

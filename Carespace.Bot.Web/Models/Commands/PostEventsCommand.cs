@@ -33,7 +33,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool fromAdmin)
         {
-            DateTime start = Utils.GetMonday(DateTime.Today);
+            DateTime start = Utils.GetMonday();
             List<Event> events = await PostWeekEvents(start, client);
             await PostWeekSchedule(events, client);
         }

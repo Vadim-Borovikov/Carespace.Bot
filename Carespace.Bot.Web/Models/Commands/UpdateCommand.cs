@@ -71,18 +71,18 @@ namespace Carespace.Bot.Web.Models.Commands
 
             if (filesToUpdate.Any())
             {
-                await Utils.FinalizeStatusMessageAsync(checkingMessage, client);
+                await client.FinalizeStatusMessageAsync(checkingMessage);
 
                 Message updatingMessage = await client.SendTextMessageAsync(checkingMessage.Chat, "_Обновляю…_",
                     ParseMode.Markdown, disableNotification: true);
 
                 await Utils.CreateOrUpdateAsync(filesToUpdate, CreateOrUpdateGoogleAsync);
 
-                await Utils.FinalizeStatusMessageAsync(updatingMessage, client);
+                await client.FinalizeStatusMessageAsync(updatingMessage);
             }
             else
             {
-                await Utils.FinalizeStatusMessageAsync(checkingMessage, client, " Раздатки уже актуальны.");
+                await client.FinalizeStatusMessageAsync(checkingMessage, " Раздатки уже актуальны.");
             }
         }
 

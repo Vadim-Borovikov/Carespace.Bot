@@ -49,7 +49,7 @@ namespace Carespace.Bot.Web.Models.Commands
         public static string PrepareWeekSchedule(IEnumerable<Event> events, string channel)
         {
             var scheduleBuilder = new StringBuilder();
-            DateTime date = Utils.GetMonday(DateTime.Today).AddDays(-1);
+            DateTime date = Utils.GetMonday().AddDays(-1);
             foreach (Event e in events.Where(e => e.DescriptionId.HasValue))
             {
                 if (e.Start.Date > date)
