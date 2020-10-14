@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Commands;
@@ -53,17 +50,10 @@ namespace Carespace.Bot.Web.Models.Services
             var startCommand = new StartCommand(Commands);
 
             commands.Insert(0, startCommand);
-
-            var uri = new Uri(_config.Url);
-            _pingUrl = uri.Host;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _periodicCancellationSource = new CancellationTokenSource();
-            _ping = new Ping();
-            StartPeriodicPing(_periodicCancellationSource.Token);
-
             return Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
         }
 
@@ -71,27 +61,12 @@ namespace Carespace.Bot.Web.Models.Services
         {
             _googleDriveDataManager.Dispose();
             _googleSheetsDataManager.Dispose();
-            _periodicCancellationSource.Cancel();
-            _ping.Dispose();
-            _periodicCancellationSource.Dispose();
             return Client.DeleteWebhookAsync(cancellationToken);
         }
-
-        private void StartPeriodicPing(CancellationToken cancellationToken)
-        {
-            IObservable<long> observable = Observable.Interval(_config.PingPeriod);
-            observable.Subscribe(PingSite, cancellationToken);
-        }
-
-        private void PingSite(long _) => _ping.Send(_pingUrl);
 
         private readonly BotConfiguration _config;
 
         private readonly DataManager _googleDriveDataManager;
         private readonly GoogleSheetsManager.DataManager _googleSheetsDataManager;
-
-        private CancellationTokenSource _periodicCancellationSource;
-        private Ping _ping;
-        private readonly string _pingUrl;
     }
 }

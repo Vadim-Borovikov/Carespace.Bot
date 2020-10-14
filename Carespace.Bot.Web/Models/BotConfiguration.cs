@@ -37,10 +37,6 @@ namespace Carespace.Bot.Web.Models
 
         public int Port { get; set; }
 
-        public int PingPeriodSeconds { get; set; }
-
-        public TimeSpan PingPeriod => TimeSpan.FromSeconds(PingPeriodSeconds);
-
         public Dictionary<string, string> GoogleCredentials { get; set; }
         public string GoogleCredentialsJson { get; set; }
 
