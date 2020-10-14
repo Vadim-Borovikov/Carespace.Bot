@@ -4,7 +4,6 @@
 // ReSharper disable CollectionNeverUpdated.Global
 // ReSharper disable ClassNeverInstantiated.Global
 
-using System;
 using System.Collections.Generic;
 
 namespace Carespace.Bot.Web.Models
@@ -69,10 +68,8 @@ namespace Carespace.Bot.Web.Models
         public string GoogleSheetId { get; set; }
 
         public string GoogleEventsRangeAll { get; set; }
-        public string GoogleEventsRangePin { get; set; }
         public string GoogleEventsRangeWeek { get; set; }
 
         public string EventsChannelLogin { get; set; }
-        public string DebugChannelLogin { get; set; }
     }
 }

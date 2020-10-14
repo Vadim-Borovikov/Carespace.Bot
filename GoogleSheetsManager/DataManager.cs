@@ -13,27 +13,6 @@ namespace GoogleSheetsManager
 
         public void Dispose() => _provider.Dispose();
 
-        public int? GetInt(string range)
-        {
-            object o = GetValue(range);
-            return ToInt(o);
-        }
-
-        private object GetValue(string range)
-        {
-            IEnumerable<IList<object>> values = _provider.GetValues(range, true);
-            return values?.SingleOrDefault()?.SingleOrDefault();
-        }
-
-        public void UpdateValue(string range, object o)
-        {
-            var table = new List<IList<object>>
-            {
-                new List<object> { o }
-            };
-            _provider.UpdateValues(range, table);
-        }
-
         public IList<T> GetValues<T>(string range) where T : ILoadable, new()
         {
             IEnumerable<IList<object>> values = _provider.GetValues(range, true);

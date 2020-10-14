@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
@@ -88,28 +87,12 @@ namespace Carespace.Bot.Web.Models
             return SendPhotoAsync(client, chat, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        internal static Task SendMessage(this ITelegramBotClient client, BotConfiguration.Payee payee,
-            IReadOnlyDictionary<string, BotConfiguration.Link> banks, Chat chat)
+        internal static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
+            IReadOnlyDictionary<string, BotConfiguration.Link> banks)
         {
-            string caption = GetCaption(payee.Name, payee.Accounts, banks);
-            return client.SendPhotoAsync(chat, payee.PhotoPath, caption, ParseMode.Markdown);
-        }
-
-        internal static async Task CreateOrUpdatePinnedMessage(this ITelegramBotClient client,
-            IEnumerable<Event> events, string channel)
-        {
-            var chatId = new ChatId($"@{channel}");
-            string text = PrepareWeekSchedule(events, channel);
-            Message message = await client.GetPinnedMessage(chatId);
-            if (IsMessageRelevant(message))
-            {
-                await client.EditMessageTextAsync(chatId, message.MessageId, text, ParseMode.Markdown, true);
-            }
-            else
-            {
-                message = await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown, true);
-                await client.PinChatMessageAsync(chatId, message.MessageId);
-            }
+            IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
+            string options = string.Join($" или{Environment.NewLine}", texts);
+            return $"{name}:{Environment.NewLine}{options}";
         }
 
         internal static DateTime GetMonday()
@@ -119,49 +102,10 @@ namespace Carespace.Bot.Web.Models
             return today.AddDays(-diff);
         }
 
-        private static string PrepareWeekSchedule(IEnumerable<Event> events, string channel)
-        {
-            var scheduleBuilder = new StringBuilder();
-            DateTime date = GetMonday().AddDays(-1);
-            foreach (Event e in events.Where(e => e.DescriptionId.HasValue))
-            {
-                if (e.Start.Date > date)
-                {
-                    if (scheduleBuilder.Length > 0)
-                    {
-                        scheduleBuilder.AppendLine();
-                    }
-                    date = e.Start.Date;
-                    scheduleBuilder.AppendLine($"*{ShowDate(date)}*");
-                }
-                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, channel, e.DescriptionId));
-                scheduleBuilder.AppendLine($"{e.Start:HH:mm} [{e.Name}]({messageUri})");
-            }
-            scheduleBuilder.AppendLine();
-            scheduleBuilder.AppendLine("#расписание");
-            return scheduleBuilder.ToString();
-        }
-
-        private static string ShowDate(DateTime date)
+        internal static string ShowDate(DateTime date)
         {
             string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
             return $"{day}, {date:dd MMMM}";
-        }
-
-        private static bool IsMessageRelevant(Message message)
-        {
-            if (message == null)
-            {
-                return false;
-            }
-
-            return message.Date < GetMonday();
-        }
-
-        private static async Task<Message> GetPinnedMessage(this ITelegramBotClient client, ChatId chatId)
-        {
-            Message chatMesage = await client.EditMessageReplyMarkupAsync(chatId, ChatMessageId);
-            return chatMesage.Chat.PinnedMessage;
         }
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, Chat chat, string photoPath,
@@ -195,14 +139,6 @@ namespace Carespace.Bot.Web.Models
             return new InlineKeyboardMarkup(button);
         }
 
-        private static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
-            IReadOnlyDictionary<string, BotConfiguration.Link> banks)
-        {
-            IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
-            string options = string.Join($" или{Environment.NewLine}", texts);
-            return $"{name}:{Environment.NewLine}{options}";
-        }
-
         private static string GetText(BotConfiguration.Payee.Account account, BotConfiguration.Link bank)
         {
             return $"`{account.CardNumber}` в [{bank.Name}]({bank.Url})";
@@ -210,7 +146,5 @@ namespace Carespace.Bot.Web.Models
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
             new ConcurrentDictionary<string, string>();
-        private const int ChatMessageId = 1;
-        private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
     }
 }

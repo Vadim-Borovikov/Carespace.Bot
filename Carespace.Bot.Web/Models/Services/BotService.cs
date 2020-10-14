@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Services
 {
@@ -41,9 +40,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new PostEventsCommand(_googleSheetsDataManager, _config.GoogleEventsRangeAll,
-                _config.GoogleEventsRangePin, _config.GoogleEventsRangeWeek, _config.EventsChannelLogin),
-                new UpdateScheduleCommand(_googleSheetsDataManager, _config.GoogleEventsRangePin,
+                new WeekCommand(_googleSheetsDataManager, _config.GoogleEventsRangeAll,
                 _config.GoogleEventsRangeWeek, _config.EventsChannelLogin)
             };
 
@@ -53,12 +50,9 @@ namespace Carespace.Bot.Web.Models.Services
             commands.Insert(0, startCommand);
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
-            User user = await Client.GetMeAsync(cancellationToken);
-            await Client.SendTextMessageAsync($"@{_config.DebugChannelLogin}", $"@{user.Username} проснулся!",
-                cancellationToken: cancellationToken);
+            return Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

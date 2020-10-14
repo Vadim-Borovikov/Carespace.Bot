@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
@@ -22,8 +23,14 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             foreach (BotConfiguration.Payee payee in _payees)
             {
-                await client.SendMessage(payee, _banks, message.Chat);
+                await SendMessage(client, payee, message.Chat);
             }
+        }
+
+        private Task SendMessage(ITelegramBotClient client, BotConfiguration.Payee payee, Chat chat)
+        {
+            string caption = Utils.GetCaption(payee.Name, payee.Accounts, _banks);
+            return client.SendPhotoAsync(chat, payee.PhotoPath, caption, ParseMode.Markdown);
         }
 
         private readonly List<BotConfiguration.Payee> _payees;
