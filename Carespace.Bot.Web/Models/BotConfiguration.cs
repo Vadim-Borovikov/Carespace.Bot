@@ -73,5 +73,6 @@ namespace Carespace.Bot.Web.Models
         public string GoogleEventsRangeWeek { get; set; }
 
         public string EventsChannelLogin { get; set; }
+        public string DebugChannelLogin { get; set; }
     }
 }

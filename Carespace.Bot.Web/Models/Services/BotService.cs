@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Services
 {
@@ -52,9 +53,12 @@ namespace Carespace.Bot.Web.Models.Services
             commands.Insert(0, startCommand);
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            return Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
+            await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
+            User user = await Client.GetMeAsync(cancellationToken);
+            await Client.SendTextMessageAsync($"@{_config.DebugChannelLogin}", $"@{user.Username} проснулся!",
+                cancellationToken: cancellationToken);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
