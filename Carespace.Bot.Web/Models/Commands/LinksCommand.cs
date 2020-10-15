@@ -21,7 +21,7 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             foreach (BotConfiguration.Link link in _links)
             {
-                await client.SendMessage(link, message.Chat);
+                await client.SendMessageAsync(link, message.Chat);
             }
         }
 

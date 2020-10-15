@@ -75,7 +75,7 @@ namespace Carespace.Bot.Web.Models
             }
         }
 
-        internal static Task SendMessage(this ITelegramBotClient client, BotConfiguration.Link link, Chat chat)
+        internal static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link, Chat chat)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
             {

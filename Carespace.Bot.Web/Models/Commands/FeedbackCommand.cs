@@ -18,7 +18,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         protected override Task ExecuteAsync(Message message, ITelegramBotClient client, bool _)
         {
-            return client.SendMessage(_link, message.Chat);
+            return client.SendMessageAsync(_link, message.Chat);
         }
 
         private readonly BotConfiguration.Link _link;
