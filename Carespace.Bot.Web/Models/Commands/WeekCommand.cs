@@ -51,7 +51,8 @@ namespace Carespace.Bot.Web.Models.Commands
             }
             else
             {
-                List<Event> events = await PostWeekEventsAsync(client, start, channel);
+                List<Event> events = LoadWeekEvents(start).ToList();
+                await PostEventsAsync(client, events, channel);
                 string text = PrepareWeekSchedule(events, start);
 
                 Message message = await client.SendTextMessageAsync(channel, text, ParseMode.Markdown, true);
@@ -59,11 +60,27 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        private async Task<List<Event>> PostWeekEventsAsync(ITelegramBotClient client, DateTime start, ChatId chatId)
+        private async Task PostEventsAsync(ITelegramBotClient client, IReadOnlyCollection<Event> events, ChatId chatId)
         {
-            DateTime end = start.AddDays(7);
+            foreach (Event e in events)
+            {
+                await PostEventAsync(client, chatId, e);
+            }
+            _googleSheetsDataManager.UpdateValues(_googleRangeWeek, events);
+        }
+
+        private static async Task PostEventAsync(ITelegramBotClient client, ChatId chatId, Event e)
+        {
+            string text = GetMessageText(e);
+            Message message =
+                await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown, disableNotification: true);
+            e.DescriptionId = message.MessageId;
+        }
+
+        private IEnumerable<Event> LoadWeekEvents(DateTime start)
+        {
             IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeAll);
-            var weekEvents = new List<Event>();
+            DateTime end = start.AddDays(7);
             foreach (Event e in events.Where(e => e.Start < end))
             {
                 if (e.Start < start)
@@ -76,14 +93,8 @@ namespace Carespace.Bot.Web.Models.Commands
                     e.PlaceOnWeek(start);
                 }
 
-                string text = GetMessageText(e);
-                Message eventMessage = await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown,
-                    disableNotification: true);
-                e.DescriptionId = eventMessage.MessageId;
-                weekEvents.Add(e);
+                yield return e;
             }
-            _googleSheetsDataManager.UpdateValues(_googleRangeWeek, weekEvents);
-            return weekEvents;
         }
 
         private string PrepareWeekSchedule(IEnumerable<Event> events, DateTime start)
