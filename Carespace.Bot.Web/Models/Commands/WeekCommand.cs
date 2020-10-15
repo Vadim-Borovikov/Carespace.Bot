@@ -15,15 +15,15 @@ namespace Carespace.Bot.Web.Models.Commands
         private readonly DataManager _googleSheetsDataManager;
         private readonly string _googleRangeAll;
         private readonly string _googleRangeWeek;
-        private readonly string _channel;
+        private readonly string _channelLogin;
 
         public WeekCommand(DataManager googleSheetsDataManager, string googleRangeAll, string googleRangeWeek,
-            string channel)
+            string channelLogin)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRangeAll = googleRangeAll;
             _googleRangeWeek = googleRangeWeek;
-            _channel = channel;
+            _channelLogin = channelLogin;
         }
 
         internal override string Name => "week";
@@ -36,26 +36,27 @@ namespace Carespace.Bot.Web.Models.Commands
 
         private async Task PostOrUpdateWeekEventsAndSchedule(ITelegramBotClient client)
         {
-            Message pinned = await GetPinnedMessage(client);
+            Chat channel = await client.GetChatAsync($"@{_channelLogin}");
             DateTime start = Utils.GetMonday();
-            if (IsMessageRelevant(pinned, start))
+            if (IsMessageRelevant(channel.PinnedMessage, start))
             {
                 IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeWeek);
                 string text = PrepareWeekSchedule(events, start);
 
-                await client.EditMessageTextAsync($"@{_channel}", pinned.MessageId, text, ParseMode.Markdown, true);
+                await client.EditMessageTextAsync(channel, channel.PinnedMessage.MessageId, text, ParseMode.Markdown,
+                    true);
             }
             else
             {
-                List<Event> events = await PostWeekEvents(client, start);
+                List<Event> events = await PostWeekEvents(client, start, channel);
                 string text = PrepareWeekSchedule(events, start);
 
-                Message message = await client.SendTextMessageAsync($"@{_channel}", text, ParseMode.Markdown, true);
-                await client.PinChatMessageAsync($"@{_channel}", message.MessageId, true);
+                Message message = await client.SendTextMessageAsync(channel, text, ParseMode.Markdown, true);
+                await client.PinChatMessageAsync(channel, message.MessageId, true);
             }
         }
 
-        private async Task<List<Event>> PostWeekEvents(ITelegramBotClient client, DateTime start)
+        private async Task<List<Event>> PostWeekEvents(ITelegramBotClient client, DateTime start, ChatId chatId)
         {
             DateTime end = start.AddDays(7);
             IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeAll);
@@ -73,7 +74,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 }
 
                 string text = GetMessageText(e);
-                Message eventMessage = await client.SendTextMessageAsync($"@{_channel}", text, ParseMode.Markdown,
+                Message eventMessage = await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown,
                     disableNotification: true);
                 e.DescriptionId = eventMessage.MessageId;
                 weekEvents.Add(e);
@@ -97,7 +98,7 @@ namespace Carespace.Bot.Web.Models.Commands
                     date = e.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
-                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _channel, e.DescriptionId));
+                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _channelLogin, e.DescriptionId));
                 scheduleBuilder.AppendLine($"{e.Start:HH:mm} [{e.Name}]({messageUri})");
             }
             scheduleBuilder.AppendLine();
@@ -135,13 +136,6 @@ namespace Carespace.Bot.Web.Models.Commands
             return builder.ToString();
         }
 
-        private async Task<Message> GetPinnedMessage(ITelegramBotClient client)
-        {
-            var chatId = new ChatId($"@{_channel}");
-            Message chatMesage = await client.EditMessageReplyMarkupAsync(chatId, ChatMessageId);
-            return chatMesage.Chat.PinnedMessage;
-        }
-
         private static bool IsMessageRelevant(Message message, DateTime start)
         {
             if (message == null)
@@ -152,7 +146,6 @@ namespace Carespace.Bot.Web.Models.Commands
             return message.Date < start;
         }
 
-        private const int ChatMessageId = 1;
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
     }
 }
