@@ -34,14 +34,14 @@ namespace Carespace.Bot.Web.Models.Services
             {
                 new CustomCommand(_config.DocumentIds, _config.PdfFolderPath, _googleDriveDataManager),
                 new UpdateCommand(_config.DocumentIds, _config.PdfFolderId, _config.PdfFolderPath,
-                _googleDriveDataManager),
+                    _googleDriveDataManager),
                 new CheckListCommand(_config.CheckList),
                 new ExercisesCommand(_config.Template, _config.ExersisesLinks),
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new WeekCommand(_googleSheetsDataManager, _config.GoogleEventsRangeAll,
-                _config.GoogleEventsRangeWeek, _config.EventsChannelLogin)
+                new WeekCommand(_googleSheetsDataManager, _config.GoogleEventsRangeAll, _config.GoogleEventsRangeWeek,
+                    _config.EventsChannelLogin)
             };
 
             Commands = commands.AsReadOnly();
