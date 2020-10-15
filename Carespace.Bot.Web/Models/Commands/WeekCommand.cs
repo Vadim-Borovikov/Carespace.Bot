@@ -47,8 +47,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeWeek);
                 string text = PrepareWeekSchedule(events, start);
 
-                await client.EditMessageTextAsync(channel, channel.PinnedMessage.MessageId, text, ParseMode.Markdown,
-                    true);
+                await ForceEditMessageTextAsync(client, channel, channel.PinnedMessage.MessageId, text, true);
             }
             else
             {
@@ -108,6 +107,14 @@ namespace Carespace.Bot.Web.Models.Commands
             scheduleBuilder.AppendLine();
             scheduleBuilder.AppendLine("#расписание");
             return scheduleBuilder.ToString();
+        }
+
+        private static async Task ForceEditMessageTextAsync(ITelegramBotClient client, ChatId chatId, int messageId,
+            string text, bool disableWebPagePreview)
+        {
+            await client.EditMessageTextAsync(chatId, messageId, $"{text}.", ParseMode.Markdown,
+                disableWebPagePreview);
+            await client.EditMessageTextAsync(chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
         }
 
         private static string GetMessageText(Event e)
