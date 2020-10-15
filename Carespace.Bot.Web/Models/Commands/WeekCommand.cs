@@ -33,12 +33,12 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             Message statusMessage = await client.SendTextMessageAsync(message.Chat, "_Обновляю…_", ParseMode.Markdown);
 
-            await PostOrUpdateWeekEventsAndSchedule(client);
+            await PostOrUpdateWeekEventsAndScheduleAsync(client);
 
             await client.FinalizeStatusMessageAsync(statusMessage);
         }
 
-        private async Task PostOrUpdateWeekEventsAndSchedule(ITelegramBotClient client)
+        private async Task PostOrUpdateWeekEventsAndScheduleAsync(ITelegramBotClient client)
         {
             Chat channel = await client.GetChatAsync($"@{_channelLogin}");
             DateTime start = Utils.GetMonday();
@@ -52,7 +52,7 @@ namespace Carespace.Bot.Web.Models.Commands
             }
             else
             {
-                List<Event> events = await PostWeekEvents(client, start, channel);
+                List<Event> events = await PostWeekEventsAsync(client, start, channel);
                 string text = PrepareWeekSchedule(events, start);
 
                 Message message = await client.SendTextMessageAsync(channel, text, ParseMode.Markdown, true);
@@ -60,7 +60,7 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        private async Task<List<Event>> PostWeekEvents(ITelegramBotClient client, DateTime start, ChatId chatId)
+        private async Task<List<Event>> PostWeekEventsAsync(ITelegramBotClient client, DateTime start, ChatId chatId)
         {
             DateTime end = start.AddDays(7);
             IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeAll);
