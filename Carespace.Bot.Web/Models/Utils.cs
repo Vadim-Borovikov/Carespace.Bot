@@ -75,16 +75,17 @@ namespace Carespace.Bot.Web.Models
             }
         }
 
-        internal static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link, Chat chat)
+        internal static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link,
+            ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
             {
                 string text = $"[{link.Name}]({link.Url})";
-                return client.SendTextMessageAsync(chat, text, ParseMode.Markdown);
+                return client.SendTextMessageAsync(chatId, text, ParseMode.Markdown);
             }
 
             InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
-            return SendPhotoAsync(client, chat, link.PhotoPath, replyMarkup: keyboard);
+            return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
         }
 
         internal static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
@@ -108,21 +109,21 @@ namespace Carespace.Bot.Web.Models
             return $"{day}, {date:dd MMMM}";
         }
 
-        private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, Chat chat, string photoPath,
+        private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
         {
             bool success = PhotoIds.TryGetValue(photoPath, out string fileId);
             if (success)
             {
                 var photo = new InputOnlineFile(fileId);
-                return await client.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
+                return await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
             }
 
             using (var stream = new FileStream(photoPath, FileMode.Open))
             {
                 var photo = new InputOnlineFile(stream);
                 Message message =
-                    await client.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
+                    await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
                 fileId = message.Photo.First().FileId;
                 PhotoIds.TryAdd(photoPath, fileId);
                 return message;
