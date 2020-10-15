@@ -147,7 +147,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 return false;
             }
 
-            return message.Date < start;
+            return message.Date >= start;
         }
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
