@@ -91,7 +91,7 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             var scheduleBuilder = new StringBuilder();
             DateTime date = start.AddDays(-1);
-            foreach (Event e in events.Where(e => e.DescriptionId.HasValue))
+            foreach (Event e in events.Where(e => e.DescriptionId.HasValue).OrderBy(e => e.Start))
             {
                 if (e.Start.Date > date)
                 {
