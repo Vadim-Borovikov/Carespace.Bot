@@ -43,7 +43,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 IList<Event> events = _googleSheetsDataManager.GetValues<Event>(_googleRangeWeek);
                 string text = PrepareWeekSchedule(events, start);
 
-                await client.EditMessageTextAsync($"@{_channel}", text, ParseMode.Markdown, true);
+                await client.EditMessageTextAsync($"@{_channel}", pinned.MessageId, text, ParseMode.Markdown, true);
             }
             else
             {
