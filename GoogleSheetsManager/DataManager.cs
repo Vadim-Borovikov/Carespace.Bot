@@ -19,7 +19,6 @@ namespace GoogleSheetsManager
             return values?.Select(LoadValues<T>).ToList();
         }
 
-        public static T To<T>(IList<object> values, int index) => To(values, index, o => (T)o);
         public static string ToString(IList<object> values, int index) => To(values, index, o => o?.ToString());
         public static DateTime? ToDateTime(IList<object> values, int index) => To(values, index, ToDateTime);
         public static TimeSpan? ToTimeSpan(IList<object> values, int index) => To(values, index, ToTimeSpan);
