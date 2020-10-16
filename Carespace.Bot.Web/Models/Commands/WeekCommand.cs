@@ -179,29 +179,36 @@ namespace Carespace.Bot.Web.Models.Commands
 
             var builder = new StringBuilder();
 
-            string title = t.Uri != null ? $"[{t.Name}]({t.Uri})" : $"*{t.Name}*";
-            builder.AppendLine(title);
+            if (t.Uri != null)
+            {
+                builder.Append($"⁠[{WordJoiner}]({t.Uri})");
+            }
+            builder.AppendLine($"*{t.Name}*");
 
             builder.AppendLine();
             builder.AppendLine(t.Description);
 
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {e.Data.Start:dddd dd MMMM}, {e.Data.Start:HH:mm}-{e.Data.End:HH:mm}");
+            builder.AppendLine($"🕰️ *Когда:* {e.Data.Start:dd MMMM, HH:mm}-{e.Data.End:HH:mm}.");
+
             if (!string.IsNullOrWhiteSpace(t.Hosts))
             {
                 builder.AppendLine();
-                string form = t.Hosts.Contains(',') ? "Ведущие" : "Ведущий";
-                builder.AppendLine($"🎤 *{form}:* {t.Hosts}");
+                builder.AppendLine($"🎤 *Кто ведёт*: {t.Hosts}.");
             }
-            if ((t.Tags != null) && (t.Tags.Count > 0))
+
+            builder.AppendLine();
+            builder.AppendLine($"💰 *Цена*: {t.Price}.");
+
+            if (t.IsWeekly)
             {
                 builder.AppendLine();
-                foreach (string tag in t.Tags)
-                {
-                    builder.Append($"#{tag}");
-                }
-                builder.AppendLine();
+                builder.AppendLine("📆 Мероприятие проходит каждую неделю.");
             }
+
+            builder.AppendLine();
+            builder.AppendLine($"🗞️ *Принять участие*: {t.Uri}.");
+
             return builder.ToString();
         }
 
@@ -216,5 +223,6 @@ namespace Carespace.Bot.Web.Models.Commands
         }
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
+        private const string WordJoiner = "\u2060";
     }
 }

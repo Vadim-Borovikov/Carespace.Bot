@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using GoogleSheetsManager;
 
 namespace Carespace.Bot.Web.Models
@@ -14,7 +13,7 @@ namespace Carespace.Bot.Web.Models
         public string Hosts { get; private set; }
         public string Description { get; private set; }
         public Uri Uri { get; private set; }
-        public List<string> Tags { get; private set; }
+        public string Price { get; private set; }
         public bool IsWeekly { get; private set; }
 
         public void Load(IList<object> values)
@@ -48,8 +47,7 @@ namespace Carespace.Bot.Web.Models
 
             Uri = DataManager.ToUri(values, 6);
 
-            string tags = DataManager.ToString(values, 7);
-            Tags = !string.IsNullOrWhiteSpace(tags) ? tags.Split(';')?.ToList() : new List<string>();
+            Price = DataManager.ToString(values, 7);
 
             IsWeekly = DataManager.To<bool?>(values, 8) ?? false;
         }
