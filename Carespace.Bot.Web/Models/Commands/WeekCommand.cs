@@ -117,7 +117,7 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             IList<EventTemplate> templates = _googleSheetsDataManager.GetValues<EventTemplate>(_googleRange);
             DateTime weekEnd = weekStart.AddDays(7);
-            foreach (EventTemplate t in templates.Where(t => t.Start < weekEnd))
+            foreach (EventTemplate t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
             {
                 if (t.Start < weekStart)
                 {

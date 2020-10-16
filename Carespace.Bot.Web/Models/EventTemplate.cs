@@ -15,9 +15,16 @@ namespace Carespace.Bot.Web.Models
         public string Price { get; private set; }
         public bool IsWeekly { get; private set; }
         public Uri Uri { get; private set; }
+        public bool IsApproved { get; private set; }
 
         public void Load(IList<object> values)
         {
+            IsApproved = DataManager.To<bool?>(values, 10) ?? false;
+            if (!IsApproved)
+            {
+                return;
+            }
+
             Name = DataManager.ToString(values, 1);
 
             int? id = DataManager.ToInt(values, 0);
