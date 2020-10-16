@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace GoogleSheetsManager
 {
-    public class DataManager : IDisposable
+    public sealed class DataManager : IDisposable
     {
         public DataManager(string credentialJson, string sheetId)
         {
@@ -19,9 +19,9 @@ namespace GoogleSheetsManager
             return values?.Select(LoadValues<T>).ToList();
         }
 
-        public static T To<T>(IList<object> values, int index) => To(values, index, o => (T) o);
         public static string ToString(IList<object> values, int index) => To(values, index, o => o?.ToString());
         public static DateTime? ToDateTime(IList<object> values, int index) => To(values, index, ToDateTime);
+        public static TimeSpan? ToTimeSpan(IList<object> values, int index) => To(values, index, ToTimeSpan);
         public static Uri ToUri(IList<object> values, int index) => To(values, index, ToUri);
         public static int? ToInt(IList<object> values, int index) => To(values, index, ToInt);
 
@@ -38,7 +38,20 @@ namespace GoogleSheetsManager
             return cast(o);
         }
 
-        private static DateTime? ToDateTime(object o) => o is double d ? (DateTime?) DateTime.FromOADate(d) : null;
+        private static DateTime? ToDateTime(object o)
+        {
+            switch (o)
+            {
+                case double d:
+                    return DateTime.FromOADate(d);
+                case long l:
+                    return DateTime.FromOADate(l);
+                default:
+                    return null;
+            }
+        }
+
+        private static TimeSpan? ToTimeSpan(object o) => ToDateTime(o)?.TimeOfDay;
 
         private static Uri ToUri(object o)
         {

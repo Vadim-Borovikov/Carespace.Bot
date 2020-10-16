@@ -8,13 +8,13 @@ namespace Carespace.Bot.Web.Models
     {
         public int Id { get; private set; }
         public string Name { get; private set; }
+        public string Description { get; private set; }
         public DateTime Start { get; private set; }
         public DateTime End { get; private set; }
         public string Hosts { get; private set; }
-        public string Description { get; private set; }
-        public Uri Uri { get; private set; }
         public string Price { get; private set; }
         public bool IsWeekly { get; private set; }
+        public Uri Uri { get; private set; }
 
         public void Load(IList<object> values)
         {
@@ -27,29 +27,45 @@ namespace Carespace.Bot.Web.Models
             }
             Id = id.Value;
 
-            DateTime? start = DataManager.ToDateTime(values, 2);
-            if (!start.HasValue)
+            Description = DataManager.ToString(values, 2);
+
+            DateTime? startDate = DataManager.ToDateTime(values, 3);
+            if (!startDate.HasValue)
             {
-                throw new ArgumentNullException($"Empty start in \"{Name}\"");
+                throw new ArgumentNullException($"Empty start date in \"{Name}\"");
             }
-            Start = start.Value;
-
-            DateTime? end = DataManager.ToDateTime(values, 3);
-            if (!end.HasValue)
+            DateTime? startTime = DataManager.ToDateTime(values, 4);
+            if (!startTime.HasValue)
             {
-                throw new ArgumentNullException($"Empty end in \"{Name}\"");
+                throw new ArgumentNullException($"Empty start time in \"{Name}\"");
             }
-            End = end.Value;
+            Start = startDate.Value.Date.Add(startTime.Value.TimeOfDay);
 
-            Hosts = DataManager.ToString(values, 4);
+            TimeSpan? duration = DataManager.ToTimeSpan(values, 5);
+            if (!duration.HasValue)
+            {
+                throw new ArgumentNullException($"Empty duration in \"{Name}\"");
+            }
+            End = Start + duration.Value;
 
-            Description = DataManager.ToString(values, 5);
-
-            Uri = DataManager.ToUri(values, 6);
+            Hosts = DataManager.ToString(values, 6);
 
             Price = DataManager.ToString(values, 7);
 
-            IsWeekly = DataManager.To<bool?>(values, 8) ?? false;
+            string type = DataManager.ToString(values, 8);
+            switch (type)
+            {
+                case "Еженедельное":
+                    IsWeekly = true;
+                    break;
+                case "Однократное":
+                    IsWeekly = false;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException($"Unknown type \"{type}\" in \"{Name}\"");
+            }
+
+            Uri = DataManager.ToUri(values, 9);
         }
     }
 }
