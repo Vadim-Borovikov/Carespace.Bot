@@ -5,7 +5,7 @@ namespace Carespace.Bot.Web.Models
     internal sealed class Event
     {
         public readonly EventTemplate Template;
-        public readonly EventData Data;
+        public EventData Data;
 
         public Event(EventTemplate template)
         {

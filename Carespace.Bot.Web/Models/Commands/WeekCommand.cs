@@ -50,9 +50,30 @@ namespace Carespace.Bot.Web.Models.Commands
 
             if (IsMessageRelevant(channel.PinnedMessage, weekStart))
             {
-                string text = PrepareWeekSchedule(events, weekStart);
+                List<int> googleTemplateIds = events.Select(e => e.Template.Id).ToList();
 
-                await EditMessageTextAsync(client, channel, channel.PinnedMessage.MessageId, text, true);
+                foreach (EventData data in _saveManager.Data.Events)
+                {
+                    if (googleTemplateIds.Contains(data.TemplateId))
+                    {
+                        Event toUpdate = events.Single(e => e.Template.Id == data.TemplateId);
+                        toUpdate.Data = data;
+                        string messageText = GetMessageText(toUpdate);
+                        await EditMessageTextAsync(client, channel, toUpdate.Data.MessageId, messageText);
+                    }
+                    else
+                    {
+                        await DeleteMessageAsync(client, channel, data.MessageId);
+                    }
+                }
+
+                IEnumerable<int> telegramTemplateIds = _saveManager.Data.Events.Select(d => d.TemplateId);
+                IEnumerable<Event> toAdd = events.Where(e => !telegramTemplateIds.Contains(e.Template.Id));
+                await PostEventsAsync(client, toAdd, channel);
+
+                string scheduleText = PrepareWeekSchedule(events, weekStart);
+
+                await EditMessageTextAsync(client, channel, channel.PinnedMessage.MessageId, scheduleText, true);
             }
             else
             {
@@ -79,7 +100,7 @@ namespace Carespace.Bot.Web.Models.Commands
         private async Task PostEventAsync(ITelegramBotClient client, ChatId chatId, Event e)
         {
             string text = GetMessageText(e);
-            int messageId = await SendTextMessageAsync(client, chatId, text, true);
+            int messageId = await SendTextMessageAsync(client, chatId, text);
             e.Data.MessageId = messageId;
         }
 
@@ -136,7 +157,7 @@ namespace Carespace.Bot.Web.Models.Commands
         }
 
         private async Task EditMessageTextAsync(ITelegramBotClient client, ChatId chatId, int messageId,
-            string text, bool disableWebPagePreview)
+            string text, bool disableWebPagePreview = false)
         {
             if (text == _saveManager.Data.Texts[messageId])
             {
@@ -144,6 +165,12 @@ namespace Carespace.Bot.Web.Models.Commands
             }
             await client.EditMessageTextAsync(chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
             _saveManager.Data.Texts[messageId] = text;
+        }
+
+        private async Task DeleteMessageAsync(ITelegramBotClient client, ChatId chatId, int messageId)
+        {
+            await client.DeleteMessageAsync(chatId, messageId);
+            _saveManager.Data.Texts.Remove(messageId);
         }
 
         private static string GetMessageText(Event e)
