@@ -37,16 +37,6 @@ namespace GoogleSheetsManager
             return response.Values;
         }
 
-        internal void UpdateValues(string range, IList<IList<object>> values)
-        {
-            var valueRange = new ValueRange { Values = values };
-            SpreadsheetsResource.ValuesResource.UpdateRequest request =
-                _service.Spreadsheets.Values.Update(valueRange, _sheetId, range);
-            request.ValueInputOption =
-                SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-            request.Execute();
-        }
-
         private static readonly string[] Scopes = { SheetsService.Scope.Drive };
         private const string ApplicationName = "GoogleApisDriveProvider";
 

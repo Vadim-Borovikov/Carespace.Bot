@@ -4,6 +4,6 @@ namespace GoogleSheetsManager
 {
     public interface ILoadable
     {
-        void Load(IList<object> values, int index);
+        void Load(IList<object> values);
     }
 }

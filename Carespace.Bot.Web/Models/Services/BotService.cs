@@ -20,6 +20,8 @@ namespace Carespace.Bot.Web.Models.Services
         {
             _config = options.Value;
 
+            var saveManager = new BotSaveManager(_config.SavePath);
+
             Client = new TelegramBotClient(_config.Token);
 
             if (string.IsNullOrWhiteSpace(_config.GoogleCredentialsJson))
@@ -40,7 +42,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new WeekCommand(_googleSheetsDataManager, _config.GoogleEventsRangeAll, _config.GoogleEventsRangeWeek,
+                new WeekCommand(_googleSheetsDataManager, saveManager, _config.GoogleRange,
                     _config.EventsChannelLogin)
             };
 

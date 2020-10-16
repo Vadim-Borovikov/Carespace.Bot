@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Carespace.Bot.Web.Models
 {
-    public class BotConfiguration
+    internal sealed class BotConfiguration
     {
         public class Link
         {
@@ -67,9 +67,10 @@ namespace Carespace.Bot.Web.Models
 
         public string GoogleSheetId { get; set; }
 
-        public string GoogleEventsRangeAll { get; set; }
-        public string GoogleEventsRangeWeek { get; set; }
+        public string GoogleRange { get; set; }
 
         public string EventsChannelLogin { get; set; }
+
+        public string SavePath { get; set; }
     }
 }
