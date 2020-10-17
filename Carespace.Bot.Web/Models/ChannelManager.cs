@@ -16,15 +16,17 @@ namespace Carespace.Bot.Web.Models
         private readonly BotSaveManager _saveManager;
         private readonly string _googleRange;
         private readonly string _channelLogin;
+        private readonly Uri _formUri;
         private readonly ITelegramBotClient _client;
 
         public ChannelManager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            string channelLogin, ITelegramBotClient client)
+            string channelLogin, Uri formUri, ITelegramBotClient client)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _saveManager = saveManager;
             _googleRange = googleRange;
             _channelLogin = channelLogin;
+            _formUri = formUri;
             _client = client;
         }
 
@@ -141,6 +143,8 @@ namespace Carespace.Bot.Web.Models
                 var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _channelLogin, e.Data.MessageId));
                 scheduleBuilder.AppendLine($"{e.Data.Start:HH:mm} [{e.Template.Name}]({messageUri})");
             }
+            scheduleBuilder.AppendLine();
+            scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
             scheduleBuilder.AppendLine();
             scheduleBuilder.AppendLine("#расписание");
             return scheduleBuilder.ToString();

@@ -33,7 +33,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new GoogleSheetsManager.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
             var channelManager = new ChannelManager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
-                _config.EventsChannelLogin, Client);
+                _config.EventsChannelLogin, _config.EventsFormUri, Client);
 
             var commands = new List<Command>
             {

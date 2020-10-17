@@ -4,6 +4,7 @@
 // ReSharper disable CollectionNeverUpdated.Global
 // ReSharper disable ClassNeverInstantiated.Global
 
+using System;
 using System.Collections.Generic;
 
 namespace Carespace.Bot.Web.Models
@@ -70,6 +71,8 @@ namespace Carespace.Bot.Web.Models
         public string GoogleRange { get; set; }
 
         public string EventsChannelLogin { get; set; }
+
+        public Uri EventsFormUri { get; set; }
 
         public string SavePath { get; set; }
     }
