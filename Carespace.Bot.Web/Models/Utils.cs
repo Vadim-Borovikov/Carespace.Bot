@@ -18,7 +18,7 @@ namespace Carespace.Bot.Web.Models
 {
     internal static class Utils
     {
-        internal static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
+        public static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
             Message message, string postfix = "")
         {
             Chat chat = message.Chat;
@@ -27,20 +27,20 @@ namespace Carespace.Bot.Web.Models
             return await client.SendTextMessageAsync(chat, text, ParseMode.Markdown);
         }
 
-        internal static async Task<List<PdfData>> CheckAsync(IEnumerable<string> sources,
+        public static async Task<List<PdfData>> CheckAsync(IEnumerable<string> sources,
             Func<string, Task<PdfData>> check)
         {
             PdfData[] datas = await Task.WhenAll(sources.Select(check));
             return datas.Where(d => d.Status != PdfData.FileStatus.Ok).ToList();
         }
 
-        internal static Task CreateOrUpdateAsync(IEnumerable<PdfData> sources, Func<PdfData, Task> createOrUpdate)
+        public static Task CreateOrUpdateAsync(IEnumerable<PdfData> sources, Func<PdfData, Task> createOrUpdate)
         {
             List<Task> updateTasks = sources.Select(createOrUpdate).ToList();
             return Task.WhenAll(updateTasks);
         }
 
-        internal static async Task<PdfData> CheckLocalPdfAsync(string sourceId, DataManager googleDataManager,
+        public static async Task<PdfData> CheckLocalPdfAsync(string sourceId, DataManager googleDataManager,
             string pdfFolderPath)
         {
             FileInfo fileInfo = await googleDataManager.GetFileInfoAsync(sourceId);
@@ -59,7 +59,7 @@ namespace Carespace.Bot.Web.Models
             return PdfData.CreateOk();
         }
 
-        internal static async Task CreateOrUpdateLocalAsync(PdfData data, DataManager googleDataManager,
+        public static async Task CreateOrUpdateLocalAsync(PdfData data, DataManager googleDataManager,
             string pdfFolderPath)
         {
             var info = new DocumentInfo(data.SourceId, DocumentType.Document);
@@ -75,7 +75,7 @@ namespace Carespace.Bot.Web.Models
             }
         }
 
-        internal static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link,
+        public static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link,
             ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
@@ -88,7 +88,7 @@ namespace Carespace.Bot.Web.Models
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        internal static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
+        public static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
             IReadOnlyDictionary<string, BotConfiguration.Link> banks)
         {
             IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
@@ -96,14 +96,14 @@ namespace Carespace.Bot.Web.Models
             return $"{name}:{Environment.NewLine}{options}";
         }
 
-        internal static DateTime GetMonday()
+        public static DateTime GetMonday()
         {
             DateTime today = DateTime.Today;
             int diff = (today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
 
-        internal static string ShowDate(DateTime date)
+        public static string ShowDate(DateTime date)
         {
             string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
             return $"{day}, {date:dd MMMM}";
