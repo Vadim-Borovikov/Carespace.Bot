@@ -10,7 +10,7 @@ using Telegram.Bot;
 
 namespace Carespace.Bot.Web.Models.Services
 {
-    internal class BotService : IBotService, IHostedService
+    internal sealed class BotService : IBotService, IHostedService
     {
         public TelegramBotClient Client { get; }
         public IReadOnlyCollection<Command> Commands { get; }
@@ -32,6 +32,9 @@ namespace Carespace.Bot.Web.Models.Services
             _googleSheetsDataManager =
                 new GoogleSheetsManager.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
+            var channelManager = new ChannelManager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
+                _config.EventsChannelLogin, Client);
+
             var commands = new List<Command>
             {
                 new CustomCommand(_config.DocumentIds, _config.PdfFolderPath, _googleDriveDataManager),
@@ -42,8 +45,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new WeekCommand(_googleSheetsDataManager, saveManager, _config.GoogleRange,
-                    _config.EventsChannelLogin)
+                new WeekCommand(channelManager)
             };
 
             Commands = commands.AsReadOnly();
