@@ -49,30 +49,30 @@ namespace Carespace.Bot.Web.Models
                         Event toUpdate = events.Single(e => e.Template.Id == data.TemplateId);
                         toUpdate.Data = data;
                         string messageText = GetMessageText(toUpdate);
-                        await EditMessageTextAsync(_client, channel, toUpdate.Data.MessageId, messageText);
+                        await EditMessageTextAsync(channel, toUpdate.Data.MessageId, messageText);
                     }
                     else
                     {
-                        await DeleteMessageAsync(_client, channel, data.MessageId);
+                        await DeleteMessageAsync(channel, data.MessageId);
                     }
                 }
 
                 IEnumerable<int> telegramTemplateIds = _saveManager.Data.Events.Select(d => d.TemplateId);
                 IEnumerable<Event> toAdd = events.Where(e => !telegramTemplateIds.Contains(e.Template.Id));
-                await PostEventsAsync(_client, toAdd, channel);
+                await PostEventsAsync(toAdd, channel);
 
                 string scheduleText = PrepareWeekSchedule(events, weekStart);
 
-                await EditMessageTextAsync(_client, channel, channel.PinnedMessage.MessageId, scheduleText, true);
+                await EditMessageTextAsync(channel, channel.PinnedMessage.MessageId, scheduleText, true);
             }
             else
             {
                 _saveManager.Reset();
 
-                await PostEventsAsync(_client, events, channel);
+                await PostEventsAsync(events, channel);
                 string text = PrepareWeekSchedule(events, weekStart);
 
-                int messageId = await SendTextMessageAsync(_client, channel, text, true);
+                int messageId = await SendTextMessageAsync(channel, text, true);
                 await _client.PinChatMessageAsync(channel, messageId, true);
             }
 
@@ -81,25 +81,26 @@ namespace Carespace.Bot.Web.Models
             _saveManager.Save();
         }
 
-        private async Task PostEventsAsync(ITelegramBotClient client, IEnumerable<Event> events, ChatId chatId)
+        private async Task PostEventsAsync(IEnumerable<Event> events, ChatId chatId)
         {
             foreach (Event e in events)
             {
-                await PostEventAsync(client, chatId, e);
+                await PostEventAsync(chatId, e);
             }
         }
 
-        private async Task PostEventAsync(ITelegramBotClient client, ChatId chatId, Event e)
+        private async Task PostEventAsync(ChatId chatId, Event e)
         {
             string text = GetMessageText(e);
-            int messageId = await SendTextMessageAsync(client, chatId, text);
+            int messageId = await SendTextMessageAsync(chatId, text);
             e.Data.MessageId = messageId;
         }
 
-        private async Task<int> SendTextMessageAsync(ITelegramBotClient client, ChatId chatId, string text,
-            bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
+
+        private async Task<int> SendTextMessageAsync(ChatId chatId, string text, bool disableWebPagePreview = false,
+            bool disableNotification = false, int replyToMessageId = 0)
         {
-            Message message = await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown,
+            Message message = await _client.SendTextMessageAsync(chatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId);
             _saveManager.Data.Texts[message.MessageId] = text;
             return message.MessageId;
@@ -150,20 +151,20 @@ namespace Carespace.Bot.Web.Models
             return scheduleBuilder.ToString();
         }
 
-        private async Task EditMessageTextAsync(ITelegramBotClient client, ChatId chatId, int messageId,
-            string text, bool disableWebPagePreview = false)
+        private async Task EditMessageTextAsync(ChatId chatId, int messageId, string text,
+            bool disableWebPagePreview = false)
         {
             if (text == _saveManager.Data.Texts[messageId])
             {
                 return;
             }
-            await client.EditMessageTextAsync(chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
+            await _client.EditMessageTextAsync(chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
             _saveManager.Data.Texts[messageId] = text;
         }
 
-        private async Task DeleteMessageAsync(ITelegramBotClient client, ChatId chatId, int messageId)
+        private async Task DeleteMessageAsync(ChatId chatId, int messageId)
         {
-            await client.DeleteMessageAsync(chatId, messageId);
+            await _client.DeleteMessageAsync(chatId, messageId);
             _saveManager.Data.Texts.Remove(messageId);
         }
 
