@@ -41,7 +41,7 @@ namespace Carespace.Bot.Web.Models
             {
                 throw new ArgumentNullException($"Empty start time in \"{Name}\"");
             }
-            Start = startDate.Value.Date.Add(startTime.Value.TimeOfDay);
+            Start = startDate.Value.Date + startTime.Value.TimeOfDay;
 
             TimeSpan? duration = DataManager.ToTimeSpan(values, 5);
             if (!duration.HasValue)
