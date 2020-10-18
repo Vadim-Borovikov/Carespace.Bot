@@ -93,12 +93,6 @@ namespace Carespace.Bot.Web.Models.Events
             return events;
         }
 
-        private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
-        {
-            var e = new Event(template, data);
-            events[template.Id] = e;
-        }
-
         private async Task PostOrUpdateScheduleAsync(IEnumerable<Event> events, DateTime weekStart)
         {
             string text = PrepareWeekSchedule(events, weekStart);
@@ -112,6 +106,12 @@ namespace Carespace.Bot.Web.Models.Events
                 int messageId = await SendTextMessageAsync(text, true);
                 await _client.PinChatMessageAsync(_chatId, messageId, true);
             }
+        }
+
+        private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
+        {
+            var e = new Event(template, data);
+            events[template.Id] = e;
         }
 
         private async Task<Data> PostEventAsync(Template template, DateTime weekStart)
