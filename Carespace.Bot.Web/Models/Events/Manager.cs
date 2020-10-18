@@ -239,7 +239,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false)
         {
-            if (text == _saveManager.Data.Texts[messageId])
+            if (_saveManager.Data.Texts.ContainsKey(messageId) && (_saveManager.Data.Texts[messageId] == text))
             {
                 return;
             }
