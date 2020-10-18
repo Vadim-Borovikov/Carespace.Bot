@@ -99,7 +99,7 @@ namespace Carespace.Bot.Web.Models
         public static DateTime GetMonday()
         {
             DateTime today = DateTime.Today;
-            int diff = (today.DayOfWeek - DayOfWeek.Monday) % 7;
+            int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
 
