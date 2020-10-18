@@ -349,3 +349,4 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 /Carespace.Bot.Web/appsettings.Development.json
+/Carespace.Bot.Web/save.json
