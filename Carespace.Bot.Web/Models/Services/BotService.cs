@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Services
 {
@@ -32,8 +33,9 @@ namespace Carespace.Bot.Web.Models.Services
             _googleSheetsDataManager =
                 new GoogleSheetsManager.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
-            var channelManager = new ChannelManager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
-                _config.EventsChannelLogin, _config.EventsFormUri, Client);
+            var chatId = new ChatId($"@{_config.EventsChannelLogin}");
+            var eventManager = new Events.Manager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
+                _config.EventsFormUri, Client, chatId);
 
             var commands = new List<Command>
             {
@@ -45,7 +47,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new WeekCommand(channelManager)
+                new WeekCommand(eventManager)
             };
 
             Commands = commands.AsReadOnly();

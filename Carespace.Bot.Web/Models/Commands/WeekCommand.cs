@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Carespace.Bot.Web.Models.Events;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -7,9 +8,9 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class WeekCommand : Command
     {
-        private readonly ChannelManager _channelManager;
+        private readonly Manager _eventManager;
 
-        public WeekCommand(ChannelManager channelManager) { _channelManager = channelManager; }
+        public WeekCommand(Manager eventManager) { _eventManager = eventManager; }
 
         internal override string Name => "week";
         internal override string Description => "события на этой неделе";
@@ -18,7 +19,7 @@ namespace Carespace.Bot.Web.Models.Commands
         {
             Message statusMessage = await client.SendTextMessageAsync(message.Chat, "_Обновляю…_", ParseMode.Markdown);
 
-            await _channelManager.PostOrUpdateWeekEventsAndScheduleAsync();
+            await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync();
 
             await client.FinalizeStatusMessageAsync(statusMessage);
         }

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using GoogleSheetsManager;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class EventTemplate : ILoadable
+    internal sealed class Template : ILoadable
     {
         public bool IsApproved { get; private set; }
         public int Id { get; private set; }

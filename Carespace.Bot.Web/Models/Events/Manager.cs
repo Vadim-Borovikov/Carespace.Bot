@@ -8,72 +8,83 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class ChannelManager
+    internal sealed class Manager
     {
         private readonly DataManager _googleSheetsDataManager;
-        private readonly BotSaveManager _saveManager;
         private readonly string _googleRange;
-        private readonly string _channelLogin;
+        private readonly BotSaveManager _saveManager;
         private readonly Uri _formUri;
         private readonly ITelegramBotClient _client;
+        private readonly ChatId _chatId;
 
-        public ChannelManager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            string channelLogin, Uri formUri, ITelegramBotClient client)
+        private Chat _chat;
+
+        public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
+            Uri formUri, ITelegramBotClient client, ChatId chatId)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
-            _saveManager = saveManager;
             _googleRange = googleRange;
-            _channelLogin = channelLogin;
+            _saveManager = saveManager;
             _formUri = formUri;
             _client = client;
+            _chatId = chatId;
+        }
+
+        private async Task LoadChatAsync()
+        {
+            if (_chat != null)
+            {
+                return;
+            }
+            _chat = await _client.GetChatAsync(_chatId);
         }
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
+            await LoadChatAsync();
             _saveManager.Load();
 
-            Chat channel = await _client.GetChatAsync($"@{_channelLogin}");
             DateTime weekStart = Utils.GetMonday();
             List<Event> events = LoadWeekEvents(weekStart).ToList();
 
-            if (IsMessageRelevant(channel.PinnedMessage, weekStart))
+            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
             {
                 List<int> googleTemplateIds = events.Select(e => e.Template.Id).ToList();
 
-                foreach (EventData data in _saveManager.Data.Events)
+                foreach (Data data in _saveManager.Data.Events)
                 {
                     if (googleTemplateIds.Contains(data.TemplateId))
                     {
                         Event toUpdate = events.Single(e => e.Template.Id == data.TemplateId);
                         toUpdate.Data = data;
                         string messageText = GetMessageText(toUpdate);
-                        await EditMessageTextAsync(channel, toUpdate.Data.MessageId, messageText);
+                        await EditMessageTextAsync(toUpdate.Data.MessageId, messageText);
                     }
                     else
                     {
-                        await DeleteMessageAsync(channel, data.MessageId);
+                        await DeleteMessageAsync(data.MessageId);
                     }
                 }
 
                 IEnumerable<int> telegramTemplateIds = _saveManager.Data.Events.Select(d => d.TemplateId);
                 IEnumerable<Event> toAdd = events.Where(e => !telegramTemplateIds.Contains(e.Template.Id));
-                await PostEventsAsync(toAdd, channel);
+                await PostEventsAsync(toAdd);
 
                 string scheduleText = PrepareWeekSchedule(events, weekStart);
 
-                await EditMessageTextAsync(channel, channel.PinnedMessage.MessageId, scheduleText, true);
+                await EditMessageTextAsync(_chat.PinnedMessage.MessageId, scheduleText, true);
             }
             else
             {
                 _saveManager.Reset();
 
-                await PostEventsAsync(events, channel);
+                await PostEventsAsync(events);
                 string text = PrepareWeekSchedule(events, weekStart);
 
-                int messageId = await SendTextMessageAsync(channel, text, true);
-                await _client.PinChatMessageAsync(channel, messageId, true);
+                int messageId = await SendTextMessageAsync(text, true);
+                await _client.PinChatMessageAsync(_chatId, messageId, true);
             }
 
             _saveManager.Data.Events = events.Select(e => e.Data).ToList();
@@ -81,26 +92,26 @@ namespace Carespace.Bot.Web.Models
             _saveManager.Save();
         }
 
-        private async Task PostEventsAsync(IEnumerable<Event> events, ChatId chatId)
+        private async Task PostEventsAsync(IEnumerable<Event> events)
         {
             foreach (Event e in events)
             {
-                await PostEventAsync(chatId, e);
+                await PostEventAsync(e);
             }
         }
 
-        private async Task PostEventAsync(ChatId chatId, Event e)
+        private async Task PostEventAsync(Event e)
         {
             string text = GetMessageText(e);
-            int messageId = await SendTextMessageAsync(chatId, text);
+            int messageId = await SendTextMessageAsync(text);
             e.Data.MessageId = messageId;
         }
 
 
-        private async Task<int> SendTextMessageAsync(ChatId chatId, string text, bool disableWebPagePreview = false,
+        private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
             bool disableNotification = false, int replyToMessageId = 0)
         {
-            Message message = await _client.SendTextMessageAsync(chatId, text, ParseMode.Markdown,
+            Message message = await _client.SendTextMessageAsync(_chatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId);
             _saveManager.Data.Texts[message.MessageId] = text;
             return message.MessageId;
@@ -108,9 +119,9 @@ namespace Carespace.Bot.Web.Models
 
         private IEnumerable<Event> LoadWeekEvents(DateTime weekStart)
         {
-            IList<EventTemplate> templates = _googleSheetsDataManager.GetValues<EventTemplate>(_googleRange);
+            IList<Template> templates = _googleSheetsDataManager.GetValues<Template>(_googleRange);
             DateTime weekEnd = weekStart.AddDays(7);
-            foreach (EventTemplate t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
+            foreach (Template t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
             {
                 if (t.Start < weekStart)
                 {
@@ -141,7 +152,7 @@ namespace Carespace.Bot.Web.Models
                     date = e.Data.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
-                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _channelLogin, e.Data.MessageId));
+                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _chat.Username, e.Data.MessageId));
                 scheduleBuilder.AppendLine($"{e.Data.Start:HH:mm} [{e.Template.Name}]({messageUri})");
             }
             scheduleBuilder.AppendLine();
@@ -151,58 +162,57 @@ namespace Carespace.Bot.Web.Models
             return scheduleBuilder.ToString();
         }
 
-        private async Task EditMessageTextAsync(ChatId chatId, int messageId, string text,
-            bool disableWebPagePreview = false)
+        private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false)
         {
             if (text == _saveManager.Data.Texts[messageId])
             {
                 return;
             }
-            await _client.EditMessageTextAsync(chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
+            await _client.EditMessageTextAsync(_chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
             _saveManager.Data.Texts[messageId] = text;
         }
 
-        private async Task DeleteMessageAsync(ChatId chatId, int messageId)
+        private async Task DeleteMessageAsync(int messageId)
         {
-            await _client.DeleteMessageAsync(chatId, messageId);
+            await _client.DeleteMessageAsync(_chatId, messageId);
             _saveManager.Data.Texts.Remove(messageId);
         }
 
         private static string GetMessageText(Event e)
         {
-            EventTemplate t = e.Template;
+            Template template = e.Template;
 
             var builder = new StringBuilder();
 
-            if (t.Uri != null)
+            if (template.Uri != null)
             {
-                builder.Append($"⁠[{WordJoiner}]({t.Uri})");
+                builder.Append($"⁠[{WordJoiner}]({template.Uri})");
             }
-            builder.AppendLine($"*{t.Name}*");
+            builder.AppendLine($"*{template.Name}*");
 
             builder.AppendLine();
-            builder.AppendLine(t.Description);
+            builder.AppendLine(template.Description);
 
             builder.AppendLine();
             builder.AppendLine($"🕰️ *Когда:* {e.Data.Start:dd MMMM, HH:mm}-{e.Data.End:HH:mm}.");
 
-            if (!string.IsNullOrWhiteSpace(t.Hosts))
+            if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
                 builder.AppendLine();
-                builder.AppendLine($"🎤 *Кто ведёт*: {t.Hosts}.");
+                builder.AppendLine($"🎤 *Кто ведёт*: {template.Hosts}.");
             }
 
             builder.AppendLine();
-            builder.AppendLine($"💰 *Цена*: {t.Price}.");
+            builder.AppendLine($"💰 *Цена*: {template.Price}.");
 
-            if (t.IsWeekly)
+            if (template.IsWeekly)
             {
                 builder.AppendLine();
                 builder.AppendLine("📆 Мероприятие проходит каждую неделю.");
             }
 
             builder.AppendLine();
-            builder.AppendLine($"🗞️ *Принять участие*: {t.Uri}.");
+            builder.AppendLine($"🗞️ *Принять участие*: {template.Uri}.");
 
             return builder.ToString();
         }

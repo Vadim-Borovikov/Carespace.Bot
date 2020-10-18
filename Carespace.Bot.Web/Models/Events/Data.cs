@@ -1,9 +1,9 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class EventData
+    internal sealed class Data
     {
         [JsonProperty]
         public int TemplateId { get; set; }
@@ -14,11 +14,11 @@ namespace Carespace.Bot.Web.Models
         [JsonProperty]
         public DateTime End { get; set; }
 
-        public EventData() { }
+        public Data() { }
 
-        public EventData(EventTemplate template) : this(template.Id, template.Start, template.End) { }
+        public Data(Template template) : this(template.Id, template.Start, template.End) { }
 
-        public EventData(int templateId, DateTime start, DateTime end)
+        public Data(int templateId, DateTime start, DateTime end)
         {
             TemplateId = templateId;
             Start = start;

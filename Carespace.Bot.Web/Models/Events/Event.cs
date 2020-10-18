@@ -1,26 +1,26 @@
 ﻿using System;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
     internal sealed class Event
     {
-        public readonly EventTemplate Template;
-        public EventData Data;
+        public readonly Template Template;
+        public Data Data;
 
-        public Event(EventTemplate template)
+        public Event(Template template)
         {
             Template = template;
-            Data = new EventData(template);
+            Data = new Data(template);
         }
 
-        public Event(EventTemplate template, DateTime weekStart)
+        public Event(Template template, DateTime weekStart)
         {
             Template = template;
 
             int weeks = (int) Math.Ceiling((weekStart - template.Start).TotalDays / 7);
             DateTime eventStart = template.Start.AddDays(7 * weeks);
             DateTime eventEnd = template.End.AddDays(7 * weeks);
-            Data = new EventData(Template.Id, eventStart, eventEnd);
+            Data = new Data(Template.Id, eventStart, eventEnd);
         }
     }
 }
