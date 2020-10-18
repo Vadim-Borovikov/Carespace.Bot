@@ -34,7 +34,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
-            await LoadChatAsync();
+            _chat = await _client.GetChatAsync(_chatId);
 
             DateTime weekStart = Utils.GetMonday();
 
@@ -112,15 +112,6 @@ namespace Carespace.Bot.Web.Models.Events
                 int messageId = await SendTextMessageAsync(text, true);
                 await _client.PinChatMessageAsync(_chatId, messageId, true);
             }
-        }
-
-        private async Task LoadChatAsync()
-        {
-            if (_chat != null)
-            {
-                return;
-            }
-            _chat = await _client.GetChatAsync(_chatId);
         }
 
         private async Task<Data> PostEventAsync(Template template, DateTime weekStart)
