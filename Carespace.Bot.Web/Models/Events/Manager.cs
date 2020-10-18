@@ -32,6 +32,88 @@ namespace Carespace.Bot.Web.Models.Events
             _chatId = chatId;
         }
 
+        public async Task PostOrUpdateWeekEventsAndScheduleAsync()
+        {
+            await LoadChatAsync();
+
+            DateTime weekStart = Utils.GetMonday();
+
+            Dictionary<int, Event> events = await PostOrUpdateEvents(weekStart);
+            await PostOrUpdateScheduleAsync(events.Values, weekStart);
+
+            _saveManager.Save();
+        }
+
+        private async Task<Dictionary<int, Event>> PostOrUpdateEvents(DateTime weekStart)
+        {
+            Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart);
+
+            _saveManager.Load();
+
+            var events = new Dictionary<int, Event>();
+
+            IEnumerable<Template> toPost = templates.Values;
+
+            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
+            {
+                ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
+                foreach (int savedTemplateId in savedTemplateIds)
+                {
+                    if (templates.ContainsKey(savedTemplateId))
+                    {
+                        Template template = templates[savedTemplateId];
+                        Data data = _saveManager.Data.Events[savedTemplateId];
+
+                        string messageText = GetMessageText(template, data.Start, data.End);
+                        await EditMessageTextAsync(data.MessageId, messageText);
+
+                        AddEvent(events, template, data);
+                    }
+                    else
+                    {
+                        await DeleteMessageAsync(_saveManager.Data.Events[savedTemplateId].MessageId);
+                    }
+                }
+
+                toPost = toPost.Where(t => !savedTemplateIds.Contains(t.Id));
+            }
+            else
+            {
+                _saveManager.Reset();
+            }
+
+            foreach (Template template in toPost)
+            {
+                Data data = await PostEventAsync(template, weekStart);
+                AddEvent(events, template, data);
+            }
+
+            _saveManager.Data.Events = events.ToDictionary(e => e.Key, e => e.Value.Data);
+
+            return events;
+        }
+
+        private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
+        {
+            var e = new Event(template, data);
+            events[template.Id] = e;
+        }
+
+        private async Task PostOrUpdateScheduleAsync(IEnumerable<Event> events, DateTime weekStart)
+        {
+            string text = PrepareWeekSchedule(events, weekStart);
+
+            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
+            {
+                await EditMessageTextAsync(_chat.PinnedMessage.MessageId, text, true);
+            }
+            else
+            {
+                int messageId = await SendTextMessageAsync(text, true);
+                await _client.PinChatMessageAsync(_chatId, messageId, true);
+            }
+        }
+
         private async Task LoadChatAsync()
         {
             if (_chat != null)
@@ -41,72 +123,21 @@ namespace Carespace.Bot.Web.Models.Events
             _chat = await _client.GetChatAsync(_chatId);
         }
 
-        public async Task PostOrUpdateWeekEventsAndScheduleAsync()
+        private async Task<Data> PostEventAsync(Template template, DateTime weekStart)
         {
-            await LoadChatAsync();
-            _saveManager.Load();
-
-            DateTime weekStart = Utils.GetMonday();
-            List<Event> events = LoadWeekEvents(weekStart).ToList();
-
-            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
+            DateTime start = template.Start;
+            DateTime end = template.End;
+            if (template.IsWeekly)
             {
-                List<int> googleTemplateIds = events.Select(e => e.Template.Id).ToList();
-
-                foreach (Data data in _saveManager.Data.Events)
-                {
-                    if (googleTemplateIds.Contains(data.TemplateId))
-                    {
-                        Event toUpdate = events.Single(e => e.Template.Id == data.TemplateId);
-                        toUpdate.Data = data;
-                        string messageText = GetMessageText(toUpdate);
-                        await EditMessageTextAsync(toUpdate.Data.MessageId, messageText);
-                    }
-                    else
-                    {
-                        await DeleteMessageAsync(data.MessageId);
-                    }
-                }
-
-                IEnumerable<int> telegramTemplateIds = _saveManager.Data.Events.Select(d => d.TemplateId);
-                IEnumerable<Event> toAdd = events.Where(e => !telegramTemplateIds.Contains(e.Template.Id));
-                await PostEventsAsync(toAdd);
-
-                string scheduleText = PrepareWeekSchedule(events, weekStart);
-
-                await EditMessageTextAsync(_chat.PinnedMessage.MessageId, scheduleText, true);
-            }
-            else
-            {
-                _saveManager.Reset();
-
-                await PostEventsAsync(events);
-                string text = PrepareWeekSchedule(events, weekStart);
-
-                int messageId = await SendTextMessageAsync(text, true);
-                await _client.PinChatMessageAsync(_chatId, messageId, true);
+                int weeks = (int)Math.Ceiling((weekStart - template.Start).TotalDays / 7);
+                start = template.Start.AddDays(7 * weeks);
+                end = template.End.AddDays(7 * weeks);
             }
 
-            _saveManager.Data.Events = events.Select(e => e.Data).ToList();
-
-            _saveManager.Save();
-        }
-
-        private async Task PostEventsAsync(IEnumerable<Event> events)
-        {
-            foreach (Event e in events)
-            {
-                await PostEventAsync(e);
-            }
-        }
-
-        private async Task PostEventAsync(Event e)
-        {
-            string text = GetMessageText(e);
+            string text = GetMessageText(template, start, end);
             int messageId = await SendTextMessageAsync(text);
-            e.Data.MessageId = messageId;
+            return new Data(messageId, start, end);
         }
-
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
             bool disableNotification = false, int replyToMessageId = 0)
@@ -117,24 +148,13 @@ namespace Carespace.Bot.Web.Models.Events
             return message.MessageId;
         }
 
-        private IEnumerable<Event> LoadWeekEvents(DateTime weekStart)
+        private Dictionary<int, Template> LoadRelevantTemplates(DateTime weekStart)
         {
             IList<Template> templates = _googleSheetsDataManager.GetValues<Template>(_googleRange);
             DateTime weekEnd = weekStart.AddDays(7);
-            foreach (Template t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
-            {
-                if (t.Start < weekStart)
-                {
-                    if (t.IsWeekly)
-                    {
-                        yield return new Event(t, weekStart);
-                    }
-
-                    continue;
-                }
-
-                yield return new Event(t);
-            }
+            return templates
+                .Where(t => t.IsApproved && (t.Start < weekEnd) && (t.IsWeekly || (t.Start >= weekStart)))
+                .ToDictionary(t => t.Id, t => t);
         }
 
         private string PrepareWeekSchedule(IEnumerable<Event> events, DateTime start)
@@ -178,10 +198,8 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Data.Texts.Remove(messageId);
         }
 
-        private static string GetMessageText(Event e)
+        private static string GetMessageText(Template template, DateTime start, DateTime end)
         {
-            Template template = e.Template;
-
             var builder = new StringBuilder();
 
             if (template.Uri != null)
@@ -194,7 +212,7 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine(template.Description);
 
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {e.Data.Start:dd MMMM, HH:mm}-{e.Data.End:HH:mm}.");
+            builder.AppendLine($"🕰️ *Когда:* {start:dd MMMM, HH:mm}-{end:HH:mm}.");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {

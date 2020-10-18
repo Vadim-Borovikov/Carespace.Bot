@@ -6,8 +6,6 @@ namespace Carespace.Bot.Web.Models.Events
     internal sealed class Data
     {
         [JsonProperty]
-        public int TemplateId { get; set; }
-        [JsonProperty]
         public int MessageId { get; set; }
         [JsonProperty]
         public DateTime Start { get; set; }
@@ -16,11 +14,9 @@ namespace Carespace.Bot.Web.Models.Events
 
         public Data() { }
 
-        public Data(Template template) : this(template.Id, template.Start, template.End) { }
-
-        public Data(int templateId, DateTime start, DateTime end)
+        public Data(int messageId, DateTime start, DateTime end)
         {
-            TemplateId = templateId;
+            MessageId = messageId;
             Start = start;
             End = end;
         }
