@@ -7,20 +7,30 @@ namespace Carespace.Bot.Web.Models
     {
         public BotSave Data { get; private set; }
 
-        public BotSaveManager(string path) { _path = path; }
+        public BotSaveManager(string path)
+        {
+            _path = path;
+            _locker = new object();
+        }
 
         public void Save()
         {
-            string json = JsonConvert.SerializeObject(Data);
-            File.WriteAllText(_path, json);
+            lock (_locker)
+            {
+                string json = JsonConvert.SerializeObject(Data);
+                File.WriteAllText(_path, json);
+            }
         }
 
         public void Load()
         {
-            if (File.Exists(_path))
+            lock (_locker)
             {
-                string json = File.ReadAllText(_path);
-                Data = JsonConvert.DeserializeObject<BotSave>(json);
+                if (File.Exists(_path))
+                {
+                    string json = File.ReadAllText(_path);
+                    Data = JsonConvert.DeserializeObject<BotSave>(json);
+                }
             }
 
             if (Data == null)
@@ -32,5 +42,6 @@ namespace Carespace.Bot.Web.Models
         public void Reset() => Data = new BotSave();
 
         private readonly string _path;
+        private readonly object _locker;
     }
 }
