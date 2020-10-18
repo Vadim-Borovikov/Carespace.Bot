@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Carespace.Bot.Web.Models.Events
 {
@@ -7,18 +6,12 @@ namespace Carespace.Bot.Web.Models.Events
     {
         [JsonProperty]
         public int MessageId { get; set; }
-        [JsonProperty]
-        public DateTime Start { get; set; }
-        [JsonProperty]
-        public DateTime End { get; set; }
 
         public Data() { }
 
-        public Data(int messageId, DateTime start, DateTime end)
+        public Data(int messageId)
         {
             MessageId = messageId;
-            Start = start;
-            End = end;
         }
     }
 }

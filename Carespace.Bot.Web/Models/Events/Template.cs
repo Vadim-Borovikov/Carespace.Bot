@@ -69,5 +69,12 @@ namespace Carespace.Bot.Web.Models.Events
 
             Uri = DataManager.ToUri(values, 9);
         }
+
+        public void MoveToWeek(DateTime weekStart)
+        {
+            int weeks = (int) Math.Ceiling((weekStart - Start).TotalDays / 7);
+            Start = Start.AddDays(7 * weeks);
+            End = End.AddDays(7 * weeks);
+        }
     }
 }

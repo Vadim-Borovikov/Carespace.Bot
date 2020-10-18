@@ -46,7 +46,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private async Task<Dictionary<int, Event>> PostOrUpdateEvents(DateTime weekStart)
         {
-            Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart);
+            Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart).ToDictionary(t => t.Id, t => t);
 
             _saveManager.Load();
 
@@ -64,7 +64,7 @@ namespace Carespace.Bot.Web.Models.Events
                         Template template = templates[savedTemplateId];
                         Data data = _saveManager.Data.Events[savedTemplateId];
 
-                        string messageText = GetMessageText(template, data.Start, data.End);
+                        string messageText = GetMessageText(template);
                         await EditMessageTextAsync(data.MessageId, messageText);
 
                         AddEvent(events, template, data);
@@ -84,7 +84,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             foreach (Template template in toPost)
             {
-                Data data = await PostEventAsync(template, weekStart);
+                Data data = await PostEventAsync(template);
                 AddEvent(events, template, data);
             }
 
@@ -114,20 +114,11 @@ namespace Carespace.Bot.Web.Models.Events
             events[template.Id] = e;
         }
 
-        private async Task<Data> PostEventAsync(Template template, DateTime weekStart)
+        private async Task<Data> PostEventAsync(Template template)
         {
-            DateTime start = template.Start;
-            DateTime end = template.End;
-            if (template.IsWeekly)
-            {
-                int weeks = (int)Math.Ceiling((weekStart - template.Start).TotalDays / 7);
-                start = template.Start.AddDays(7 * weeks);
-                end = template.End.AddDays(7 * weeks);
-            }
-
-            string text = GetMessageText(template, start, end);
+            string text = GetMessageText(template);
             int messageId = await SendTextMessageAsync(text);
-            return new Data(messageId, start, end);
+            return new Data(messageId);
         }
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
@@ -139,32 +130,42 @@ namespace Carespace.Bot.Web.Models.Events
             return message.MessageId;
         }
 
-        private Dictionary<int, Template> LoadRelevantTemplates(DateTime weekStart)
+        private IEnumerable<Template> LoadRelevantTemplates(DateTime weekStart)
         {
             IList<Template> templates = _googleSheetsDataManager.GetValues<Template>(_googleRange);
             DateTime weekEnd = weekStart.AddDays(7);
-            return templates
-                .Where(t => t.IsApproved && (t.Start < weekEnd) && (t.IsWeekly || (t.Start >= weekStart)))
-                .ToDictionary(t => t.Id, t => t);
+            foreach (Template t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
+            {
+                if (t.IsWeekly)
+                {
+                    t.MoveToWeek(weekStart);
+                }
+                else if (t.Start < weekStart)
+                {
+                    continue;
+                }
+
+                yield return t;
+            }
         }
 
         private string PrepareWeekSchedule(IEnumerable<Event> events, DateTime start)
         {
             var scheduleBuilder = new StringBuilder();
             DateTime date = start.AddDays(-1);
-            foreach (Event e in events.OrderBy(e => e.Data.Start))
+            foreach (Event e in events.OrderBy(e => e.Template.Start))
             {
-                if (e.Data.Start.Date > date)
+                if (e.Template.Start.Date > date)
                 {
                     if (scheduleBuilder.Length > 0)
                     {
                         scheduleBuilder.AppendLine();
                     }
-                    date = e.Data.Start.Date;
+                    date = e.Template.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
                 var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _chat.Username, e.Data.MessageId));
-                scheduleBuilder.AppendLine($"{e.Data.Start:HH:mm} [{e.Template.Name}]({messageUri})");
+                scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri})");
             }
             scheduleBuilder.AppendLine();
             scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
@@ -189,7 +190,7 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Data.Texts.Remove(messageId);
         }
 
-        private static string GetMessageText(Template template, DateTime start, DateTime end)
+        private static string GetMessageText(Template template)
         {
             var builder = new StringBuilder();
 
@@ -203,7 +204,7 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine(template.Description);
 
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {start:dd MMMM, HH:mm}-{end:HH:mm}.");
+            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm}.");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
