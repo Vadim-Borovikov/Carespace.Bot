@@ -40,6 +40,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             Dictionary<int, Event> events = await PostOrUpdateEvents(weekStart);
             await PostOrUpdateScheduleAsync(events.Values, weekStart);
+            await CreateOrUpdateNotificationsAsync(events.Values);
 
             _saveManager.Save();
         }
@@ -106,6 +107,68 @@ namespace Carespace.Bot.Web.Models.Events
                 int messageId = await SendTextMessageAsync(text, true);
                 await _client.PinChatMessageAsync(_chatId, messageId, true);
             }
+        }
+
+        private async Task CreateOrUpdateNotificationsAsync(IEnumerable<Event> events)
+        {
+            foreach (Event e in events)
+            {
+                await CreateOrUpdateNotificationAsync(e);
+            }
+        }
+
+        private async Task CreateOrUpdateNotificationAsync(Event e)
+        {
+            string text = GetNotificationText(e.Template);
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                if (!e.Data.NotificationId.HasValue)
+                {
+                    return;
+                }
+
+                await DeleteMessageAsync(e.Data.NotificationId.Value);
+                e.Data.NotificationId = null;
+                return;
+            }
+
+            if (e.Data.NotificationId.HasValue)
+            {
+                await EditMessageTextAsync(e.Data.NotificationId.Value, text);
+            }
+            else
+            {
+                e.Data.NotificationId = await SendTextMessageAsync(text, replyToMessageId: e.Data.MessageId);
+            }
+        }
+
+        private static string GetNotificationText(Template template)
+        {
+            DateTime now = DateTime.Now;
+
+            if (template.End <= now)
+            {
+                return null;
+            }
+
+            TimeSpan startIn = template.Start - now;
+            if (startIn > TimeSpan.FromHours(1))
+            {
+                return null;
+            }
+
+            if (startIn > TimeSpan.FromMinutes(15))
+            {
+                return $"*Через час* начнётся мероприятие [{template.Name}]({template.Uri}).";
+            }
+
+            if (startIn > TimeSpan.Zero)
+            {
+                return $"*Через 15 минут* начнётся мероприятие [{template.Name}]({template.Uri}).";
+            }
+
+            return $"*Сейчас* идёт мероприятие [{template.Name}]({template.Uri}).";
         }
 
         private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
