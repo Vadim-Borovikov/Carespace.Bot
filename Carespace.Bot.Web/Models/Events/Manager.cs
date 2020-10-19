@@ -124,21 +124,54 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private async Task CreateOrUpdateNotificationAsync(Event e)
+        private Task CreateOrUpdateNotificationAsync(Event e)
         {
-            string text = GetNotificationText(e.Template);
+            DateTime now = DateTime.Now;
 
-            if (string.IsNullOrWhiteSpace(text))
+            if (e.Template.End <= now)
             {
-                if (!e.Data.NotificationId.HasValue)
-                {
-                    return;
-                }
-
-                await DeleteMessageAsync(e.Data.NotificationId.Value);
-                e.Data.NotificationId = null;
-                return;
+                return DeleteNotificationAsync(e);
             }
+
+            TimeSpan startIn = e.Template.Start - now;
+            if (startIn > Hour)
+            {
+                Utils.DoOnce(ref e.Timer, e.Template.Start - Hour, () => NotifyInAnHourAsync(e));
+                return DeleteNotificationAsync(e);
+            }
+
+            if (startIn > Soon)
+            {
+                return NotifyInAnHourAsync(e);
+            }
+
+            return startIn > TimeSpan.Zero ? NotifySoonAsync(e) : NotifyCurrentAsync(e);
+        }
+
+        private async Task NotifyInAnHourAsync(Event e)
+        {
+            await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.Start - Soon, NotifySoonAsync);
+        }
+
+        private async Task NotifySoonAsync(Event e)
+        {
+            await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.Start, NotifyCurrentAsync);
+        }
+
+        private async Task NotifyCurrentAsync(Event e)
+        {
+            await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.End, DeleteNotificationAsync);
+        }
+
+        private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc)
+        {
+            await CreateOrUpdateNotificationAsync(e, prefix);
+            Utils.DoOnce(ref e.Timer, nextAt, () => nextFunc(e));
+        }
+
+        private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
+        {
+            string text = $"{prefix} мероприятие [{e.Template.Name}]({e.Template.Uri}).";
 
             if (e.Data.NotificationId.HasValue)
             {
@@ -148,34 +181,20 @@ namespace Carespace.Bot.Web.Models.Events
             {
                 e.Data.NotificationId = await SendTextMessageAsync(text, replyToMessageId: e.Data.MessageId);
             }
+
+            _saveManager.Save();
         }
 
-        private static string GetNotificationText(Template template)
+        private async Task DeleteNotificationAsync(Event e)
         {
-            DateTime now = DateTime.Now;
-
-            if (template.End <= now)
+            if (!e.Data.NotificationId.HasValue)
             {
-                return null;
+                return;
             }
 
-            TimeSpan startIn = template.Start - now;
-            if (startIn > TimeSpan.FromHours(1))
-            {
-                return null;
-            }
-
-            if (startIn > TimeSpan.FromMinutes(15))
-            {
-                return $"*Через час* начнётся мероприятие [{template.Name}]({template.Uri}).";
-            }
-
-            if (startIn > TimeSpan.Zero)
-            {
-                return $"*Через 15 минут* начнётся мероприятие [{template.Name}]({template.Uri}).";
-            }
-
-            return $"*Сейчас* идёт мероприятие [{template.Name}]({template.Uri}).";
+            await DeleteMessageAsync(e.Data.NotificationId.Value);
+            e.Data.NotificationId = null;
+            _saveManager.Save();
         }
 
         private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
@@ -311,5 +330,8 @@ namespace Carespace.Bot.Web.Models.Events
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
         private const string WordJoiner = "\u2060";
+
+        private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+        private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
     }
 }
