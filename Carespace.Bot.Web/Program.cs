@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,7 +15,7 @@ namespace Carespace.Bot.Web
             }
             catch (Exception ex)
             {
-                File.AppendAllText(LogPath, ex.ToString());
+                Utils.LogException(ex);
             }
         }
 
@@ -30,7 +29,5 @@ namespace Carespace.Bot.Web
                 })
                 .UseStartup<Startup>();
         }
-
-        private const string LogPath = "errors.txt";
     }
 }

@@ -74,6 +74,8 @@ namespace Carespace.Bot.Web.Models
 
         public Uri EventsFormUri { get; set; }
 
+        public DateTime EventsUpdateAt { get; set; }
+
         public string SavePath { get; set; }
     }
 }

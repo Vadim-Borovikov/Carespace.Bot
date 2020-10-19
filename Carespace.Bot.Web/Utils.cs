@@ -5,6 +5,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
+using Carespace.Bot.Web.Models;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -14,7 +16,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using File = System.IO.File;
 using FileInfo = GoogleDocumentsUnifier.Logic.FileInfo;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web
 {
     internal static class Utils
     {
@@ -109,6 +111,45 @@ namespace Carespace.Bot.Web.Models
             return $"{day}, {date:dd MMMM}";
         }
 
+        public static void LogException(Exception ex) => File.AppendAllText(LogPath, $"{ex}{Environment.NewLine}");
+
+        public static void DoOnce(ref Timer timer, DateTime at, Func<Task> func)
+        {
+            TimeSpan after = at - DateTime.Now;
+            Do(ref timer, after, false, func);
+        }
+
+        public static void DoWeekly(ref Timer timer, Func<Task> func)
+        {
+            Do(ref timer, TimeSpan.FromDays(7), true, func);
+        }
+
+        private static void Do(ref Timer timer, TimeSpan interval, bool repeat, Func<Task> func)
+        {
+            timer?.Stop();
+            timer?.Dispose();
+
+            timer = new Timer
+            {
+                Interval = interval.TotalMilliseconds,
+                AutoReset = repeat
+            };
+
+            timer.Elapsed += (sender, e) =>
+            {
+                try
+                {
+                    func().Wait();
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex);
+                    throw;
+                }
+            };
+            timer.Start();
+        }
+
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
         {
@@ -147,5 +188,7 @@ namespace Carespace.Bot.Web.Models
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
             new ConcurrentDictionary<string, string>();
+
+        private const string LogPath = "errors.txt";
     }
 }

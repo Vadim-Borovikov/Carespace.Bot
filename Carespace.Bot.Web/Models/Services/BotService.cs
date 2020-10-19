@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Timer = System.Timers.Timer;
 
 namespace Carespace.Bot.Web.Models.Services
 {
@@ -34,7 +36,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new GoogleSheetsManager.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
             var chatId = new ChatId($"@{_config.EventsChannelLogin}");
-            var eventManager = new Events.Manager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
+            _eventManager = new Events.Manager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
                 _config.EventsFormUri, Client, chatId);
 
             var commands = new List<Command>
@@ -47,7 +49,7 @@ namespace Carespace.Bot.Web.Models.Services
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
                 new ThanksCommand(_config.Payees, _config.Banks),
-                new WeekCommand(eventManager)
+                new WeekCommand(_eventManager)
             };
 
             Commands = commands.AsReadOnly();
@@ -56,21 +58,39 @@ namespace Carespace.Bot.Web.Models.Services
             commands.Insert(0, startCommand);
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            return Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
+            await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
+            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            _weeklyUpdateTimer?.Stop();
+            _weeklyUpdateTimer?.Dispose();
             _googleDriveDataManager.Dispose();
             _googleSheetsDataManager.Dispose();
             return Client.DeleteWebhookAsync(cancellationToken);
+        }
+
+        private async Task DoAndSchedule(Func<Task> func)
+        {
+            await func();
+            DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + _config.EventsUpdateAt.TimeOfDay;
+            Utils.DoOnce(ref _weeklyUpdateTimer, nextUpdateAt, () => DoAndScheduleWeekly(func));
+        }
+
+        private async Task DoAndScheduleWeekly(Func<Task> func)
+        {
+            await func();
+            Utils.DoWeekly(ref _weeklyUpdateTimer, func);
         }
 
         private readonly BotConfiguration _config;
 
         private readonly DataManager _googleDriveDataManager;
         private readonly GoogleSheetsManager.DataManager _googleSheetsDataManager;
+        private readonly Events.Manager _eventManager;
+        private Timer _weeklyUpdateTimer;
     }
 }
