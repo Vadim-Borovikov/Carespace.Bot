@@ -17,24 +17,29 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly BotSaveManager _saveManager;
         private readonly Uri _formUri;
         private readonly ITelegramBotClient _client;
-        private readonly ChatId _chatId;
+        private readonly ChatId _eventsChatId;
+        private readonly ChatId _logsChatId;
 
-        private Chat _chat;
+        private Chat _eventsChat;
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            Uri formUri, ITelegramBotClient client, ChatId chatId)
+            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRange = googleRange;
             _saveManager = saveManager;
             _formUri = formUri;
             _client = client;
-            _chatId = chatId;
+            _eventsChatId = eventsChatId;
+            _logsChatId = logsChatId;
         }
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
-            _chat = await _client.GetChatAsync(_chatId);
+            Message statusMessage =
+                await _client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
+
+            _eventsChat = await _client.GetChatAsync(_eventsChatId);
 
             DateTime weekStart = Utils.GetMonday();
 
@@ -43,6 +48,8 @@ namespace Carespace.Bot.Web.Models.Events
             await CreateOrUpdateNotificationsAsync(events.Values);
 
             _saveManager.Save();
+
+            await _client.FinalizeStatusMessageAsync(statusMessage);
         }
 
         private async Task<Dictionary<int, Event>> PostOrUpdateEvents(DateTime weekStart)
@@ -55,7 +62,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             IEnumerable<Template> toPost = templates.Values;
 
-            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
+            if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
             {
                 ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
                 foreach (int savedTemplateId in savedTemplateIds)
@@ -98,14 +105,14 @@ namespace Carespace.Bot.Web.Models.Events
         {
             string text = PrepareWeekSchedule(events, weekStart);
 
-            if (IsMessageRelevant(_chat.PinnedMessage, weekStart))
+            if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
             {
-                await EditMessageTextAsync(_chat.PinnedMessage.MessageId, text, true);
+                await EditMessageTextAsync(_eventsChat.PinnedMessage.MessageId, text, true);
             }
             else
             {
                 int messageId = await SendTextMessageAsync(text, true);
-                await _client.PinChatMessageAsync(_chatId, messageId, true);
+                await _client.PinChatMessageAsync(_eventsChatId, messageId, true);
             }
         }
 
@@ -187,7 +194,7 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
             bool disableNotification = false, int replyToMessageId = 0)
         {
-            Message message = await _client.SendTextMessageAsync(_chatId, text, ParseMode.Markdown,
+            Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId);
             _saveManager.Data.Texts[message.MessageId] = text;
             return message.MessageId;
@@ -227,7 +234,8 @@ namespace Carespace.Bot.Web.Models.Events
                     date = e.Template.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
-                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, _chat.Username, e.Data.MessageId));
+                var messageUri =
+                    new Uri(string.Format(ChannelMessageUriFormat, _eventsChat.Username, e.Data.MessageId));
                 scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri})");
             }
             scheduleBuilder.AppendLine();
@@ -243,13 +251,14 @@ namespace Carespace.Bot.Web.Models.Events
             {
                 return;
             }
-            await _client.EditMessageTextAsync(_chatId, messageId, text, ParseMode.Markdown, disableWebPagePreview);
+            await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
+                disableWebPagePreview);
             _saveManager.Data.Texts[messageId] = text;
         }
 
         private async Task DeleteMessageAsync(int messageId)
         {
-            await _client.DeleteMessageAsync(_chatId, messageId);
+            await _client.DeleteMessageAsync(_eventsChatId, messageId);
             _saveManager.Data.Texts.Remove(messageId);
         }
 

@@ -77,5 +77,7 @@ namespace Carespace.Bot.Web.Models
         public DateTime EventsUpdateAt { get; set; }
 
         public string SavePath { get; set; }
+
+        public string LogsChatId { get; set; }
     }
 }

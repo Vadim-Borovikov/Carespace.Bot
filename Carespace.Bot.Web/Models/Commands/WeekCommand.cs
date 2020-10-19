@@ -2,7 +2,6 @@
 using Carespace.Bot.Web.Models.Events;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
@@ -17,11 +16,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool fromAdmin)
         {
-            Message statusMessage = await client.SendTextMessageAsync(message.Chat, "_Обновляю…_", ParseMode.Markdown);
-
             await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync();
-
-            await client.FinalizeStatusMessageAsync(statusMessage);
         }
     }
 }
