@@ -84,10 +84,10 @@ namespace Carespace.Bot.Web.Models.Events
                 ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
                 foreach (int savedTemplateId in savedTemplateIds)
                 {
+                    Data data = _saveManager.Data.Events[savedTemplateId];
                     if (templates.ContainsKey(savedTemplateId))
                     {
                         Template template = templates[savedTemplateId];
-                        Data data = _saveManager.Data.Events[savedTemplateId];
 
                         string messageText = GetMessageText(template);
                         await EditMessageTextAsync(data.MessageId, messageText);
@@ -96,7 +96,8 @@ namespace Carespace.Bot.Web.Models.Events
                     }
                     else
                     {
-                        await DeleteMessageAsync(_saveManager.Data.Events[savedTemplateId].MessageId);
+                        await DeleteNotificationAsync(data);
+                        await DeleteMessageAsync(data.MessageId);
                     }
                 }
 
@@ -201,15 +202,16 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Save();
         }
 
-        private async Task DeleteNotificationAsync(Event e)
+        private Task DeleteNotificationAsync(Event e) => DeleteNotificationAsync(e.Data);
+        private async Task DeleteNotificationAsync(Data data)
         {
-            if (!e.Data.NotificationId.HasValue)
+            if (!data.NotificationId.HasValue)
             {
                 return;
             }
 
-            await DeleteMessageAsync(e.Data.NotificationId.Value);
-            e.Data.NotificationId = null;
+            await DeleteMessageAsync(data.NotificationId.Value);
+            data.NotificationId = null;
             _saveManager.Save();
         }
 
@@ -251,6 +253,7 @@ namespace Carespace.Bot.Web.Models.Events
         private string PrepareWeekSchedule(DateTime start)
         {
             var scheduleBuilder = new StringBuilder();
+            scheduleBuilder.AppendLine("🗓 *Расписание* (время московское)");
             DateTime date = start.AddDays(-1);
             foreach (Event e in _events.Values.OrderBy(e => e.Template.Start))
             {
@@ -269,8 +272,6 @@ namespace Carespace.Bot.Web.Models.Events
             }
             scheduleBuilder.AppendLine();
             scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
-            scheduleBuilder.AppendLine();
-            scheduleBuilder.AppendLine("#расписание");
             return scheduleBuilder.ToString();
         }
 
@@ -305,7 +306,7 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine(template.Description);
 
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm}.");
+            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск).");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
