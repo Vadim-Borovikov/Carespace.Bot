@@ -107,7 +107,7 @@ namespace Carespace.Bot.Web.Models.Events
                 _saveManager.Reset();
             }
 
-            foreach (Template template in toPost)
+            foreach (Template template in toPost.OrderBy(t => t.Start))
             {
                 Data data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
