@@ -1,4 +1,5 @@
-﻿using Carespace.Bot.Web.Models;
+﻿using System.Globalization;
+using Carespace.Bot.Web.Models;
 using Carespace.Bot.Web.Models.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Carespace.Bot.Web
 {
-    public class Startup
+    public sealed class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -55,6 +56,8 @@ namespace Carespace.Bot.Web
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("ru-RU");
 
             app.UseMvc(routes => routes.MapRoute("update", $"{Configuration["Token"]}/{{controller=Update}}/{{action=post}}"));
         }
