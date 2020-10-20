@@ -10,7 +10,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class Manager
+    internal sealed class Manager : IDisposable
     {
         private readonly DataManager _googleSheetsDataManager;
         private readonly string _googleRange;
@@ -20,6 +20,7 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ChatId _eventsChatId;
         private readonly ChatId _logsChatId;
 
+        private Dictionary<int, Event> _events;
         private Chat _eventsChat;
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
@@ -43,22 +44,38 @@ namespace Carespace.Bot.Web.Models.Events
 
             DateTime weekStart = Utils.GetMonday();
 
-            Dictionary<int, Event> events = await PostOrUpdateEvents(weekStart);
-            await PostOrUpdateScheduleAsync(events.Values, weekStart);
-            await CreateOrUpdateNotificationsAsync(events.Values);
+            await PostOrUpdateEvents(weekStart);
+            await PostOrUpdateScheduleAsync(weekStart);
+            await CreateOrUpdateNotificationsAsync();
 
             _saveManager.Save();
 
             await _client.FinalizeStatusMessageAsync(statusMessage);
         }
 
-        private async Task<Dictionary<int, Event>> PostOrUpdateEvents(DateTime weekStart)
+        public void Dispose() => DisposeEvents();
+
+        private void DisposeEvents()
+        {
+            if (_events == null)
+            {
+                return;
+            }
+
+            foreach (Event e in _events.Values)
+            {
+                e.Dispose();
+            }
+        }
+
+        private async Task PostOrUpdateEvents(DateTime weekStart)
         {
             Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart).ToDictionary(t => t.Id, t => t);
 
             _saveManager.Load();
 
-            var events = new Dictionary<int, Event>();
+            DisposeEvents();
+            _events = new Dictionary<int, Event>();
 
             IEnumerable<Template> toPost = templates.Values;
 
@@ -75,7 +92,7 @@ namespace Carespace.Bot.Web.Models.Events
                         string messageText = GetMessageText(template);
                         await EditMessageTextAsync(data.MessageId, messageText);
 
-                        AddEvent(events, template, data);
+                        _events[template.Id] = new Event(template, data);
                     }
                     else
                     {
@@ -93,17 +110,15 @@ namespace Carespace.Bot.Web.Models.Events
             foreach (Template template in toPost)
             {
                 Data data = await PostEventAsync(template);
-                AddEvent(events, template, data);
+                _events[template.Id] = new Event(template, data);
             }
 
-            _saveManager.Data.Events = events.ToDictionary(e => e.Key, e => e.Value.Data);
-
-            return events;
+            _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
         }
 
-        private async Task PostOrUpdateScheduleAsync(IEnumerable<Event> events, DateTime weekStart)
+        private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
         {
-            string text = PrepareWeekSchedule(events, weekStart);
+            string text = PrepareWeekSchedule(weekStart);
 
             if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
             {
@@ -116,9 +131,9 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private async Task CreateOrUpdateNotificationsAsync(IEnumerable<Event> events)
+        private async Task CreateOrUpdateNotificationsAsync()
         {
-            foreach (Event e in events)
+            foreach (Event e in _events.Values)
             {
                 await CreateOrUpdateNotificationAsync(e);
             }
@@ -130,6 +145,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             if (e.Template.End <= now)
             {
+                e.DisposeTimer();
                 return DeleteNotificationAsync(e);
             }
 
@@ -197,12 +213,6 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Save();
         }
 
-        private static void AddEvent(IDictionary<int, Event> events, Template template, Data data)
-        {
-            var e = new Event(template, data);
-            events[template.Id] = e;
-        }
-
         private async Task<Data> PostEventAsync(Template template)
         {
             string text = GetMessageText(template);
@@ -238,11 +248,11 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private string PrepareWeekSchedule(IEnumerable<Event> events, DateTime start)
+        private string PrepareWeekSchedule(DateTime start)
         {
             var scheduleBuilder = new StringBuilder();
             DateTime date = start.AddDays(-1);
-            foreach (Event e in events.OrderBy(e => e.Template.Start))
+            foreach (Event e in _events.Values.OrderBy(e => e.Template.Start))
             {
                 if (e.Template.Start.Date > date)
                 {

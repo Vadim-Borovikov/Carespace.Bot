@@ -64,13 +64,14 @@ namespace Carespace.Bot.Web.Models.Services
             await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
+            await Client.DeleteWebhookAsync(cancellationToken);
             _weeklyUpdateTimer?.Stop();
             _weeklyUpdateTimer?.Dispose();
             _googleDriveDataManager.Dispose();
             _googleSheetsDataManager.Dispose();
-            return Client.DeleteWebhookAsync(cancellationToken);
+            _eventManager.Dispose();
         }
 
         private async Task DoAndSchedule(Func<Task> func)
