@@ -253,7 +253,7 @@ namespace Carespace.Bot.Web.Models.Events
         private string PrepareWeekSchedule(DateTime start)
         {
             var scheduleBuilder = new StringBuilder();
-            scheduleBuilder.AppendLine("🗓 *Расписание* (время московское)");
+            scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
             DateTime date = start.AddDays(-1);
             foreach (Event e in _events.Values.OrderBy(e => e.Template.Start))
             {
@@ -268,7 +268,8 @@ namespace Carespace.Bot.Web.Models.Events
                 }
                 var messageUri =
                     new Uri(string.Format(ChannelMessageUriFormat, _eventsChat.Username, e.Data.MessageId));
-                scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri})");
+                string weekly = e.Template.IsWeekly ? " 🔄" : "";
+                scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri}){weekly}");
             }
             scheduleBuilder.AppendLine();
             scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
@@ -305,8 +306,9 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine();
             builder.AppendLine(template.Description);
 
+            string postfix = template.IsWeekly ? " 🔄" : ".";
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск).");
+            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск){postfix}");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
