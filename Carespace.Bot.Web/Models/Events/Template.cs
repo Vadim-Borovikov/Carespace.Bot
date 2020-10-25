@@ -68,6 +68,10 @@ namespace Carespace.Bot.Web.Models.Events
             }
 
             Uri = DataManager.ToUri(values, 9);
+            if (Uri == null)
+            {
+                throw new ArgumentNullException($"Empty uri in \"{Name}\"");
+            }
         }
 
         public void MoveToWeek(DateTime weekStart)

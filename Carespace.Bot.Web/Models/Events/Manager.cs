@@ -297,10 +297,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             var builder = new StringBuilder();
 
-            if (template.Uri != null)
-            {
-                builder.Append($"⁠[{WordJoiner}]({template.Uri})");
-            }
+            builder.Append($"⁠[{WordJoiner}]({template.Uri})");
             builder.AppendLine($"*{template.Name}*");
 
             builder.AppendLine();
@@ -325,8 +322,9 @@ namespace Carespace.Bot.Web.Models.Events
                 builder.AppendLine("📆 Мероприятие проходит каждую неделю.");
             }
 
+            string uriString = $"{template.Uri}".Replace("_", "\\_");
             builder.AppendLine();
-            builder.AppendLine($"🗞️ *Принять участие*: {template.Uri}.");
+            builder.AppendLine($"🗞️ *Принять участие*: {uriString}.");
 
             return builder.ToString();
         }
