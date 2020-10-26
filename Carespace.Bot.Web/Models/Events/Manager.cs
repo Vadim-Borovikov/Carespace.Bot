@@ -303,9 +303,14 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine();
             builder.AppendLine(template.Description);
 
-            string postfix = template.IsWeekly ? " 🔄" : ".";
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск){postfix}");
+            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск).");
+
+            if (template.IsWeekly)
+            {
+                builder.AppendLine();
+                builder.AppendLine("🔄 Мероприятие проходит каждую неделю.");
+            }
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
@@ -315,12 +320,6 @@ namespace Carespace.Bot.Web.Models.Events
 
             builder.AppendLine();
             builder.AppendLine($"💰 *Цена*: {template.Price}.");
-
-            if (template.IsWeekly)
-            {
-                builder.AppendLine();
-                builder.AppendLine("📆 Мероприятие проходит каждую неделю.");
-            }
 
             string uriString = $"{template.Uri}".Replace("_", "\\_");
             builder.AppendLine();
