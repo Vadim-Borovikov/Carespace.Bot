@@ -79,5 +79,7 @@ namespace Carespace.Bot.Web.Models
         public string SavePath { get; set; }
 
         public string LogsChatId { get; set; }
+
+        public Uri DiscussUri { get; set; }
     }
 }

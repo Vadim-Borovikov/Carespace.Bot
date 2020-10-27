@@ -7,6 +7,7 @@ using GoogleSheetsManager;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Carespace.Bot.Web.Models.Events
 {
@@ -19,12 +20,13 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ITelegramBotClient _client;
         private readonly ChatId _eventsChatId;
         private readonly ChatId _logsChatId;
+        private readonly InlineKeyboardMarkup _discussKeyboard;
 
         private Dictionary<int, Event> _events;
         private Chat _eventsChat;
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId)
+            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, Uri discussUri)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRange = googleRange;
@@ -33,6 +35,13 @@ namespace Carespace.Bot.Web.Models.Events
             _client = client;
             _eventsChatId = eventsChatId;
             _logsChatId = logsChatId;
+
+            var discussButton = new InlineKeyboardButton
+            {
+                Text = "💬 Обсудить",
+                Url = discussUri.ToString()
+            };
+            _discussKeyboard = new InlineKeyboardMarkup(discussButton);
         }
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -43,6 +52,7 @@ namespace Carespace.Bot.Web.Models.Events
             _eventsChat = await _client.GetChatAsync(_eventsChatId);
 
             DateTime weekStart = Utils.GetMonday();
+
 
             await PostOrUpdateEvents(weekStart);
             await PostOrUpdateScheduleAsync(weekStart);
@@ -90,7 +100,7 @@ namespace Carespace.Bot.Web.Models.Events
                         Template template = templates[savedTemplateId];
 
                         string messageText = GetMessageText(template);
-                        await EditMessageTextAsync(data.MessageId, messageText);
+                        await EditMessageTextAsync(data.MessageId, messageText, keyboardMarkup: _discussKeyboard);
 
                         _events[template.Id] = new Event(template, data);
                     }
@@ -123,11 +133,11 @@ namespace Carespace.Bot.Web.Models.Events
 
             if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
             {
-                await EditMessageTextAsync(_eventsChat.PinnedMessage.MessageId, text, true);
+                await EditMessageTextAsync(_eventsChat.PinnedMessage.MessageId, text, true, _discussKeyboard);
             }
             else
             {
-                int messageId = await SendTextMessageAsync(text, true);
+                int messageId = await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
                 await _client.PinChatMessageAsync(_eventsChatId, messageId, true);
             }
         }
@@ -218,15 +228,15 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task<Data> PostEventAsync(Template template)
         {
             string text = GetMessageText(template);
-            int messageId = await SendTextMessageAsync(text);
+            int messageId = await SendTextMessageAsync(text, keyboardMarkup: _discussKeyboard);
             return new Data(messageId);
         }
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
-            bool disableNotification = false, int replyToMessageId = 0)
+            bool disableNotification = false, int replyToMessageId = 0, IReplyMarkup keyboardMarkup = null)
         {
             Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
-                disableWebPagePreview, disableNotification, replyToMessageId);
+                disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
             _saveManager.Data.Texts[message.MessageId] = text;
             return message.MessageId;
         }
@@ -276,14 +286,15 @@ namespace Carespace.Bot.Web.Models.Events
             return scheduleBuilder.ToString();
         }
 
-        private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false)
+        private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
+            InlineKeyboardMarkup keyboardMarkup = null)
         {
             if (_saveManager.Data.Texts.ContainsKey(messageId) && (_saveManager.Data.Texts[messageId] == text))
             {
                 return;
             }
             await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
-                disableWebPagePreview);
+                disableWebPagePreview, keyboardMarkup);
             _saveManager.Data.Texts[messageId] = text;
         }
 
