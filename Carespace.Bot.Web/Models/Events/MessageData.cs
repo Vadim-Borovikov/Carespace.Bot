@@ -10,6 +10,9 @@ namespace Carespace.Bot.Web.Models.Events
         public string Text { get; set; }
 
         [JsonProperty]
+        public bool HasKeyboard { get; set; }
+
+        [JsonProperty]
         public DateTime Date { get; set; }
 
         public MessageData() { }

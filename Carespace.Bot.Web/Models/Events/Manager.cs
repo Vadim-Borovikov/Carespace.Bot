@@ -127,11 +127,9 @@ namespace Carespace.Bot.Web.Models.Events
             }
             else
             {
-                _saveManager.Data.ScheduleId =
-                    await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
+                _saveManager.Data.ScheduleId = await PostForwardAndAddButton(text, true);
                 await _client.UnpinChatMessageAsync(_eventsChatId);
                 await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
-                await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, _saveManager.Data.ScheduleId);
             }
         }
 
@@ -221,9 +219,16 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task<EventData> PostEventAsync(Template template)
         {
             string text = GetMessageText(template);
-            int messageId = await SendTextMessageAsync(text, keyboardMarkup: _discussKeyboard);
-            await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
+            int messageId = await PostForwardAndAddButton(text);
             return new EventData(messageId);
+        }
+
+        private async Task<int> PostForwardAndAddButton(string text, bool disableWebPagePreview = false)
+        {
+            int messageId = await SendTextMessageAsync(text, disableWebPagePreview);
+            await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
+            await EditMessageTextAsync(messageId, text, disableWebPagePreview, _discussKeyboard);
+            return messageId;
         }
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
@@ -297,7 +302,7 @@ namespace Carespace.Bot.Web.Models.Events
             InlineKeyboardMarkup keyboardMarkup = null)
         {
             MessageData data = GetMessageData(messageId);
-            if (data?.Text == text)
+            if ((data?.Text == text) && (data?.HasKeyboard == (keyboardMarkup != null)))
             {
                 return;
             }
