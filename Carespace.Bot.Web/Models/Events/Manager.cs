@@ -121,6 +121,11 @@ namespace Carespace.Bot.Web.Models.Events
             }
 
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
+            List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
+            foreach (int id in toRemove)
+            {
+                _saveManager.Data.Messages.Remove(id);
+            }
         }
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
@@ -352,6 +357,12 @@ namespace Carespace.Bot.Web.Models.Events
         private MessageData GetMessageData(int id)
         {
             return _saveManager.Data.Messages.TryGetValue(id, out MessageData data) ? data : null;
+        }
+
+        private bool IsExcess(int id)
+        {
+            return (id != _saveManager.Data.ScheduleId)
+                && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
         }
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
