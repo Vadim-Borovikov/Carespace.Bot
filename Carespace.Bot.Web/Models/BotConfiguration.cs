@@ -47,8 +47,6 @@ namespace Carespace.Bot.Web.Models
 
         public List<string> ExersisesLinks { get; set; }
 
-        public Link FeedbackLink { get; set; }
-
         public string GoogleSheetId { get; set; }
 
         public string GoogleRange { get; set; }

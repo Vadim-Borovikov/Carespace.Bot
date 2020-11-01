@@ -47,7 +47,6 @@ namespace Carespace.Bot.Web.Models.Services
                 new CheckListCommand(_config.CheckList),
                 new ExercisesCommand(_config.Template, _config.ExersisesLinks),
                 new LinksCommand(_config.Links),
-                new FeedbackCommand(_config.FeedbackLink),
                 new WeekCommand(_eventManager)
             };
 
