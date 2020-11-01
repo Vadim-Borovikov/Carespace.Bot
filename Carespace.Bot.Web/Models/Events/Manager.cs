@@ -289,20 +289,20 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
             InlineKeyboardMarkup keyboardMarkup = null)
         {
-            bool saved = _saveManager.Data.Messages.ContainsKey(messageId);
-            if (saved && (_saveManager.Data.Messages[messageId].Text == text))
+            MessageData data = GetMessageData(messageId);
+            if (data?.Text == text)
             {
                 return;
             }
             Message message = await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
                 disableWebPagePreview, keyboardMarkup);
-            if (saved)
+            if (data == null)
             {
-                _saveManager.Data.Messages[messageId].Text = text;
+                _saveManager.Data.Messages[messageId] = new MessageData(message, text);
             }
             else
             {
-                _saveManager.Data.Messages[messageId] = new MessageData(message, text);
+                data.Text = text;
             }
         }
 
@@ -355,6 +355,11 @@ namespace Carespace.Bot.Web.Models.Events
             }
 
             return message.Date >= start;
+        }
+
+        private MessageData GetMessageData(int id)
+        {
+            return _saveManager.Data.Messages.TryGetValue(id, out MessageData data) ? data : null;
         }
 
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
