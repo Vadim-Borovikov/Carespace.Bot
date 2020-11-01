@@ -60,8 +60,8 @@ namespace Carespace.Bot.Web.Models.Services
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
-            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
             _weeklyUpdateTimer = new Timer();
+            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
