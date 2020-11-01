@@ -2,7 +2,7 @@
 
 namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class Data
+    internal sealed class EventData
     {
         [JsonProperty]
         public int MessageId { get; set; }
@@ -10,9 +10,9 @@ namespace Carespace.Bot.Web.Models.Events
         [JsonProperty]
         public int? NotificationId { get; set; }
 
-        public Data() { }
+        public EventData() { }
 
-        public Data(int messageId)
+        public EventData(int messageId)
         {
             MessageId = messageId;
         }

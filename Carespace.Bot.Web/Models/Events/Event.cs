@@ -6,10 +6,10 @@ namespace Carespace.Bot.Web.Models.Events
     internal sealed class Event : IDisposable
     {
         public readonly Template Template;
-        public readonly Data Data;
+        public readonly EventData Data;
         public Timer Timer;
 
-        public Event(Template template, Data data)
+        public Event(Template template, EventData data)
         {
             Template = template;
             Data = data;

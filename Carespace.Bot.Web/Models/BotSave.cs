@@ -7,8 +7,8 @@ namespace Carespace.Bot.Web.Models
     internal sealed class BotSave
     {
         [JsonProperty]
-        public Dictionary<int, Data> Events { get; set; } = new Dictionary<int, Data>();
+        public Dictionary<int, EventData> Events { get; set; } = new Dictionary<int, EventData>();
         [JsonProperty]
-        public Dictionary<int, string> Texts { get; set; } = new Dictionary<int, string>();
+        public Dictionary<int, MessageData> Messages { get; set; } = new Dictionary<int, MessageData>();
     }
 }

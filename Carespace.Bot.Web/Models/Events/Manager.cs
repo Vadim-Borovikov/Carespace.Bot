@@ -94,7 +94,7 @@ namespace Carespace.Bot.Web.Models.Events
                 ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
                 foreach (int savedTemplateId in savedTemplateIds)
                 {
-                    Data data = _saveManager.Data.Events[savedTemplateId];
+                    EventData data = _saveManager.Data.Events[savedTemplateId];
                     if (templates.ContainsKey(savedTemplateId))
                     {
                         Template template = templates[savedTemplateId];
@@ -120,7 +120,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             foreach (Template template in toPost.OrderBy(t => t.Start))
             {
-                Data data = await PostEventAsync(template);
+                EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
             }
 
@@ -213,7 +213,7 @@ namespace Carespace.Bot.Web.Models.Events
         }
 
         private Task DeleteNotificationAsync(Event e) => DeleteNotificationAsync(e.Data);
-        private async Task DeleteNotificationAsync(Data data)
+        private async Task DeleteNotificationAsync(EventData data)
         {
             if (!data.NotificationId.HasValue)
             {
@@ -225,11 +225,11 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Save();
         }
 
-        private async Task<Data> PostEventAsync(Template template)
+        private async Task<EventData> PostEventAsync(Template template)
         {
             string text = GetMessageText(template);
             int messageId = await SendTextMessageAsync(text, keyboardMarkup: _discussKeyboard);
-            return new Data(messageId);
+            return new EventData(messageId);
         }
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
@@ -237,7 +237,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
-            _saveManager.Data.Texts[message.MessageId] = text;
+            _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text);
             return message.MessageId;
         }
 
@@ -289,19 +289,27 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
             InlineKeyboardMarkup keyboardMarkup = null)
         {
-            if (_saveManager.Data.Texts.ContainsKey(messageId) && (_saveManager.Data.Texts[messageId] == text))
+            bool saved = _saveManager.Data.Messages.ContainsKey(messageId);
+            if (saved && (_saveManager.Data.Messages[messageId].Text == text))
             {
                 return;
             }
-            await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
+            Message message = await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
                 disableWebPagePreview, keyboardMarkup);
-            _saveManager.Data.Texts[messageId] = text;
+            if (saved)
+            {
+                _saveManager.Data.Messages[messageId].Text = text;
+            }
+            else
+            {
+                _saveManager.Data.Messages[messageId] = new MessageData(message, text);
+            }
         }
 
         private async Task DeleteMessageAsync(int messageId)
         {
             await _client.DeleteMessageAsync(_eventsChatId, messageId);
-            _saveManager.Data.Texts.Remove(messageId);
+            _saveManager.Data.Messages.Remove(messageId);
         }
 
         private static string GetMessageText(Template template)
