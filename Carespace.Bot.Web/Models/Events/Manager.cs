@@ -385,9 +385,7 @@ namespace Carespace.Bot.Web.Models.Events
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
         private const string WordJoiner = "\u2060";
 
-        private static readonly TimeSpan Hour = TimeSpan.FromMinutes(1);
-        // private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
-        // private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
-        private static readonly TimeSpan Soon = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+        private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
     }
 }
