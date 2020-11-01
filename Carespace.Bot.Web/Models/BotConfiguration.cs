@@ -18,19 +18,6 @@ namespace Carespace.Bot.Web.Models
             public string PhotoPath { get; set; }
         }
 
-        public class Payee
-        {
-            public class Account
-            {
-                public string BankId { get; set; }
-                public string CardNumber { get; set; }
-            }
-
-            public string Name { get; set; }
-            public string PhotoPath { get; set; }
-            public List<Account> Accounts { get; set; }
-        }
-
         public string Token { get; set; }
 
         public string Host { get; set; }
@@ -61,10 +48,6 @@ namespace Carespace.Bot.Web.Models
         public List<string> ExersisesLinks { get; set; }
 
         public Link FeedbackLink { get; set; }
-
-        public List<Payee> Payees { get; set; }
-
-        public Dictionary<string, Link> Banks { get; set; }
 
         public string GoogleSheetId { get; set; }
 

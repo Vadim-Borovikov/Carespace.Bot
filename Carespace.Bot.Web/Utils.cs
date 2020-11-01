@@ -89,14 +89,6 @@ namespace Carespace.Bot.Web
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        public static string GetCaption(string name, IEnumerable<BotConfiguration.Payee.Account> accounts,
-            IReadOnlyDictionary<string, BotConfiguration.Link> banks)
-        {
-            IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
-            string options = string.Join($" или{Environment.NewLine}", texts);
-            return $"{name}:{Environment.NewLine}{options}";
-        }
-
         public static DateTime GetMonday()
         {
             DateTime today = DateTime.Today;
@@ -141,11 +133,6 @@ namespace Carespace.Bot.Web
                 Url = link.Url
             };
             return new InlineKeyboardMarkup(button);
-        }
-
-        private static string GetText(BotConfiguration.Payee.Account account, BotConfiguration.Link bank)
-        {
-            return $"`{account.CardNumber}` в [{bank.Name}]({bank.Url})";
         }
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =

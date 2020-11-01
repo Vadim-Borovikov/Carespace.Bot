@@ -48,7 +48,6 @@ namespace Carespace.Bot.Web.Models.Services
                 new ExercisesCommand(_config.Template, _config.ExersisesLinks),
                 new LinksCommand(_config.Links),
                 new FeedbackCommand(_config.FeedbackLink),
-                new ThanksCommand(_config.Payees, _config.Banks),
                 new WeekCommand(_eventManager)
             };
 
