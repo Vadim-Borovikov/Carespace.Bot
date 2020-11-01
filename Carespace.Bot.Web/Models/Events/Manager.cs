@@ -129,6 +129,7 @@ namespace Carespace.Bot.Web.Models.Events
             {
                 _saveManager.Data.ScheduleId =
                     await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
+                await _client.UnpinChatMessageAsync(_eventsChatId);
                 await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
                 await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, _saveManager.Data.ScheduleId);
             }
