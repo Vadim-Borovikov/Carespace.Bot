@@ -18,11 +18,11 @@ namespace Carespace.Bot.Web.Models.Commands
             _links = links;
         }
 
-        protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool _)
+        protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {
             foreach (string text in _links.Select(l => string.Format(_template, l)))
             {
-                await client.SendTextMessageAsync(message.Chat, text, ParseMode.Html);
+                await client.SendTextMessageAsync(chatId, text, ParseMode.Html);
             }
         }
 

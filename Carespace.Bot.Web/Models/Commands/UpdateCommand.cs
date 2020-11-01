@@ -26,10 +26,10 @@ namespace Carespace.Bot.Web.Models.Commands
             _googleDataManager = googleDataManager;
         }
 
-        protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool _)
+        protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {
-            Message checkingMessage = await client.SendTextMessageAsync(message.Chat, "_Проверяю…_",
-                ParseMode.Markdown, disableNotification: true);
+            Message checkingMessage = await client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.Markdown,
+                disableNotification: true);
 
             await UpdateLocalAsync();
 

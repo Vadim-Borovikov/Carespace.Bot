@@ -19,7 +19,7 @@ namespace Carespace.Bot.Web.Models.Commands
             _commands = commands;
         }
 
-        protected override Task ExecuteAsync(Message message, ITelegramBotClient client, bool fromAdmin)
+        protected override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool fromAdmin)
         {
             var builder = new StringBuilder();
             builder.AppendLine("Привет!");
@@ -35,7 +35,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
             AppendCommands(builder, _commands.Where(c => c.Type != AccessType.Admins));
 
-            return client.SendTextMessageAsync(message.Chat, builder.ToString());
+            return client.SendTextMessageAsync(chatId, builder.ToString());
         }
 
         private static void AppendCommands(StringBuilder builder, IEnumerable<Command> commands)

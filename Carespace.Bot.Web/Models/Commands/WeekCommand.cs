@@ -14,7 +14,7 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "week";
         internal override string Description => "события на этой неделе";
 
-        protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool fromAdmin)
+        protected override async Task ExecuteAsync(ChatId chat, ITelegramBotClient client, bool _)
         {
             await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync();
         }

@@ -26,10 +26,10 @@ namespace Carespace.Bot.Web.Models.Commands
             Directory.CreateDirectory(_pdfFolderPath);
         }
 
-        protected override async Task ExecuteAsync(Message message, ITelegramBotClient client, bool _)
+        protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {
-            await UpdateLocalAsync(message.Chat, client);
-            await SelectAsync(message.Chat, client);
+            await UpdateLocalAsync(chatId, client);
+            await SelectAsync(chatId, client);
         }
 
         protected override async Task InvokeAsync(Message message, ITelegramBotClient client, string data)
@@ -76,17 +76,17 @@ namespace Carespace.Bot.Web.Models.Commands
         // Update
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        private async Task UpdateLocalAsync(Chat chat, ITelegramBotClient client)
+        private async Task UpdateLocalAsync(ChatId chatId, ITelegramBotClient client)
         {
-            Message checkingMessage =
-                await client.SendTextMessageAsync(chat, "_Проверяю…_", ParseMode.Markdown, disableNotification: true);
+            Message checkingMessage = await client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.Markdown,
+                disableNotification: true);
 
             List<PdfData> filesToUpdate = await Utils.CheckAsync(_sourceIds, CheckLocal);
 
             if (filesToUpdate.Any())
             {
                 await client.FinalizeStatusMessageAsync(checkingMessage);
-                Message updatingMessage = await client.SendTextMessageAsync(chat, "_Обновляю…_", ParseMode.Markdown,
+                Message updatingMessage = await client.SendTextMessageAsync(chatId, "_Обновляю…_", ParseMode.Markdown,
                     disableNotification: true);
 
                 await Utils.CreateOrUpdateAsync(filesToUpdate, CreateOrUpdateLocal);
@@ -113,15 +113,14 @@ namespace Carespace.Bot.Web.Models.Commands
         // Select
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        private async Task SelectAsync(Chat chat, ITelegramBotClient client)
+        private async Task SelectAsync(ChatId chatId, ITelegramBotClient client)
         {
-            Message firstMessage =
-                await client.SendTextMessageAsync(chat, "Выбери раздатки:", ParseMode.Markdown,
-                    disableNotification: true);
+            Message firstMessage = await client.SendTextMessageAsync(chatId, "Выбери раздатки:", ParseMode.Markdown,
+                disableNotification: true);
 
             string[] paths = Directory.GetFiles(_pdfFolderPath);
 
-            CustomCommandData data = await CreateOrClearDataAsync(client, chat.Id);
+            CustomCommandData data = await CreateOrClearDataAsync(client, chatId.Identifier);
             string last = paths.Last();
 
             data.AddMessage(firstMessage);
@@ -134,7 +133,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 bool isLast = path == last;
                 InlineKeyboardMarkup keyboard = GetKeyboard(0, isLast);
                 Message chatMessage =
-                    await client.SendTextMessageAsync(chat, name, disableNotification: !isLast, replyMarkup: keyboard);
+                    await client.SendTextMessageAsync(chatId, name, disableNotification: !isLast, replyMarkup: keyboard);
                 data.AddMessage(chatMessage);
             }
         }

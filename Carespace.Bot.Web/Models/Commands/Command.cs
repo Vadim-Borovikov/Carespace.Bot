@@ -27,7 +27,7 @@ namespace Carespace.Bot.Web.Models.Commands
         internal Task ExecuteAsyncWrapper(Message message, ITelegramBotClient client, bool fromAdmin)
         {
             CheckAccess(message.From, fromAdmin);
-            return ExecuteAsync(message, client, fromAdmin);
+            return ExecuteAsync(message.From.Id, client, fromAdmin);
         }
 
         internal Task InvokeAsyncWrapper(Message message, ITelegramBotClient client, string data, bool fromAdmin)
@@ -60,7 +60,7 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        protected abstract Task ExecuteAsync(Message message, ITelegramBotClient client, bool fromAdmin);
+        protected abstract Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool fromAdmin);
 
         protected virtual Task InvokeAsync(Message message, ITelegramBotClient client, string data)
         {
