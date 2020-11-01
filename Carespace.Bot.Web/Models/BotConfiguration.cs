@@ -80,6 +80,6 @@ namespace Carespace.Bot.Web.Models
 
         public string LogsChatId { get; set; }
 
-        public Uri DiscussUri { get; set; }
+        public string DiscussGroupLogin { get; set; }
     }
 }

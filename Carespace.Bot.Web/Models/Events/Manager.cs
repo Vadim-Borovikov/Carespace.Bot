@@ -20,12 +20,13 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ITelegramBotClient _client;
         private readonly ChatId _eventsChatId;
         private readonly ChatId _logsChatId;
+        private readonly ChatId _discussChatId;
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, Uri discussUri)
+            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRange = googleRange;
@@ -34,11 +35,12 @@ namespace Carespace.Bot.Web.Models.Events
             _client = client;
             _eventsChatId = eventsChatId;
             _logsChatId = logsChatId;
+            _discussChatId = discussChatId;
 
             var discussButton = new InlineKeyboardButton
             {
                 Text = "💬 Обсудить",
-                Url = discussUri.ToString()
+                Url = GetUri(_discussChatId).AbsoluteUri
             };
             _discussKeyboard = new InlineKeyboardMarkup(discussButton);
         }
@@ -128,6 +130,7 @@ namespace Carespace.Bot.Web.Models.Events
                 _saveManager.Data.ScheduleId =
                     await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
                 await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
+                await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, _saveManager.Data.ScheduleId);
             }
         }
 
@@ -218,6 +221,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             string text = GetMessageText(template);
             int messageId = await SendTextMessageAsync(text, keyboardMarkup: _discussKeyboard);
+            await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
             return new EventData(messageId);
         }
 
@@ -276,8 +280,14 @@ namespace Carespace.Bot.Web.Models.Events
 
         private static Uri GetMessageUri(ChatId chatId, int messageId)
         {
+            Uri chatUri = GetUri(chatId);
+            string uriString = string.Format(ChannelMessageUriFormat, chatUri, messageId);
+            return new Uri(uriString);
+        }
+        private static Uri GetUri(ChatId chatId)
+        {
             string username = GetUsername(chatId);
-            string uriString = string.Format(ChannelMessageUriFormat, username, messageId);
+            string uriString = string.Format(ChannelUriFormat, username);
             return new Uri(uriString);
         }
         private static string GetUsername(ChatId chatId) => chatId.Username.Remove(0, 1);
@@ -389,7 +399,8 @@ namespace Carespace.Bot.Web.Models.Events
                 && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
         }
 
-        private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
+        private const string ChannelUriFormat = "https://t.me/{0}";
+        private const string ChannelMessageUriFormat = "{0}/{1}";
         private const string WordJoiner = "\u2060";
 
         private static readonly TimeSpan Hour = TimeSpan.FromHours(1);

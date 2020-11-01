@@ -34,9 +34,10 @@ namespace Carespace.Bot.Web.Models.Services
             _googleSheetsDataManager =
                 new GoogleSheetsManager.DataManager(_config.GoogleCredentialsJson, _config.GoogleSheetId);
 
-            var chatId = new ChatId($"@{_config.EventsChannelLogin}");
+            var eventsChatId = new ChatId($"@{_config.EventsChannelLogin}");
+            var discussChatId = new ChatId($"@{_config.DiscussGroupLogin}");
             _eventManager = new Events.Manager(_googleSheetsDataManager, saveManager, _config.GoogleRange,
-                _config.EventsFormUri, Client, chatId, _config.LogsChatId, _config.DiscussUri);
+                _config.EventsFormUri, Client, eventsChatId, _config.LogsChatId, discussChatId);
 
             var commands = new List<Command>
             {
