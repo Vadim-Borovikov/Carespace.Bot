@@ -117,8 +117,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
         {
-            Chat eventsChat = await _client.GetChatAsync(_eventsChatId);
-            string text = PrepareWeekSchedule(weekStart, eventsChat.Username);
+            string text = PrepareWeekSchedule(weekStart);
 
             if (IsScheduleRelevant(weekStart))
             {
@@ -250,7 +249,7 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private string PrepareWeekSchedule(DateTime start, string eventsChatUsername)
+        private string PrepareWeekSchedule(DateTime start)
         {
             var scheduleBuilder = new StringBuilder();
             scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
@@ -266,7 +265,7 @@ namespace Carespace.Bot.Web.Models.Events
                     date = e.Template.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
-                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, eventsChatUsername, e.Data.MessageId));
+                Uri messageUri = GetMessageUri(_eventsChatId, e.Data.MessageId);
                 string weekly = e.Template.IsWeekly ? " 🔄" : "";
                 scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri}){weekly}");
             }
@@ -274,6 +273,14 @@ namespace Carespace.Bot.Web.Models.Events
             scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
             return scheduleBuilder.ToString();
         }
+
+        private static Uri GetMessageUri(ChatId chatId, int messageId)
+        {
+            string username = GetUsername(chatId);
+            string uriString = string.Format(ChannelMessageUriFormat, username, messageId);
+            return new Uri(uriString);
+        }
+        private static string GetUsername(ChatId chatId) => chatId.Username.Remove(0, 1);
 
         private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
             InlineKeyboardMarkup keyboardMarkup = null)
