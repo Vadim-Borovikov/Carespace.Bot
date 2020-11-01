@@ -35,11 +35,9 @@ namespace Carespace.Bot.Web.Models
 
             if (Data == null)
             {
-                Reset();
+                Data = new BotSave();
             }
         }
-
-        public void Reset() => Data = new BotSave();
 
         private readonly string _path;
         private readonly object _locker;

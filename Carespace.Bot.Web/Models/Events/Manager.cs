@@ -22,7 +22,7 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ChatId _logsChatId;
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
-        private Dictionary<int, Event> _events;
+        private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, Uri discussUri)
@@ -54,6 +54,12 @@ namespace Carespace.Bot.Web.Models.Events
             await PostOrUpdateScheduleAsync(weekStart);
             await CreateOrUpdateNotificationsAsync();
 
+            List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
+            foreach (int id in toRemove)
+            {
+                _saveManager.Data.Messages.Remove(id);
+            }
+
             _saveManager.Save();
 
             await _client.FinalizeStatusMessageAsync(statusMessage);
@@ -63,69 +69,50 @@ namespace Carespace.Bot.Web.Models.Events
 
         private void DisposeEvents()
         {
-            if (_events == null)
-            {
-                return;
-            }
-
             foreach (Event e in _events.Values)
             {
                 e.Dispose();
             }
+            _events.Clear();
         }
 
         private async Task PostOrUpdateEvents(DateTime weekStart)
         {
             Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart).ToDictionary(t => t.Id, t => t);
 
-            _saveManager.Load();
-
             DisposeEvents();
-            _events = new Dictionary<int, Event>();
 
-            IEnumerable<Template> toPost = templates.Values;
-
-            if (IsScheduleRelevant(weekStart))
+            _saveManager.Load();
+            ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
+            foreach (int savedTemplateId in savedTemplateIds)
             {
-                ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
-                foreach (int savedTemplateId in savedTemplateIds)
+                EventData data = _saveManager.Data.Events[savedTemplateId];
+                if (templates.ContainsKey(savedTemplateId))
                 {
-                    EventData data = _saveManager.Data.Events[savedTemplateId];
-                    if (templates.ContainsKey(savedTemplateId))
-                    {
-                        Template template = templates[savedTemplateId];
+                    Template template = templates[savedTemplateId];
 
-                        string messageText = GetMessageText(template);
-                        await EditMessageTextAsync(data.MessageId, messageText, keyboardMarkup: _discussKeyboard);
+                    string messageText = GetMessageText(template);
+                    await EditMessageTextAsync(data.MessageId, messageText, keyboardMarkup: _discussKeyboard);
 
-                        _events[template.Id] = new Event(template, data);
-                    }
-                    else
-                    {
-                        await DeleteNotificationAsync(data);
-                        await DeleteMessageAsync(data.MessageId);
-                    }
+                    _events[template.Id] = new Event(template, data);
                 }
-
-                toPost = toPost.Where(t => !savedTemplateIds.Contains(t.Id));
+                else
+                {
+                    await DeleteNotificationAsync(data);
+                    await DeleteMessageAsync(data.MessageId);
+                }
             }
-            else
-            {
-                _saveManager.Reset();
-            }
 
-            foreach (Template template in toPost.OrderBy(t => t.Start))
+            IOrderedEnumerable<Template> toPost = templates.Values
+                .Where(t => !savedTemplateIds.Contains(t.Id))
+                .OrderBy(t => t.Start);
+            foreach (Template template in toPost)
             {
                 EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
             }
 
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
-            List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
-            foreach (int id in toRemove)
-            {
-                _saveManager.Data.Messages.Remove(id);
-            }
         }
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
@@ -139,7 +126,8 @@ namespace Carespace.Bot.Web.Models.Events
             }
             else
             {
-                _saveManager.Data.ScheduleId = await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
+                _saveManager.Data.ScheduleId =
+                    await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
                 await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
             }
         }
@@ -324,13 +312,42 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine(template.Description);
 
             builder.AppendLine();
-            builder.AppendLine($"🕰️ *Когда:* {template.Start:dd MMMM, HH:mm}-{template.End:HH:mm} (Мск).");
-
+            builder.Append("🕰️ *Когда:* ");
             if (template.IsWeekly)
             {
-                builder.AppendLine();
-                builder.AppendLine("🔄 Мероприятие проходит каждую неделю.");
+                builder.Append("по ");
+                switch (template.Start.DayOfWeek)
+                {
+                    case DayOfWeek.Monday:
+                        builder.Append("понедельникам");
+                        break;
+                    case DayOfWeek.Tuesday:
+                        builder.Append("вторникам");
+                        break;
+                    case DayOfWeek.Wednesday:
+                        builder.Append("средам");
+                        break;
+                    case DayOfWeek.Thursday:
+                        builder.Append("четвергам");
+                        break;
+                    case DayOfWeek.Friday:
+                        builder.Append("пятницам");
+                        break;
+                    case DayOfWeek.Saturday:
+                        builder.Append("субботам");
+                        break;
+                    case DayOfWeek.Sunday:
+                        builder.Append("воскресеньям");
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
+            else
+            {
+                builder.Append($"{template.Start:dd MMMM}");
+            }
+            builder.AppendLine($", {template.Start:HH:mm}-{template.End:HH:mm} (Мск).");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
