@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Timer = System.Timers.Timer;
 
 namespace Carespace.Bot.Web.Models.Services
 {
@@ -62,13 +61,14 @@ namespace Carespace.Bot.Web.Models.Services
         {
             await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
             await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
+            _weeklyUpdateTimer = new Timer();
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             await Client.DeleteWebhookAsync(cancellationToken);
-            _weeklyUpdateTimer?.Stop();
-            _weeklyUpdateTimer?.Dispose();
+            _weeklyUpdateTimer.Stop();
+            _weeklyUpdateTimer.Dispose();
             _googleDriveDataManager.Dispose();
             _googleSheetsDataManager.Dispose();
             _eventManager.Dispose();
@@ -78,13 +78,13 @@ namespace Carespace.Bot.Web.Models.Services
         {
             await func();
             DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + _config.EventsUpdateAt.TimeOfDay;
-            Utils.DoOnce(ref _weeklyUpdateTimer, nextUpdateAt, () => DoAndScheduleWeekly(func));
+            _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeekly(func));
         }
 
         private async Task DoAndScheduleWeekly(Func<Task> func)
         {
             await func();
-            Utils.DoWeekly(ref _weeklyUpdateTimer, func);
+            _weeklyUpdateTimer.DoWeekly(func);
         }
 
         private readonly BotConfiguration _config;

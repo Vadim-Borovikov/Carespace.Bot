@@ -153,7 +153,7 @@ namespace Carespace.Bot.Web.Models.Events
             TimeSpan startIn = e.Template.Start - now;
             if (startIn > Hour)
             {
-                Utils.DoOnce(ref e.Timer, e.Template.Start - Hour, () => NotifyInAnHourAsync(e));
+                e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e));
                 return DeleteNotificationAsync(e);
             }
 
@@ -183,7 +183,7 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc)
         {
             await CreateOrUpdateNotificationAsync(e, prefix);
-            Utils.DoOnce(ref e.Timer, nextAt, () => nextFunc(e));
+            e.Timer.DoOnce(nextAt, () => nextFunc(e));
         }
 
         private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
@@ -385,7 +385,9 @@ namespace Carespace.Bot.Web.Models.Events
         private const string ChannelMessageUriFormat = "https://t.me/{0}/{1}";
         private const string WordJoiner = "\u2060";
 
-        private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
-        private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan Hour = TimeSpan.FromMinutes(1);
+        // private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+        // private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan Soon = TimeSpan.FromSeconds(15);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Timers;
 
 namespace Carespace.Bot.Web.Models.Events
 {
@@ -7,7 +6,7 @@ namespace Carespace.Bot.Web.Models.Events
     {
         public readonly Template Template;
         public readonly EventData Data;
-        public Timer Timer;
+        public readonly Timer Timer;
 
         public Event(Template template, EventData data)
         {
