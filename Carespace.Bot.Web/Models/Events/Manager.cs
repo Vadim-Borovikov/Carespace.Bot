@@ -23,7 +23,6 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
         private Dictionary<int, Event> _events;
-        private Chat _eventsChat;
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, Uri discussUri)
@@ -49,10 +48,7 @@ namespace Carespace.Bot.Web.Models.Events
             Message statusMessage =
                 await _client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
 
-            _eventsChat = await _client.GetChatAsync(_eventsChatId);
-
             DateTime weekStart = Utils.GetMonday();
-
 
             await PostOrUpdateEvents(weekStart);
             await PostOrUpdateScheduleAsync(weekStart);
@@ -89,7 +85,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             IEnumerable<Template> toPost = templates.Values;
 
-            if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
+            if (IsScheduleRelevant(weekStart))
             {
                 ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
                 foreach (int savedTemplateId in savedTemplateIds)
@@ -129,16 +125,17 @@ namespace Carespace.Bot.Web.Models.Events
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
         {
-            string text = PrepareWeekSchedule(weekStart);
+            Chat eventsChat = await _client.GetChatAsync(_eventsChatId);
+            string text = PrepareWeekSchedule(weekStart, eventsChat.Username);
 
-            if (IsMessageRelevant(_eventsChat.PinnedMessage, weekStart))
+            if (IsScheduleRelevant(weekStart))
             {
-                await EditMessageTextAsync(_eventsChat.PinnedMessage.MessageId, text, true, _discussKeyboard);
+                await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, true, _discussKeyboard);
             }
             else
             {
-                int messageId = await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
-                await _client.PinChatMessageAsync(_eventsChatId, messageId, true);
+                _saveManager.Data.ScheduleId = await SendTextMessageAsync(text, true, keyboardMarkup: _discussKeyboard);
+                await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
             }
         }
 
@@ -260,7 +257,7 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private string PrepareWeekSchedule(DateTime start)
+        private string PrepareWeekSchedule(DateTime start, string eventsChatUsername)
         {
             var scheduleBuilder = new StringBuilder();
             scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
@@ -276,8 +273,7 @@ namespace Carespace.Bot.Web.Models.Events
                     date = e.Template.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
-                var messageUri =
-                    new Uri(string.Format(ChannelMessageUriFormat, _eventsChat.Username, e.Data.MessageId));
+                var messageUri = new Uri(string.Format(ChannelMessageUriFormat, eventsChatUsername, e.Data.MessageId));
                 string weekly = e.Template.IsWeekly ? " 🔄" : "";
                 scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri}){weekly}");
             }
@@ -347,14 +343,10 @@ namespace Carespace.Bot.Web.Models.Events
             return builder.ToString();
         }
 
-        private static bool IsMessageRelevant(Message message, DateTime start)
+        private bool IsScheduleRelevant(DateTime start)
         {
-            if (message == null)
-            {
-                return false;
-            }
-
-            return message.Date >= start;
+            MessageData data = GetMessageData(_saveManager.Data.ScheduleId);
+            return data?.Date >= start;
         }
 
         private MessageData GetMessageData(int id)
