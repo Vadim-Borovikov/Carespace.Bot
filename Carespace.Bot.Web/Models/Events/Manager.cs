@@ -339,7 +339,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             var builder = new StringBuilder();
 
-            builder.Append($"⁠[{WordJoiner}]({template.Uri})");
+            builder.Append($"[{WordJoiner}]({template.Uri})");
             builder.AppendLine($"*{template.Name}*");
 
             builder.AppendLine();
