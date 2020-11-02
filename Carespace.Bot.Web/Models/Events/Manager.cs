@@ -101,7 +101,7 @@ namespace Carespace.Bot.Web.Models.Events
                 else
                 {
                     await DeleteNotificationAsync(data);
-                    await DeleteMessageAsync(data.MessageId);
+                    await DeleteMessageAsync(data.MessageId, weekStart);
                 }
             }
 
@@ -318,9 +318,12 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private async Task DeleteMessageAsync(int messageId)
+        private async Task DeleteMessageAsync(int messageId, DateTime? weekStart = null)
         {
-            await _client.DeleteMessageAsync(_eventsChatId, messageId);
+            if (!weekStart.HasValue || (_saveManager.Data.Messages[messageId].Date >= weekStart))
+            {
+                await _client.DeleteMessageAsync(_eventsChatId, messageId);
+            }
             _saveManager.Data.Messages.Remove(messageId);
         }
 
