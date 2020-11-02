@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GoogleSheetsManager;
+using Ical.Net.CalendarComponents;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -21,12 +22,15 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ChatId _eventsChatId;
         private readonly ChatId _logsChatId;
         private readonly ChatId _discussChatId;
+        private readonly string _host;
+        private readonly InlineKeyboardButton _discussButton;
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
         public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
-            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId)
+            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
+            string host)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRange = googleRange;
@@ -36,13 +40,14 @@ namespace Carespace.Bot.Web.Models.Events
             _eventsChatId = eventsChatId;
             _logsChatId = logsChatId;
             _discussChatId = discussChatId;
+            _host = host;
 
-            var discussButton = new InlineKeyboardButton
+            _discussButton = new InlineKeyboardButton
             {
                 Text = "💬 Обсудить",
                 Url = GetUri(_discussChatId).AbsoluteUri
             };
-            _discussKeyboard = new InlineKeyboardMarkup(discussButton);
+            _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
         }
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -94,7 +99,10 @@ namespace Carespace.Bot.Web.Models.Events
                     Template template = templates[savedTemplateId];
 
                     string messageText = GetMessageText(template);
-                    await EditMessageTextAsync(data.MessageId, messageText, hasKeyboard: true);
+                    InlineKeyboardButton icsButton = GetMessageIcsButton(template);
+                    await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
+                        keyboard: MessageData.KeyboardType.Full);
+                    WriteIcs(template);
 
                     _events[template.Id] = new Event(template, data);
                 }
@@ -110,11 +118,19 @@ namespace Carespace.Bot.Web.Models.Events
                 .OrderBy(t => t.Start);
             foreach (Template template in toPost)
             {
+                WriteIcs(template);
                 EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
             }
 
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
+        }
+
+        private static void WriteIcs(Template template)
+        {
+            CalendarEvent e = template.AsCalendarEvent();
+            string path = string.Format(Utils.IcsPathFormat, template.Id);
+            Utils.SaveAsCalendar(path, e);
         }
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
@@ -123,11 +139,13 @@ namespace Carespace.Bot.Web.Models.Events
 
             if (IsScheduleRelevant(weekStart))
             {
-                await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, true, true);
+                await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, MessageData.KeyboardType.Discuss,
+                    disableWebPagePreview: true);
             }
             else
             {
-                _saveManager.Data.ScheduleId = await PostForwardAndAddButton(text, true);
+                _saveManager.Data.ScheduleId = await PostForwardAndAddButton(text, MessageData.KeyboardType.None,
+                    MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
                 await _client.UnpinChatMessageAsync(_eventsChatId);
                 await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
             }
@@ -224,25 +242,30 @@ namespace Carespace.Bot.Web.Models.Events
         private async Task<EventData> PostEventAsync(Template template)
         {
             string text = GetMessageText(template);
-            int messageId = await PostForwardAndAddButton(text);
+            InlineKeyboardButton icsButton = GetMessageIcsButton(template);
+            int messageId = await PostForwardAndAddButton(text, MessageData.KeyboardType.Ics,
+                MessageData.KeyboardType.Full, icsButton);
             return new EventData(messageId);
         }
 
-        private async Task<int> PostForwardAndAddButton(string text, bool disableWebPagePreview = false)
+        private async Task<int> PostForwardAndAddButton(string text, MessageData.KeyboardType chatKeyboard,
+            MessageData.KeyboardType keyboard, InlineKeyboardButton icsButton = null,
+            bool disableWebPagePreview = false)
         {
-            int messageId = await SendTextMessageAsync(text, disableWebPagePreview);
+            int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
             await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
-            await EditMessageTextAsync(messageId, text, disableWebPagePreview, true);
+            await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
             return messageId;
         }
 
-        private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
-            bool disableNotification = false, int replyToMessageId = 0, bool hasKeyboard = false)
+        private async Task<int> SendTextMessageAsync(string text,
+            MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton icsButton = null,
+            bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
         {
-            InlineKeyboardMarkup keyboardMarkup = hasKeyboard ? _discussKeyboard : null;
+            InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
             Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
-            _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, hasKeyboard);
+            _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
             return message.MessageId;
         }
 
@@ -304,25 +327,49 @@ namespace Carespace.Bot.Web.Models.Events
         }
         private static string GetUsername(ChatId chatId) => chatId.Username.Remove(0, 1);
 
-        private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
-            bool hasKeyboard = false)
+        private async Task EditMessageTextAsync(int messageId, string text,
+            MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton icsButton = null,
+            bool disableWebPagePreview = false)
         {
             MessageData data = GetMessageData(messageId);
-            if ((data?.Text == text) && (data?.HasKeyboard == hasKeyboard))
+            if ((data?.Text == text) && (data?.Keyboard == keyboard))
             {
                 return;
             }
-            InlineKeyboardMarkup keyboardMarkup = hasKeyboard ? _discussKeyboard : null;
+            InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
             Message message = await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
                 disableWebPagePreview, keyboardMarkup);
             if (data == null)
             {
-                _saveManager.Data.Messages[messageId] = new MessageData(message, text, hasKeyboard);
+                _saveManager.Data.Messages[messageId] = new MessageData(message, text, keyboard);
             }
             else
             {
                 data.Text = text;
-                data.HasKeyboard = hasKeyboard;
+                data.Keyboard = keyboard;
+            }
+        }
+
+        private InlineKeyboardMarkup GetKeyboardMarkup(MessageData.KeyboardType keyboardType,
+            InlineKeyboardButton icsButton)
+        {
+            var icsKeyboard = new InlineKeyboardMarkup(icsButton);
+
+            var row = new[] { icsButton, _discussButton };
+            var fullKeyboard = new InlineKeyboardMarkup(row);
+
+            switch (keyboardType)
+            {
+                case MessageData.KeyboardType.None:
+                    return null;
+                case MessageData.KeyboardType.Ics:
+                    return icsKeyboard;
+                case MessageData.KeyboardType.Discuss:
+                    return _discussKeyboard;
+                case MessageData.KeyboardType.Full:
+                    return fullKeyboard;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(keyboardType), keyboardType, null);
             }
         }
 
@@ -335,7 +382,7 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Data.Messages.Remove(messageId);
         }
 
-        private static string GetMessageText(Template template)
+        private string GetMessageText(Template template)
         {
             var builder = new StringBuilder();
 
@@ -395,8 +442,19 @@ namespace Carespace.Bot.Web.Models.Events
             string uriString = $"{template.Uri}".Replace("_", "\\_");
             builder.AppendLine();
             builder.AppendLine($"🗞️ *Принять участие*: {uriString}.");
+            builder.AppendLine();
+            builder.Append($"[ISC]({string.Format(Utils.IcsUriFormat, _host, template.Id)})");
 
             return builder.ToString();
+        }
+
+        private InlineKeyboardButton GetMessageIcsButton(Template template)
+        {
+            return new InlineKeyboardButton
+            {
+                Text = "📅 .ics (iCalendar)",
+                Url = string.Format(Utils.IcsUriFormat, _host, template.Id)
+            };
         }
 
         private bool IsScheduleRelevant(DateTime start)

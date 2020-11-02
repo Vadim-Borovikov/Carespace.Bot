@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="Karambolo.Extensions.Logging.File" Version="3.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
@@ -28,6 +29,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="ics\0.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ics\1.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ics\2.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ics\3.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ics\5.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ics\6.ics">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Photos\CareSpace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
