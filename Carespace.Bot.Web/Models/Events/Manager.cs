@@ -94,7 +94,7 @@ namespace Carespace.Bot.Web.Models.Events
                     Template template = templates[savedTemplateId];
 
                     string messageText = GetMessageText(template);
-                    await EditMessageTextAsync(data.MessageId, messageText, keyboardMarkup: _discussKeyboard);
+                    await EditMessageTextAsync(data.MessageId, messageText, hasKeyboard: true);
 
                     _events[template.Id] = new Event(template, data);
                 }
@@ -123,7 +123,7 @@ namespace Carespace.Bot.Web.Models.Events
 
             if (IsScheduleRelevant(weekStart))
             {
-                await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, true, _discussKeyboard);
+                await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, true, true);
             }
             else
             {
@@ -227,16 +227,17 @@ namespace Carespace.Bot.Web.Models.Events
         {
             int messageId = await SendTextMessageAsync(text, disableWebPagePreview);
             await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
-            await EditMessageTextAsync(messageId, text, disableWebPagePreview, _discussKeyboard);
+            await EditMessageTextAsync(messageId, text, disableWebPagePreview, true);
             return messageId;
         }
 
         private async Task<int> SendTextMessageAsync(string text, bool disableWebPagePreview = false,
-            bool disableNotification = false, int replyToMessageId = 0, IReplyMarkup keyboardMarkup = null)
+            bool disableNotification = false, int replyToMessageId = 0, bool hasKeyboard = false)
         {
+            InlineKeyboardMarkup keyboardMarkup = hasKeyboard ? _discussKeyboard : null;
             Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
-            _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text);
+            _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, hasKeyboard);
             return message.MessageId;
         }
 
@@ -299,22 +300,24 @@ namespace Carespace.Bot.Web.Models.Events
         private static string GetUsername(ChatId chatId) => chatId.Username.Remove(0, 1);
 
         private async Task EditMessageTextAsync(int messageId, string text, bool disableWebPagePreview = false,
-            InlineKeyboardMarkup keyboardMarkup = null)
+            bool hasKeyboard = false)
         {
             MessageData data = GetMessageData(messageId);
-            if ((data?.Text == text) && (data?.HasKeyboard == (keyboardMarkup != null)))
+            if ((data?.Text == text) && (data?.HasKeyboard == hasKeyboard))
             {
                 return;
             }
+            InlineKeyboardMarkup keyboardMarkup = hasKeyboard ? _discussKeyboard : null;
             Message message = await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
                 disableWebPagePreview, keyboardMarkup);
             if (data == null)
             {
-                _saveManager.Data.Messages[messageId] = new MessageData(message, text);
+                _saveManager.Data.Messages[messageId] = new MessageData(message, text, hasKeyboard);
             }
             else
             {
                 data.Text = text;
+                data.HasKeyboard = hasKeyboard;
             }
         }
 

@@ -17,10 +17,11 @@ namespace Carespace.Bot.Web.Models.Events
 
         public MessageData() { }
 
-        public MessageData(Message message, string text)
+        public MessageData(Message message, string text, bool hasKeyboard)
         {
             Text = text;
             Date = message.Date.ToLocalTime();
+            HasKeyboard = hasKeyboard;
         }
     }
 }
