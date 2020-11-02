@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <None Remove="errors.txt" />
+    <None Remove="timers.txt" />
   </ItemGroup>
 
   <ItemGroup>

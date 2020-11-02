@@ -60,7 +60,8 @@ namespace Carespace.Bot.Web.Models.Services
         {
             await Client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
             _weeklyUpdateTimer = new Timer();
-            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync);
+            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync,
+                nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
@@ -73,17 +74,17 @@ namespace Carespace.Bot.Web.Models.Services
             _eventManager.Dispose();
         }
 
-        private async Task DoAndSchedule(Func<Task> func)
+        private async Task DoAndSchedule(Func<Task> func, string funcName)
         {
             await func();
             DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + _config.EventsUpdateAt.TimeOfDay;
-            _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeekly(func));
+            _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeekly(func, funcName), funcName);
         }
 
-        private async Task DoAndScheduleWeekly(Func<Task> func)
+        private async Task DoAndScheduleWeekly(Func<Task> func, string funcName)
         {
             await func();
-            _weeklyUpdateTimer.DoWeekly(func);
+            _weeklyUpdateTimer.DoWeekly(func, funcName);
         }
 
         private readonly BotConfiguration _config;

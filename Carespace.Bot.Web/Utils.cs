@@ -102,7 +102,12 @@ namespace Carespace.Bot.Web
             return $"{day}, {date:d MMMM}";
         }
 
-        public static void LogException(Exception ex) => File.AppendAllText(LogPath, $"{ex}{Environment.NewLine}");
+        public static void LogException(Exception ex)
+        {
+            File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
+        }
+
+        public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
@@ -138,6 +143,7 @@ namespace Carespace.Bot.Web
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
             new ConcurrentDictionary<string, string>();
 
-        private const string LogPath = "errors.txt";
+        private const string ExceptionsLogPath = "errors.txt";
+        private const string TimersLogPath = "timers.txt";
     }
 }

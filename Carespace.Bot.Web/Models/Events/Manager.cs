@@ -154,7 +154,8 @@ namespace Carespace.Bot.Web.Models.Events
             TimeSpan startIn = e.Template.Start - now;
             if (startIn > Hour)
             {
-                e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e));
+                e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
+                    $"{nameof(NotifyInAnHourAsync)} for {e.Template.Id}");
                 return DeleteNotificationAsync(e);
             }
 
@@ -168,23 +169,27 @@ namespace Carespace.Bot.Web.Models.Events
 
         private async Task NotifyInAnHourAsync(Event e)
         {
-            await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.Start - Soon, NotifySoonAsync);
+            await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.Start - Soon, NotifySoonAsync,
+                nameof(NotifySoonAsync));
         }
 
         private async Task NotifySoonAsync(Event e)
         {
-            await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.Start, NotifyCurrentAsync);
+            await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.Start, NotifyCurrentAsync,
+                nameof(NotifyCurrentAsync));
         }
 
         private async Task NotifyCurrentAsync(Event e)
         {
-            await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.End, DeleteNotificationAsync);
+            await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.End, DeleteNotificationAsync,
+                nameof(DeleteNotificationAsync));
         }
 
-        private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc)
+        private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc,
+            string nextFuncName)
         {
             await CreateOrUpdateNotificationAsync(e, prefix);
-            e.Timer.DoOnce(nextAt, () => nextFunc(e));
+            e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for {e.Template.Id}");
         }
 
         private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)

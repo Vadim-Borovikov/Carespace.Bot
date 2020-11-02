@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -11,23 +14,48 @@ namespace Carespace.Bot.Web.Models
         public void Stop() { _timer.Stop(); }
         public void Dispose() { _timer.Dispose(); }
 
-        public void DoOnce(DateTime at, Func<Task> func)
+        public void DoOnce(DateTime at, Func<Task> func, string funcName)
         {
-            TimeSpan after = at - DateTime.Now;
-            Do(after, false, func);
+            _at = at;
+            _after = _at - DateTime.Now;
+
+            _funcName = funcName;
+
+            Do(false, func);
         }
 
-        public void DoWeekly(Func<Task> func) => Do(TimeSpan.FromDays(7), true, func);
+        public void DoWeekly(Func<Task> func, string funcName)
+        {
+            _after = TimeSpan.FromDays(7);
+            _at = DateTime.Now + _after;
 
-        private void Do(TimeSpan interval, bool autoReset, Func<Task> func)
+            _funcName = funcName;
+
+            Do(true, func);
+        }
+
+        public override string ToString()
+        {
+            string result = $"{_at}: {_funcName}";
+            if (_timer.AutoReset)
+            {
+                result += $" with repeat every {_after}";
+            }
+            return result;
+        }
+
+        private void Do(bool autoReset, Func<Task> func)
         {
             _timer.Stop();
 
-            _timer.Interval = interval.TotalMilliseconds;
+            _timer.Interval = _after.TotalMilliseconds;
             _timer.AutoReset = autoReset;
             SetHandlerTo(func);
 
             _timer.Start();
+
+            Logs[_at] = ToString();
+            UpdateLog();
         }
 
         private void SetHandlerTo(Func<Task> func)
@@ -36,16 +64,18 @@ namespace Carespace.Bot.Web.Models
             {
                 _timer.Elapsed -= _handler;
             }
-            _handler = CreateHandlerFor(func);
+            _handler = CreateHandlerFor(func, _at);
             _timer.Elapsed += _handler;
         }
 
-        private static ElapsedEventHandler CreateHandlerFor(Func<Task> func)
+        private static ElapsedEventHandler CreateHandlerFor(Func<Task> func, DateTime at)
         {
             return (sender, e) => {
                 try
                 {
                     func().Wait();
+                    Logs.Remove(at);
+                    UpdateLog();
                 }
                 catch (Exception ex)
                 {
@@ -55,7 +85,22 @@ namespace Carespace.Bot.Web.Models
             };
         }
 
+        private static void UpdateLog()
+        {
+            var sb = new StringBuilder();
+            foreach (DateTime at in Logs.Keys.OrderBy(d => d))
+            {
+                sb.AppendLine(Logs[at]);
+            }
+            Utils.LogTimers(sb.ToString());
+        }
+
+        private static readonly Dictionary<DateTime, string> Logs = new Dictionary<DateTime, string>();
+
         private readonly System.Timers.Timer _timer;
         private ElapsedEventHandler _handler;
+        private DateTime _at;
+        private TimeSpan _after;
+        private string _funcName;
     }
 }
