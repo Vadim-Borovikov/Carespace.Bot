@@ -371,7 +371,7 @@ namespace Carespace.Bot.Web.Models.Events
             }
             else
             {
-                builder.Append($"{template.Start:dd MMMM}");
+                builder.Append($"{template.Start:d MMMM}");
             }
             builder.AppendLine($", {template.Start:HH:mm}-{template.End:HH:mm} (Мск).");
 

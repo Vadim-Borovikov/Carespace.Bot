@@ -99,7 +99,7 @@ namespace Carespace.Bot.Web
         public static string ShowDate(DateTime date)
         {
             string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
-            return $"{day}, {date:dd MMMM}";
+            return $"{day}, {date:d MMMM}";
         }
 
         public static void LogException(Exception ex) => File.AppendAllText(LogPath, $"{ex}{Environment.NewLine}");
