@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GoogleSheetsManager;
-using Ical.Net.CalendarComponents;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -102,7 +101,7 @@ namespace Carespace.Bot.Web.Models.Events
                     InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                     await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                         keyboard: MessageData.KeyboardType.Full);
-                    WriteIcs(template);
+                    Utils.AddCalendars(template);
 
                     _events[template.Id] = new Event(template, data);
                 }
@@ -118,19 +117,12 @@ namespace Carespace.Bot.Web.Models.Events
                 .OrderBy(t => t.Start);
             foreach (Template template in toPost)
             {
-                WriteIcs(template);
+                Utils.AddCalendars(template);
                 EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
             }
 
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
-        }
-
-        private static void WriteIcs(Template template)
-        {
-            CalendarEvent e = template.AsCalendarEvent();
-            string path = string.Format(Utils.IcsPathFormat, template.Id);
-            Utils.SaveAsCalendar(path, e);
         }
 
         private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
@@ -450,8 +442,8 @@ namespace Carespace.Bot.Web.Models.Events
         {
             return new InlineKeyboardButton
             {
-                Text = "📅 .ics (iCalendar)",
-                Url = string.Format(Utils.IcsUriFormat, _host, template.Id)
+                Text = "📅 в календарь",
+                Url = string.Format(Utils.CalendarUriFormat, _host, template.Id)
             };
         }
 

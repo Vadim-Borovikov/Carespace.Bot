@@ -6,15 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models;
+using Carespace.Bot.Web.Models.Events;
 using GoogleDocumentsUnifier.Logic;
-using Ical.Net.CalendarComponents;
-using Ical.Net.Serialization;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
-using Calendar = Ical.Net.Calendar;
 using File = System.IO.File;
 using FileInfo = GoogleDocumentsUnifier.Logic.FileInfo;
 
@@ -22,6 +20,8 @@ namespace Carespace.Bot.Web
 {
     internal static class Utils
     {
+        public static readonly Dictionary<int, Calendar> Calendars = new Dictionary<int, Calendar>();
+
         public static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
             Message message, string postfix = "")
         {
@@ -112,15 +112,10 @@ namespace Carespace.Bot.Web
 
         public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
 
-        public static void SaveAsCalendar(string path, CalendarEvent e)
+        public static void AddCalendars(Template template)
         {
-            var calendar = new Calendar
-            {
-                Events = { e }
-            };
-            var serializer = new CalendarSerializer();
-            string content = serializer.SerializeToString(calendar);
-            File.WriteAllText(path, content);
+            var calendar = new Calendar(template);
+            Calendars[template.Id] = calendar;
         }
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
@@ -160,7 +155,6 @@ namespace Carespace.Bot.Web
         private const string ExceptionsLogPath = "errors.txt";
         private const string TimersLogPath = "timers.txt";
 
-        public const string IcsPathFormat = "ics/{0}.ics";
-        public const string IcsUriFormat = "{0}/ics/{1}";
+        public const string CalendarUriFormat = "{0}/calendar/{1}";
     }
 }

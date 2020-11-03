@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using GoogleSheetsManager;
-using Ical.Net;
-using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
 using ILoadable = GoogleSheetsManager.ILoadable;
 
 namespace Carespace.Bot.Web.Models.Events
@@ -84,33 +80,6 @@ namespace Carespace.Bot.Web.Models.Events
             int weeks = (int) Math.Ceiling((weekStart - Start).TotalDays / 7);
             Start = Start.AddDays(7 * weeks);
             End = End.AddDays(7 * weeks);
-        }
-
-        public CalendarEvent AsCalendarEvent()
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine(Description);
-            sb.AppendLine();
-            sb.Append($"Цена: {Price}");
-            if (!string.IsNullOrWhiteSpace(Hosts))
-            {
-                sb.AppendLine();
-                sb.Append($"Кто ведёт: {Hosts}");
-            }
-            var e = new CalendarEvent
-            {
-                Start = new CalDateTime(Start),
-                End = new CalDateTime(End),
-                Summary = Name,
-                Description = sb.ToString(),
-                Url = Uri
-            };
-            if (IsWeekly)
-            {
-                var rule = new RecurrencePattern(FrequencyType.Weekly);
-                e.RecurrenceRules = new List<RecurrencePattern> { rule };
-            }
-            return e;
         }
     }
 }
