@@ -442,7 +442,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             return new InlineKeyboardButton
             {
-                Text = "📅 в календарь",
+                Text = "📅 В календарь",
                 Url = string.Format(Utils.CalendarUriFormat, _host, template.Id)
             };
         }
