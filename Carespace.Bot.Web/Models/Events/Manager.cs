@@ -382,7 +382,7 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Data.Messages.Remove(messageId);
         }
 
-        private string GetMessageText(Template template)
+        private static string GetMessageText(Template template)
         {
             var builder = new StringBuilder();
 
@@ -442,8 +442,6 @@ namespace Carespace.Bot.Web.Models.Events
             string uriString = $"{template.Uri}".Replace("_", "\\_");
             builder.AppendLine();
             builder.AppendLine($"🗞️ *Принять участие*: {uriString}.");
-            builder.AppendLine();
-            builder.Append($"[ISC]({string.Format(Utils.IcsUriFormat, _host, template.Id)})");
 
             return builder.ToString();
         }
