@@ -12,7 +12,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Services
 {
-    internal sealed class BotService : IBotService, IHostedService
+    internal sealed class BotService : IBotService, IHostedService, IDisposable
     {
         public TelegramBotClient Client { get; }
         public IReadOnlyCollection<Command> Commands { get; }
@@ -66,12 +66,16 @@ namespace Carespace.Bot.Web.Models.Services
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            await Client.DeleteWebhookAsync(cancellationToken);
             _weeklyUpdateTimer.Stop();
-            _weeklyUpdateTimer.Dispose();
-            _googleDriveDataManager.Dispose();
-            _googleSheetsDataManager.Dispose();
-            _eventManager.Dispose();
+            await Client.DeleteWebhookAsync(cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _weeklyUpdateTimer?.Dispose();
+            _googleDriveDataManager?.Dispose();
+            _googleSheetsDataManager?.Dispose();
+            _eventManager?.Dispose();
         }
 
         private async Task DoAndSchedule(Func<Task> func, string funcName)
