@@ -31,7 +31,7 @@ namespace Carespace.Bot.Web.Models.Bot
             var discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
             _eventManager = new Events.Manager(_googleSheetsDataManager, saveManager, _bot.Config.GoogleRange,
                 _bot.Config.EventsFormUri, _bot.Client, eventsChatId, _bot.Config.LogsChatId, discussChatId,
-                _bot.Config.Host);
+                _bot.Config.Host, _bot.Calendars);
 
             _bot.InitCommands(_googleDriveDataManager, _eventManager);
 

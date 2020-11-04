@@ -8,12 +8,12 @@ using Ical.Net.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
 using NodaTime.Extensions;
 
-namespace Carespace.Bot.Web
+namespace Carespace.Bot.Web.Models
 {
-    internal sealed class Calendar
+    public sealed class Calendar
     {
-        public readonly byte[] IcsContent;
-        public readonly string GoogleCalendarLink;
+        internal readonly byte[] IcsContent;
+        internal readonly string GoogleCalendarLink;
 
         internal Calendar(Template template)
         {

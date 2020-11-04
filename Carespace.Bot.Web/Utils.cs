@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models;
 using Carespace.Bot.Web.Models.Bot;
-using Carespace.Bot.Web.Models.Events;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -21,8 +20,6 @@ namespace Carespace.Bot.Web
 {
     internal static class Utils
     {
-        public static readonly Dictionary<int, Calendar> Calendars = new Dictionary<int, Calendar>();
-
         public static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
             Message message, string postfix = "")
         {
@@ -112,12 +109,6 @@ namespace Carespace.Bot.Web
         }
 
         public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
-
-        public static void AddCalendars(Template template)
-        {
-            var calendar = new Calendar(template);
-            Calendars[template.Id] = calendar;
-        }
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)

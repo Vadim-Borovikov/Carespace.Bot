@@ -22,6 +22,7 @@ namespace Carespace.Bot.Web.Models.Events
         private readonly ChatId _logsChatId;
         private readonly ChatId _discussChatId;
         private readonly string _host;
+        private readonly IDictionary<int, Calendar> _calendars;
         private readonly InlineKeyboardButton _discussButton;
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
@@ -29,7 +30,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         internal Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
-            string host)
+            string host, IDictionary<int, Calendar> calendars)
         {
             _googleSheetsDataManager = googleSheetsDataManager;
             _googleRange = googleRange;
@@ -40,6 +41,7 @@ namespace Carespace.Bot.Web.Models.Events
             _logsChatId = logsChatId;
             _discussChatId = discussChatId;
             _host = host;
+            _calendars = calendars;
 
             _discussButton = new InlineKeyboardButton
             {
@@ -101,7 +103,7 @@ namespace Carespace.Bot.Web.Models.Events
                     InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                     await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                         keyboard: MessageData.KeyboardType.Full);
-                    Utils.AddCalendars(template);
+                    _calendars[template.Id] = new Calendar(template);
 
                     _events[template.Id] = new Event(template, data);
                 }
@@ -117,7 +119,7 @@ namespace Carespace.Bot.Web.Models.Events
                 .OrderBy(t => t.Start);
             foreach (Template template in toPost)
             {
-                Utils.AddCalendars(template);
+                _calendars[template.Id] = new Calendar(template);
                 EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data);
             }

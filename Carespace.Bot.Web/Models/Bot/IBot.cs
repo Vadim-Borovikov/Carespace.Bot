@@ -11,6 +11,7 @@ namespace Carespace.Bot.Web.Models.Bot
         TelegramBotClient Client { get; set; }
         IReadOnlyCollection<Command> Commands { get; }
         IEnumerable<int> AdminIds { get; }
+        IDictionary<int, Calendar> Calendars { get; }
         Configuration Config { get; }
 
         void InitCommands(DataManager googleDataManager, Manager eventManager);

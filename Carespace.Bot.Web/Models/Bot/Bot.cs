@@ -14,6 +14,7 @@ namespace Carespace.Bot.Web.Models.Bot
 
         public IReadOnlyCollection<Command> Commands => _commands.AsReadOnly();
         public IEnumerable<int> AdminIds => Config.AdminIds;
+        public IDictionary<int, Calendar> Calendars { get; }
 
         public Configuration Config { get; }
 
@@ -27,6 +28,8 @@ namespace Carespace.Bot.Web.Models.Bot
             {
                 Config.GoogleCredentialsJson = JsonConvert.SerializeObject(Config.GoogleCredentials);
             }
+
+            Calendars = new Dictionary<int, Calendar>();
         }
 
         public void InitCommands(DataManager googleDataManager, Manager eventManager)
