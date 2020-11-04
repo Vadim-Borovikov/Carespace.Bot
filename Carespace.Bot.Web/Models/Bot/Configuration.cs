@@ -7,9 +7,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Bot
 {
-    internal sealed class BotConfiguration
+    public sealed class Configuration
     {
         public class Link
         {

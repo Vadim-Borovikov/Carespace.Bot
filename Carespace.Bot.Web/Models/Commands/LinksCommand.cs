@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Carespace.Bot.Web.Models.Bot;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -12,19 +13,19 @@ namespace Carespace.Bot.Web.Models.Commands
 
         internal override AccessType Type => AccessType.Users;
 
-        public LinksCommand(IEnumerable<BotConfiguration.Link> links)
+        public LinksCommand(IEnumerable<Configuration.Link> links)
         {
             _links = links;
         }
 
         protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {
-            foreach (BotConfiguration.Link link in _links)
+            foreach (Configuration.Link link in _links)
             {
                 await client.SendMessageAsync(link, chatId);
             }
         }
 
-        private readonly IEnumerable<BotConfiguration.Link> _links;
+        private readonly IEnumerable<Configuration.Link> _links;
     }
 }

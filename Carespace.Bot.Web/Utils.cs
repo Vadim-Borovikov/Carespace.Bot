@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models;
+using Carespace.Bot.Web.Models.Bot;
 using Carespace.Bot.Web.Models.Events;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
@@ -79,7 +80,7 @@ namespace Carespace.Bot.Web
             }
         }
 
-        public static Task SendMessageAsync(this ITelegramBotClient client, BotConfiguration.Link link,
+        public static Task SendMessageAsync(this ITelegramBotClient client, Configuration.Link link,
             ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
@@ -139,7 +140,7 @@ namespace Carespace.Bot.Web
             }
         }
 
-        private static InlineKeyboardMarkup GetReplyMarkup(BotConfiguration.Link link)
+        private static InlineKeyboardMarkup GetReplyMarkup(Configuration.Link link)
         {
             var button = new InlineKeyboardButton
             {

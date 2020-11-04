@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Commands;
-using Carespace.Bot.Web.Models.Services;
+using Carespace.Bot.Web.Models.Bot;
 using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -11,9 +11,9 @@ namespace Carespace.Bot.Web.Controllers
 {
     public class UpdateController : Controller
     {
-        private readonly IBotService _botService;
+        private readonly IBot _bot;
 
-        public UpdateController(IBotService botService) { _botService = botService; }
+        public UpdateController(IBot bot) { _bot = bot; }
 
         [HttpPost]
         public async Task<OkResult> Post([FromBody]Update update)
@@ -27,7 +27,7 @@ namespace Carespace.Bot.Web.Controllers
                     case UpdateType.Message:
                         Message message = update.Message;
 
-                        command = _botService.Commands.FirstOrDefault(c => c.Contains(message));
+                        command = _bot.Commands.FirstOrDefault(c => c.Contains(message));
                         if (command != null)
                         {
                             isAdmin = IsAdmin(message.From);
@@ -35,11 +35,11 @@ namespace Carespace.Bot.Web.Controllers
                             {
                                 try
                                 {
-                                    await command.ExecuteAsyncWrapper(message, _botService.Client, isAdmin);
+                                    await command.ExecuteAsyncWrapper(message, _bot.Client, isAdmin);
                                 }
                                 catch (Exception exception)
                                 {
-                                    await command.HandleExceptionAsync(exception, message.Chat.Id, _botService.Client);
+                                    await command.HandleExceptionAsync(exception, message.Chat.Id, _bot.Client);
                                 }
                             }
                         }
@@ -47,7 +47,7 @@ namespace Carespace.Bot.Web.Controllers
                     case UpdateType.CallbackQuery:
                         CallbackQuery query = update.CallbackQuery;
 
-                        command = _botService.Commands.FirstOrDefault(c => query.Data.Contains(c.Name));
+                        command = _bot.Commands.FirstOrDefault(c => query.Data.Contains(c.Name));
                         if (command != null)
                         {
                             isAdmin = IsAdmin(query.From);
@@ -56,13 +56,12 @@ namespace Carespace.Bot.Web.Controllers
                                 string queryData = query.Data.Replace(command.Name, "");
                                 try
                                 {
-                                    await command.InvokeAsyncWrapper(query.Message, _botService.Client, queryData,
+                                    await command.InvokeAsyncWrapper(query.Message, _bot.Client, queryData,
                                         isAdmin);
                                 }
                                 catch (Exception exception)
                                 {
-                                    await command.HandleExceptionAsync(exception, query.Message.Chat.Id,
-                                        _botService.Client);
+                                    await command.HandleExceptionAsync(exception, query.Message.Chat.Id, _bot.Client);
                                 }
                             }
                         }
@@ -73,6 +72,6 @@ namespace Carespace.Bot.Web.Controllers
             return Ok();
         }
 
-        private bool IsAdmin(User user) => _botService.AdminIds.Contains(user.Id);
+        private bool IsAdmin(User user) => _bot.AdminIds.Contains(user.Id);
     }
 }

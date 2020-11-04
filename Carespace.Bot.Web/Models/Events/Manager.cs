@@ -11,7 +11,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Carespace.Bot.Web.Models.Events
 {
-    internal sealed class Manager : IDisposable
+    public sealed class Manager : IDisposable
     {
         private readonly DataManager _googleSheetsDataManager;
         private readonly string _googleRange;
@@ -27,7 +27,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
-        public Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
+        internal Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
             string host)
         {
@@ -49,7 +49,7 @@ namespace Carespace.Bot.Web.Models.Events
             _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
         }
 
-        public async Task PostOrUpdateWeekEventsAndScheduleAsync()
+        internal async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
             Message statusMessage =
                 await _client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
