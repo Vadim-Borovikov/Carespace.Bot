@@ -433,11 +433,10 @@ namespace Carespace.Bot.Web.Models.Events
             builder.AppendLine();
             builder.AppendLine($"💰 *Цена*: {template.Price}.");
 
-            string uriString = $"{template.Uri}".Replace("_", "\\_");
             builder.AppendLine();
-            builder.AppendLine($"🗞️ *Принять участие*: {uriString}.");
+            builder.AppendLine($"🗞️ *Принять участие*: {template.Uri}.");
 
-            return builder.ToString();
+            return builder.ToString().Replace("_", "\\_");
         }
 
         private InlineKeyboardButton GetMessageIcsButton(Template template)
