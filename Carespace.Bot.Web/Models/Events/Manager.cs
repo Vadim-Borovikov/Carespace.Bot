@@ -167,7 +167,7 @@ namespace Carespace.Bot.Web.Models.Events
             if (startIn > Hour)
             {
                 e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
-                    $"{nameof(NotifyInAnHourAsync)} for {e.Template.Id}");
+                    $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
                 return DeleteNotificationAsync(e);
             }
 
@@ -201,7 +201,7 @@ namespace Carespace.Bot.Web.Models.Events
             string nextFuncName)
         {
             await CreateOrUpdateNotificationAsync(e, prefix);
-            e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for {e.Template.Id}");
+            e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
         }
 
         private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
