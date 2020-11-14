@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models;
-using Carespace.Bot.Web.Models.Bot;
 using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
 

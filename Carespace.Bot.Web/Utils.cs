@@ -5,8 +5,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Carespace.Bot.Web.Models;
-using Carespace.Bot.Web.Models.Bot;
+using Carespace.Bot.Web.Models.Config;
+using Carespace.Bot.Web.Models.Pdf;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -29,20 +29,20 @@ namespace Carespace.Bot.Web
             return await client.SendTextMessageAsync(chat, text, ParseMode.Markdown);
         }
 
-        public static async Task<List<PdfData>> CheckAsync(IEnumerable<string> sources,
-            Func<string, Task<PdfData>> check)
+        public static async Task<List<Data>> CheckAsync(IEnumerable<string> sources,
+            Func<string, Task<Data>> check)
         {
-            PdfData[] datas = await Task.WhenAll(sources.Select(check));
-            return datas.Where(d => d.Status != PdfData.FileStatus.Ok).ToList();
+            Data[] datas = await Task.WhenAll(sources.Select(check));
+            return datas.Where(d => d.Status != Data.FileStatus.Ok).ToList();
         }
 
-        public static Task CreateOrUpdateAsync(IEnumerable<PdfData> sources, Func<PdfData, Task> createOrUpdate)
+        public static Task CreateOrUpdateAsync(IEnumerable<Data> sources, Func<Data, Task> createOrUpdate)
         {
             List<Task> updateTasks = sources.Select(createOrUpdate).ToList();
             return Task.WhenAll(updateTasks);
         }
 
-        public static async Task<PdfData> CheckLocalPdfAsync(string sourceId, DataManager googleDataManager,
+        public static async Task<Data> CheckLocalPdfAsync(string sourceId, DataManager googleDataManager,
             string pdfFolderPath)
         {
             FileInfo fileInfo = await googleDataManager.GetFileInfoAsync(sourceId);
@@ -50,26 +50,26 @@ namespace Carespace.Bot.Web
             string path = Path.Combine(pdfFolderPath, $"{fileInfo.Name}.pdf");
             if (!File.Exists(path))
             {
-                return PdfData.CreateNoneLocal(sourceId, path);
+                return Data.CreateNoneLocal(sourceId, path);
             }
 
             if (File.GetLastWriteTime(path) < fileInfo.ModifiedTime)
             {
-                return PdfData.CreateOutdatedLocal(sourceId, path);
+                return Data.CreateOutdatedLocal(sourceId, path);
             }
 
-            return PdfData.CreateOk();
+            return Data.CreateOk();
         }
 
-        public static async Task CreateOrUpdateLocalAsync(PdfData data, DataManager googleDataManager,
+        public static async Task CreateOrUpdateLocalAsync(Data data, DataManager googleDataManager,
             string pdfFolderPath)
         {
             var info = new DocumentInfo(data.SourceId, DocumentType.Document);
             string path = Path.Combine(pdfFolderPath, data.Name);
             switch (data.Status)
             {
-                case PdfData.FileStatus.None:
-                case PdfData.FileStatus.Outdated:
+                case Data.FileStatus.None:
+                case Data.FileStatus.Outdated:
                     await googleDataManager.DownloadAsync(info, path);
                     break;
                 default:
@@ -77,8 +77,7 @@ namespace Carespace.Bot.Web
             }
         }
 
-        public static Task SendMessageAsync(this ITelegramBotClient client, Configuration.Link link,
-            ChatId chatId)
+        public static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
             {
@@ -131,7 +130,7 @@ namespace Carespace.Bot.Web
             }
         }
 
-        private static InlineKeyboardMarkup GetReplyMarkup(Configuration.Link link)
+        private static InlineKeyboardMarkup GetReplyMarkup(Link link)
         {
             var button = new InlineKeyboardButton
             {

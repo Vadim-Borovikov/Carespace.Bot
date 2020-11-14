@@ -1,4 +1,4 @@
-﻿using Carespace.Bot.Web.Models.Bot;
+﻿using Carespace.Bot.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using UAParser;
 

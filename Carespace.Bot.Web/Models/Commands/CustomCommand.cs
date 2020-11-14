@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Carespace.Bot.Web.Models.Pdf;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -81,7 +82,7 @@ namespace Carespace.Bot.Web.Models.Commands
             Message checkingMessage = await client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.Markdown,
                 disableNotification: true);
 
-            List<PdfData> filesToUpdate = await Utils.CheckAsync(_sourceIds, CheckLocal);
+            List<Data> filesToUpdate = await Utils.CheckAsync(_sourceIds, CheckLocal);
 
             if (filesToUpdate.Any())
             {
@@ -99,12 +100,9 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        private Task<PdfData> CheckLocal(string id)
-        {
-            return Utils.CheckLocalPdfAsync(id, _googleDataManager, _pdfFolderPath);
-        }
+        private Task<Data> CheckLocal(string id) => Utils.CheckLocalPdfAsync(id, _googleDataManager, _pdfFolderPath);
 
-        private Task CreateOrUpdateLocal(PdfData data)
+        private Task CreateOrUpdateLocal(Data data)
         {
             return Utils.CreateOrUpdateLocalAsync(data, _googleDataManager, _pdfFolderPath);
         }

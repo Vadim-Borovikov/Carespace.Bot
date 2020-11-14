@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
     internal sealed class Timer : IDisposable
     {

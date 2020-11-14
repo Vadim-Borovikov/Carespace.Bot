@@ -4,7 +4,7 @@ using Carespace.Bot.Web.Models.Events;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 
-namespace Carespace.Bot.Web.Models.Bot
+namespace Carespace.Bot.Web.Models
 {
     public interface IBot
     {
@@ -12,7 +12,7 @@ namespace Carespace.Bot.Web.Models.Bot
         IReadOnlyCollection<Command> Commands { get; }
         IEnumerable<int> AdminIds { get; }
         IDictionary<int, Calendar> Calendars { get; }
-        Configuration Config { get; }
+        Config.Config Config { get; }
 
         void InitCommands(DataManager googleDataManager, Manager eventManager);
     }

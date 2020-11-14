@@ -1,4 +1,6 @@
 ﻿using System.Globalization;
+using Carespace.Bot.Web.Models;
+using Carespace.Bot.Web.Models.Config;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,9 +20,9 @@ namespace Carespace.Bot.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<Models.Bot.IBot, Models.Bot.Bot>();
-            services.AddHostedService<Models.Bot.Service>();
-            services.Configure<Models.Bot.Configuration>(_configuration);
+            services.AddSingleton<IBot, Models.Bot>();
+            services.AddHostedService<Service>();
+            services.Configure<Config>(_configuration);
 
             services.AddMvc();
         }

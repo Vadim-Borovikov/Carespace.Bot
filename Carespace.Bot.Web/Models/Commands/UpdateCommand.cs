@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Carespace.Bot.Web.Models.Pdf;
 using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -42,7 +43,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         private async Task UpdateLocalAsync()
         {
-            List<PdfData> filesToUpdate = await Utils.CheckAsync(_sourceIds, CheckLocalAsync);
+            List<Data> filesToUpdate = await Utils.CheckAsync(_sourceIds, CheckLocalAsync);
 
             if (filesToUpdate.Any())
             {
@@ -50,12 +51,12 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        private Task<PdfData> CheckLocalAsync(string id)
+        private Task<Data> CheckLocalAsync(string id)
         {
             return Utils.CheckLocalPdfAsync(id, _googleDataManager, _pdfFolderPath);
         }
 
-        private Task CreateOrUpdateLocalAsync(PdfData data)
+        private Task CreateOrUpdateLocalAsync(Data data)
         {
             return Utils.CreateOrUpdateLocalAsync(data, _googleDataManager, _pdfFolderPath);
         }
@@ -67,7 +68,7 @@ namespace Carespace.Bot.Web.Models.Commands
         private async Task UpdateGoogleAsync(Message checkingMessage, ITelegramBotClient client)
         {
             IEnumerable<string> sources = Directory.EnumerateFiles(_pdfFolderPath);
-            List<PdfData> filesToUpdate = await Utils.CheckAsync(sources, CheckGooglePdfAsync);
+            List<Data> filesToUpdate = await Utils.CheckAsync(sources, CheckGooglePdfAsync);
 
             if (filesToUpdate.Any())
             {
@@ -86,32 +87,32 @@ namespace Carespace.Bot.Web.Models.Commands
             }
         }
 
-        private async Task<PdfData> CheckGooglePdfAsync(string path)
+        private async Task<Data> CheckGooglePdfAsync(string path)
         {
             string pdfName = Path.GetFileName(path);
             FileInfo pdfInfo = await _googleDataManager.FindFileInFolderAsync(_pdfFolderId, pdfName);
 
             if (pdfInfo == null)
             {
-                return PdfData.CreateNoneGoogle(path);
+                return Data.CreateNoneGoogle(path);
             }
 
             if (pdfInfo.ModifiedTime < File.GetLastWriteTime(path))
             {
-                return PdfData.CreateOutdatedGoogle(path, pdfInfo.Id);
+                return Data.CreateOutdatedGoogle(path, pdfInfo.Id);
             }
 
-            return PdfData.CreateOk();
+            return Data.CreateOk();
         }
 
-        private async Task CreateOrUpdateGoogleAsync(PdfData data)
+        private async Task CreateOrUpdateGoogleAsync(Data data)
         {
             switch (data.Status)
             {
-                case PdfData.FileStatus.None:
+                case Data.FileStatus.None:
                     await _googleDataManager.CreateAsync(data.Name, _pdfFolderId, data.Path);
                     break;
-                case PdfData.FileStatus.Outdated:
+                case Data.FileStatus.Outdated:
                     await _googleDataManager.UpdateAsync(data.Id, data.Path);
                     break;
                 default:

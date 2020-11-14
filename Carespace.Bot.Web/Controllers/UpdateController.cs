@@ -2,14 +2,14 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Commands;
-using Carespace.Bot.Web.Models.Bot;
+using Carespace.Bot.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Controllers
 {
-    public class UpdateController : Controller
+    public sealed class UpdateController : Controller
     {
         private readonly IBot _bot;
 

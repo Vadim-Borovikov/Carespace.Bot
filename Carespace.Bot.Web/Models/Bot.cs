@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
 
-namespace Carespace.Bot.Web.Models.Bot
+namespace Carespace.Bot.Web.Models
 {
     internal sealed class Bot : IBot
     {
@@ -16,9 +16,9 @@ namespace Carespace.Bot.Web.Models.Bot
         public IEnumerable<int> AdminIds => Config.AdminIds;
         public IDictionary<int, Calendar> Calendars { get; }
 
-        public Configuration Config { get; }
+        public Config.Config Config { get; }
 
-        public Bot(IOptions<Configuration> options)
+        public Bot(IOptions<Config.Config> options)
         {
             Config = options.Value;
 

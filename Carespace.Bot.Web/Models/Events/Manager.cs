@@ -15,7 +15,7 @@ namespace Carespace.Bot.Web.Models.Events
     {
         private readonly DataManager _googleSheetsDataManager;
         private readonly string _googleRange;
-        private readonly BotSaveManager _saveManager;
+        private readonly Save.Manager _saveManager;
         private readonly Uri _formUri;
         private readonly ITelegramBotClient _client;
         private readonly ChatId _eventsChatId;
@@ -28,7 +28,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
-        internal Manager(DataManager googleSheetsDataManager, BotSaveManager saveManager, string googleRange,
+        internal Manager(DataManager googleSheetsDataManager, Save.Manager saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
             string host, IDictionary<int, Calendar> calendars)
         {

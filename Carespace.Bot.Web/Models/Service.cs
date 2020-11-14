@@ -4,10 +4,9 @@ using System.Threading.Tasks;
 using GoogleDocumentsUnifier.Logic;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Web.Models.Bot
+namespace Carespace.Bot.Web.Models
 {
     internal sealed class Service : IHostedService, IDisposable
     {
@@ -15,7 +14,7 @@ namespace Carespace.Bot.Web.Models.Bot
         {
             _bot = bot;
 
-            var saveManager = new BotSaveManager(_bot.Config.SavePath);
+            var saveManager = new Save.Manager(_bot.Config.SavePath);
 
             if (string.IsNullOrWhiteSpace(_bot.Config.GoogleCredentialsJson))
             {
@@ -33,7 +32,7 @@ namespace Carespace.Bot.Web.Models.Bot
 
             _bot.InitCommands(_googleDriveDataManager, _eventManager);
 
-            _weeklyUpdateTimer = new Timer();
+            _weeklyUpdateTimer = new Events.Timer();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -74,6 +73,6 @@ namespace Carespace.Bot.Web.Models.Bot
         private readonly DataManager _googleDriveDataManager;
         private readonly GoogleSheetsManager.DataManager _googleSheetsDataManager;
         private readonly Events.Manager _eventManager;
-        private readonly Timer _weeklyUpdateTimer;
+        private readonly Events.Timer _weeklyUpdateTimer;
     }
 }

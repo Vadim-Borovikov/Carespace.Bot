@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Text;
-using Carespace.Bot.Web.Models.Events;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
@@ -8,7 +7,7 @@ using Ical.Net.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
 using NodaTime.Extensions;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Events
 {
     public sealed class Calendar
     {

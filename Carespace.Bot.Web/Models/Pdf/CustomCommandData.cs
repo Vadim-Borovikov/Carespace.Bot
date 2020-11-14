@@ -6,7 +6,7 @@ using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models.Pdf
 {
     internal sealed class CustomCommandData
     {

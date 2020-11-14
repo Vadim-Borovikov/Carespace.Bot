@@ -2,20 +2,10 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Bot
+namespace Carespace.Bot.Web.Models.Config
 {
-    public sealed class Configuration
+    public sealed class Config
     {
-        public sealed class Link
-        {
-            [JsonProperty]
-            public string Name { get; set; }
-            [JsonProperty]
-            public string Url { get; set; }
-            [JsonProperty]
-            public string PhotoPath { get; set; }
-        }
-
         [JsonProperty]
         public string Token { get; set; }
 
