@@ -1,66 +1,86 @@
-// ReSharper disable MemberCanBeInternal
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable CollectionNeverUpdated.Global
-// ReSharper disable ClassNeverInstantiated.Global
-
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Carespace.Bot.Web.Models.Bot
 {
     public sealed class Configuration
     {
-        public class Link
+        public sealed class Link
         {
+            [JsonProperty]
             public string Name { get; set; }
+            [JsonProperty]
             public string Url { get; set; }
+            [JsonProperty]
             public string PhotoPath { get; set; }
         }
 
+        [JsonProperty]
         public string Token { get; set; }
 
+        [JsonProperty]
         public string Host { get; set; }
 
+        [JsonProperty]
         public int Port { get; set; }
 
+        [JsonProperty]
         public Dictionary<string, string> GoogleCredentials { get; set; }
+
+        [JsonProperty]
         public string GoogleCredentialsJson { get; set; }
 
+        [JsonProperty]
         public List<string> DocumentIds { get; set; }
 
+        [JsonProperty]
         public string PdfFolderId { get; set; }
 
+        [JsonProperty]
         public string PdfFolderPath { get; set; }
 
-        public string Url => $"{Host}:{Port}/{Token}";
-
+        [JsonProperty]
         public List<string> CheckListLines { get; set; }
 
-        public string CheckList => string.Join('\n', CheckListLines);
-
+        [JsonProperty]
         public List<int> AdminIds { get; set; }
 
+        [JsonProperty]
         public List<Link> Links { get; set; }
 
+        [JsonProperty]
         public string Template { get; set; }
 
+        [JsonProperty]
         public List<string> ExersisesLinks { get; set; }
 
+        [JsonProperty]
         public string GoogleSheetId { get; set; }
 
+        [JsonProperty]
         public string GoogleRange { get; set; }
 
+        [JsonProperty]
         public string EventsChannelLogin { get; set; }
 
+        [JsonProperty]
         public Uri EventsFormUri { get; set; }
 
+        [JsonProperty]
         public DateTime EventsUpdateAt { get; set; }
 
+        [JsonProperty]
         public string SavePath { get; set; }
 
+        [JsonProperty]
         public string LogsChatId { get; set; }
 
+        [JsonProperty]
         public string DiscussGroupLogin { get; set; }
+
+        internal string Url => $"{Host}:{Port}/{Token}";
+
+        internal string CheckList => string.Join('\n', CheckListLines);
     }
 }
