@@ -1,8 +1,6 @@
 ﻿using System.Globalization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Carespace.Bot.Web
 {
-    public sealed class Startup
+    internal sealed class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -24,15 +22,7 @@ namespace Carespace.Bot.Web
             services.AddHostedService<Models.Bot.Service>();
             services.Configure<Models.Bot.Configuration>(_configuration);
 
-            services.Configure<CookiePolicyOptions>(options =>
-            {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-            });
-
-
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -51,7 +41,6 @@ namespace Carespace.Bot.Web
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-            app.UseCookiePolicy();
 
             CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("ru-RU");
 
