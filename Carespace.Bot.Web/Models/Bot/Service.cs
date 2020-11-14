@@ -17,8 +17,6 @@ namespace Carespace.Bot.Web.Models.Bot
 
             var saveManager = new BotSaveManager(_bot.Config.SavePath);
 
-            _bot.Client = new TelegramBotClient(_bot.Config.Token);
-
             if (string.IsNullOrWhiteSpace(_bot.Config.GoogleCredentialsJson))
             {
                 _bot.Config.GoogleCredentialsJson = JsonConvert.SerializeObject(_bot.Config.GoogleCredentials);
