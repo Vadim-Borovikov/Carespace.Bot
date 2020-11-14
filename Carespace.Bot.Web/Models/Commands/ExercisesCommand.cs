@@ -7,7 +7,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class ExercisesCommand : Command
+    internal sealed class ExercisesCommand : Command
     {
         internal override string Name => "exercises";
         internal override string Description => "упражнения";

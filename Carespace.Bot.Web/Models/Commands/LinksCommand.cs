@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class LinksCommand : Command
+    internal sealed class LinksCommand : Command
     {
         internal override string Name => "links";
         internal override string Description => "полезные ссылки";

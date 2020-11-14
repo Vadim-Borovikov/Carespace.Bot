@@ -8,7 +8,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models
 {
-    internal class CustomCommandData
+    internal sealed class CustomCommandData
     {
         public Task Clear(ITelegramBotClient client, long chatId)
         {

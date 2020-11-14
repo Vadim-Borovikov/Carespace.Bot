@@ -12,7 +12,7 @@ using File = System.IO.File;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class UpdateCommand : Command
+    internal sealed class UpdateCommand : Command
     {
         internal override string Name => "update";
         internal override string Description => "обновить раздатки на Диске";

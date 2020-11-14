@@ -13,7 +13,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class CustomCommand : Command
+    internal sealed class CustomCommand : Command
     {
         internal override string Name => "custom";
         internal override string Description => "обновить, выбрать и объединить раздатки";

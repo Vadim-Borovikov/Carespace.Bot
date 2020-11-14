@@ -14,17 +14,15 @@ namespace Carespace.Bot.Web
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
-
-        private IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<Models.Bot.IBot, Models.Bot.Bot>();
             services.AddHostedService<Models.Bot.Service>();
-            services.Configure<Models.Bot.Configuration>(Configuration);
+            services.Configure<Models.Bot.Configuration>(_configuration);
 
             services.Configure<CookiePolicyOptions>(options =>
             {
@@ -57,7 +55,9 @@ namespace Carespace.Bot.Web
 
             CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("ru-RU");
 
-            app.UseMvc(routes => routes.MapRoute("update", $"{Configuration["Token"]}/{{controller=Update}}/{{action=post}}"));
+            app.UseMvc(routes => routes.MapRoute("update", $"{_configuration["Token"]}/{{controller=Update}}/{{action=post}}"));
         }
+
+        private readonly IConfiguration _configuration;
     }
 }

@@ -4,7 +4,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class CheckListCommand : Command
+    internal sealed class CheckListCommand : Command
     {
         internal override string Name => "checklist";
         internal override string Description => "инструкция после вступления";

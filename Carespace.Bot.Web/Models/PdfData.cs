@@ -1,6 +1,6 @@
 ﻿namespace Carespace.Bot.Web.Models
 {
-    internal class PdfData
+    internal sealed class PdfData
     {
         public enum FileStatus
         {

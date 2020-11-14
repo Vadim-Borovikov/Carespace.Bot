@@ -7,7 +7,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    internal class StartCommand : Command
+    internal sealed class StartCommand : Command
     {
         internal override string Name => "start";
         internal override string Description => "список команд";
