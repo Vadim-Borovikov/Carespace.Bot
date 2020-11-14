@@ -8,7 +8,7 @@ namespace Carespace.Bot.Web.Models
 {
     public interface IBot
     {
-        TelegramBotClient Client { get; set; }
+        TelegramBotClient Client { get; }
         IReadOnlyCollection<Command> Commands { get; }
         IEnumerable<int> AdminIds { get; }
         IDictionary<int, Calendar> Calendars { get; }

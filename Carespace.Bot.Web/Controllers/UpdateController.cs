@@ -11,8 +11,6 @@ namespace Carespace.Bot.Web.Controllers
 {
     public sealed class UpdateController : Controller
     {
-        private readonly IBot _bot;
-
         public UpdateController(IBot bot) { _bot = bot; }
 
         [HttpPost]
@@ -73,5 +71,7 @@ namespace Carespace.Bot.Web.Controllers
         }
 
         private bool IsAdmin(User user) => _bot.AdminIds.Contains(user.Id);
+
+        private readonly IBot _bot;
     }
 }

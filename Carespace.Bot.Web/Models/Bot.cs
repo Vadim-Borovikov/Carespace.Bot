@@ -10,7 +10,7 @@ namespace Carespace.Bot.Web.Models
 {
     internal sealed class Bot : IBot
     {
-        public TelegramBotClient Client { get; set; }
+        public TelegramBotClient Client { get; }
 
         public IReadOnlyCollection<Command> Commands => _commands.AsReadOnly();
         public IEnumerable<int> AdminIds => Config.AdminIds;
