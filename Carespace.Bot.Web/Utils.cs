@@ -20,13 +20,11 @@ namespace Carespace.Bot.Web
 {
     internal static class Utils
     {
-        public static async Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client,
-            Message message, string postfix = "")
+        public static Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client, Message message,
+            string postfix = "")
         {
-            Chat chat = message.Chat;
             string text = $"_{message.Text}_ Готово.{postfix}";
-            await client.DeleteMessageAsync(chat, message.MessageId);
-            return await client.SendTextMessageAsync(chat, text, ParseMode.Markdown);
+            return client.EditMessageTextAsync(message.Chat, message.MessageId, text, ParseMode.Markdown);
         }
 
         public static async Task<List<Data>> CheckAsync(IEnumerable<string> sources,
