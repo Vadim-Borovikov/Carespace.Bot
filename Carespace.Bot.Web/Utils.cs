@@ -89,7 +89,7 @@ namespace Carespace.Bot.Web
 
         public static DateTime GetMonday()
         {
-            DateTime today = DateTime.Today;
+            DateTime today = Now().Date;
             int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
@@ -106,6 +106,10 @@ namespace Carespace.Bot.Web
         }
 
         public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
+
+        public static DateTime Now() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _timeZoneInfo);
+
+        public static void SetupTimeZoneInfo(string id) => _timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(id);
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
@@ -145,5 +149,7 @@ namespace Carespace.Bot.Web
         private const string TimersLogPath = "timers.txt";
 
         public const string CalendarUriFormat = "{0}/calendar/{1}";
+
+        private static TimeZoneInfo _timeZoneInfo;
     }
 }

@@ -22,6 +22,8 @@ namespace Carespace.Bot.Web.Models
         {
             Config = options.Value;
 
+            Utils.SetupTimeZoneInfo(Config.SystemTimeZoneId);
+
             Client = new TelegramBotClient(Config.Token);
 
             if (string.IsNullOrWhiteSpace(Config.GoogleCredentialsJson))

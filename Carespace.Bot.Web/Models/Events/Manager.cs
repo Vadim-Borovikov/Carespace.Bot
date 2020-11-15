@@ -155,7 +155,7 @@ namespace Carespace.Bot.Web.Models.Events
 
         private Task CreateOrUpdateNotificationAsync(Event e)
         {
-            DateTime now = DateTime.Now;
+            DateTime now = Utils.Now();
 
             if (e.Template.End <= now)
             {

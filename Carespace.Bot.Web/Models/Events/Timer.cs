@@ -17,7 +17,7 @@ namespace Carespace.Bot.Web.Models.Events
         public void DoOnce(DateTime at, Func<Task> func, string funcName)
         {
             _at = at;
-            _after = _at - DateTime.Now;
+            _after = _at - Utils.Now();
 
             _funcName = funcName;
 
@@ -27,7 +27,7 @@ namespace Carespace.Bot.Web.Models.Events
         public void DoWeekly(Func<Task> func, string funcName)
         {
             _after = TimeSpan.FromDays(7);
-            _at = DateTime.Now + _after;
+            _at = Utils.Now() + _after;
 
             _funcName = funcName;
 

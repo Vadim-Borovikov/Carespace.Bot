@@ -69,6 +69,9 @@ namespace Carespace.Bot.Web.Models.Config
         [JsonProperty]
         public string DiscussGroupLogin { get; set; }
 
+        [JsonProperty]
+        public string SystemTimeZoneId { get; set; }
+
         internal string Url => $"{Host}:{Port}/{Token}";
 
         internal string CheckList => string.Join('\n', CheckListLines);
