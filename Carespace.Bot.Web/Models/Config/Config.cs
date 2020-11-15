@@ -72,6 +72,9 @@ namespace Carespace.Bot.Web.Models.Config
         [JsonProperty]
         public string SystemTimeZoneId { get; set; }
 
+        [JsonProperty]
+        public string CultureInfoName { get; set; }
+
         internal string Url => $"{Host}:{Port}/{Token}";
 
         internal string CheckList => string.Join('\n', CheckListLines);

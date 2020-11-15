@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Carespace.Bot.Web.Models;
+﻿using Carespace.Bot.Web.Models;
 using Carespace.Bot.Web.Models.Config;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -40,8 +39,6 @@ namespace Carespace.Bot.Web
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("ru-RU");
 
             app.UseMvc(routes => routes.MapRoute("update", $"{_config["Token"]}/{{controller=Update}}/{{action=post}}"));
         }

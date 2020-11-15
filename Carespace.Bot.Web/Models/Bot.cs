@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Carespace.Bot.Web.Models.Commands;
 using Carespace.Bot.Web.Models.Events;
 using GoogleDocumentsUnifier.Logic;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
+using Calendar = Carespace.Bot.Web.Models.Events.Calendar;
 
 namespace Carespace.Bot.Web.Models
 {
@@ -23,6 +25,8 @@ namespace Carespace.Bot.Web.Models
             Config = options.Value;
 
             Utils.SetupTimeZoneInfo(Config.SystemTimeZoneId);
+
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(Config.CultureInfoName);
 
             Client = new TelegramBotClient(Config.Token);
 
