@@ -12,9 +12,6 @@ namespace Carespace.Bot.Web.Models.Events
 
         public EventData() { }
 
-        public EventData(int messageId)
-        {
-            MessageId = messageId;
-        }
+        public EventData(int messageId) { MessageId = messageId; }
     }
 }

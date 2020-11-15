@@ -157,7 +157,7 @@ namespace Carespace.Bot.Web.Models.Events
         {
             DateTime now = Utils.Now();
 
-            if (e.Template.End <= now)
+            if (!e.Template.Active || (e.Template.End <= now))
             {
                 e.DisposeTimer();
                 return DeleteNotificationAsync(e);
@@ -287,7 +287,9 @@ namespace Carespace.Bot.Web.Models.Events
             var scheduleBuilder = new StringBuilder();
             scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
             DateTime date = start.AddDays(-1);
-            foreach (Event e in _events.Values.OrderBy(e => e.Template.Start))
+            foreach (Event e in _events.Values
+                .Where(e => e.Template.Active)
+                .OrderBy(e => e.Template.Start))
             {
                 if (e.Template.Start.Date > date)
                 {

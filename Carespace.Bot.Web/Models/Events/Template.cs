@@ -18,6 +18,8 @@ namespace Carespace.Bot.Web.Models.Events
         public bool IsWeekly { get; private set; }
         public Uri Uri { get; private set; }
 
+        public bool Active => !IsWeekly || (_skip != Start.Date);
+
         public void Load(IList<object> values)
         {
             int? id = DataManager.ToInt(values, 0);
@@ -37,25 +39,29 @@ namespace Carespace.Bot.Web.Models.Events
             {
                 throw new ArgumentNullException($"Empty start date in \"{Name}\"");
             }
-            DateTime? startTime = DataManager.ToDateTime(values, 4);
+
+            _skip = DataManager.ToDateTime(values, 4);
+
+
+            DateTime? startTime = DataManager.ToDateTime(values, 5);
             if (!startTime.HasValue)
             {
                 throw new ArgumentNullException($"Empty start time in \"{Name}\"");
             }
             Start = startDate.Value.Date + startTime.Value.TimeOfDay;
 
-            TimeSpan? duration = DataManager.ToTimeSpan(values, 5);
+            TimeSpan? duration = DataManager.ToTimeSpan(values, 6);
             if (!duration.HasValue)
             {
                 throw new ArgumentNullException($"Empty duration in \"{Name}\"");
             }
             End = Start + duration.Value;
 
-            Hosts = DataManager.ToString(values, 6);
+            Hosts = DataManager.ToString(values, 7);
 
-            Price = DataManager.ToString(values, 7);
+            Price = DataManager.ToString(values, 8);
 
-            string type = DataManager.ToString(values, 8);
+            string type = DataManager.ToString(values, 9);
             switch (type)
             {
                 case "Еженедельное":
@@ -68,7 +74,7 @@ namespace Carespace.Bot.Web.Models.Events
                     throw new ArgumentOutOfRangeException($"Unknown type \"{type}\" in \"{Name}\"");
             }
 
-            Uri = DataManager.ToUri(values, 9);
+            Uri = DataManager.ToUri(values, 10);
             if (Uri == null)
             {
                 throw new ArgumentNullException($"Empty uri in \"{Name}\"");
@@ -81,5 +87,7 @@ namespace Carespace.Bot.Web.Models.Events
             Start = Start.AddDays(7 * weeks);
             End = End.AddDays(7 * weeks);
         }
+
+        private DateTime? _skip;
     }
 }
