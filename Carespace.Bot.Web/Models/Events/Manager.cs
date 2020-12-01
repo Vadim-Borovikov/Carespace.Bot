@@ -57,10 +57,11 @@ namespace Carespace.Bot.Web.Models.Events
                 await _client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
 
             DateTime weekStart = Utils.GetMonday();
+            DateTime weekEnd = weekStart.AddDays(7);
 
-            await PostOrUpdateEvents(weekStart);
-            await PostOrUpdateScheduleAsync(weekStart);
-            await CreateOrUpdateNotificationsAsync();
+            await PostOrUpdateEvents(weekStart, weekEnd);
+            await PostOrUpdateScheduleAsync(weekStart, weekEnd);
+            await CreateOrUpdateNotificationsAsync(weekEnd);
 
             List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
             foreach (int id in toRemove)
@@ -84,9 +85,10 @@ namespace Carespace.Bot.Web.Models.Events
             _events.Clear();
         }
 
-        private async Task PostOrUpdateEvents(DateTime weekStart)
+        private async Task PostOrUpdateEvents(DateTime weekStart, DateTime weekEnd)
         {
-            Dictionary<int, Template> templates = LoadRelevantTemplates(weekStart).ToDictionary(t => t.Id, t => t);
+            Dictionary<int, Template> templates =
+                LoadRelevantTemplates(weekStart, weekEnd).ToDictionary(t => t.Id, t => t);
 
             DisposeEvents();
 
@@ -127,9 +129,9 @@ namespace Carespace.Bot.Web.Models.Events
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
         }
 
-        private async Task PostOrUpdateScheduleAsync(DateTime weekStart)
+        private async Task PostOrUpdateScheduleAsync(DateTime weekStart, DateTime weekEnd)
         {
-            string text = PrepareWeekSchedule(weekStart);
+            string text = PrepareWeekSchedule(weekStart, weekEnd);
 
             if (IsScheduleRelevant(weekStart))
             {
@@ -145,19 +147,19 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private async Task CreateOrUpdateNotificationsAsync()
+        private async Task CreateOrUpdateNotificationsAsync(DateTime end)
         {
             foreach (Event e in _events.Values)
             {
-                await CreateOrUpdateNotificationAsync(e);
+                await CreateOrUpdateNotificationAsync(e, end);
             }
         }
 
-        private Task CreateOrUpdateNotificationAsync(Event e)
+        private Task CreateOrUpdateNotificationAsync(Event e, DateTime end)
         {
             DateTime now = Utils.Now();
 
-            if (!e.Template.Active || (e.Template.End <= now))
+            if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= end))
             {
                 e.DisposeTimer();
                 return DeleteNotificationAsync(e);
@@ -263,14 +265,17 @@ namespace Carespace.Bot.Web.Models.Events
             return message.MessageId;
         }
 
-        private IEnumerable<Template> LoadRelevantTemplates(DateTime weekStart)
+        private IEnumerable<Template> LoadRelevantTemplates(DateTime weekStart, DateTime weekEnd)
         {
             IList<Template> templates = _googleSheetsDataManager.GetValues<Template>(_googleRange);
-            DateTime weekEnd = weekStart.AddDays(7);
-            foreach (Template t in templates.Where(t => t.IsApproved && (t.Start < weekEnd)))
+            foreach (Template t in templates.Where(t => t.IsApproved))
             {
                 if (t.IsWeekly)
                 {
+                    if (t.Start >= weekEnd)
+                    {
+                        continue;
+                    }
                     t.MoveToWeek(weekStart);
                 }
                 else if (t.Start < weekStart)
@@ -282,13 +287,13 @@ namespace Carespace.Bot.Web.Models.Events
             }
         }
 
-        private string PrepareWeekSchedule(DateTime start)
+        private string PrepareWeekSchedule(DateTime start, DateTime end)
         {
             var scheduleBuilder = new StringBuilder();
             scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
             DateTime date = start.AddDays(-1);
             foreach (Event e in _events.Values
-                .Where(e => e.Template.Active)
+                .Where(e => e.Template.Active && (e.Template.Start < end))
                 .OrderBy(e => e.Template.Start))
             {
                 if (e.Template.Start.Date > date)
