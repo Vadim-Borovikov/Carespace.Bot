@@ -9,7 +9,7 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "checklist";
         internal override string Description => "инструкция после вступления";
 
-        public CheckListCommand(string text) { _text = text; }
+        public CheckListCommand(string text) => _text = text;
 
         protected override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {

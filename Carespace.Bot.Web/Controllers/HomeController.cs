@@ -9,7 +9,7 @@ namespace Carespace.Bot.Web.Controllers
     [Route("")]
     public sealed class HomeController : Controller
     {
-        public HomeController(IBot bot) { _bot = bot; }
+        public HomeController(IBot bot) => _bot = bot;
 
         [HttpGet]
         [Route("")]

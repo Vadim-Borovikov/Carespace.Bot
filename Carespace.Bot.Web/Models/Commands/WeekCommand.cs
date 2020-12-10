@@ -9,7 +9,7 @@ namespace Carespace.Bot.Web.Models.Commands
     {
         private readonly Manager _eventManager;
 
-        public WeekCommand(Manager eventManager) { _eventManager = eventManager; }
+        public WeekCommand(Manager eventManager) => _eventManager = eventManager;
 
         internal override string Name => "week";
         internal override string Description => "события на этой неделе";

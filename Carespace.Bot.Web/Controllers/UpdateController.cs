@@ -11,7 +11,7 @@ namespace Carespace.Bot.Web.Controllers
 {
     public sealed class UpdateController : Controller
     {
-        public UpdateController(IBot bot) { _bot = bot; }
+        public UpdateController(IBot bot) => _bot = bot;
 
         [HttpPost]
         public async Task<OkResult> Post([FromBody]Update update)

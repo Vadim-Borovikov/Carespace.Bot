@@ -34,28 +34,20 @@ namespace Carespace.Bot.Web.Models.Events
 
             Description = DataManager.ToString(values, 2);
 
-            DateTime? startDate = DataManager.ToDateTime(values, 3);
-            if (!startDate.HasValue)
-            {
-                throw new ArgumentNullException($"Empty start date in \"{Name}\"");
-            }
+            DateTime startDate = DataManager.ToDateTime(values, 3)
+                ?? throw new ArgumentNullException($"Empty start date in \"{Name}\"");
 
             _skip = DataManager.ToDateTime(values, 4);
 
+            DateTime startTime = DataManager.ToDateTime(values, 5)
+                ?? throw new ArgumentNullException($"Empty start time in \"{Name}\"");
 
-            DateTime? startTime = DataManager.ToDateTime(values, 5);
-            if (!startTime.HasValue)
-            {
-                throw new ArgumentNullException($"Empty start time in \"{Name}\"");
-            }
-            Start = startDate.Value.Date + startTime.Value.TimeOfDay;
+            Start = startDate.Date + startTime.TimeOfDay;
 
-            TimeSpan? duration = DataManager.ToTimeSpan(values, 6);
-            if (!duration.HasValue)
-            {
-                throw new ArgumentNullException($"Empty duration in \"{Name}\"");
-            }
-            End = Start + duration.Value;
+            TimeSpan duration = DataManager.ToTimeSpan(values, 6)
+                ?? throw new ArgumentNullException($"Empty duration in \"{Name}\"");
+
+            End = Start + duration;
 
             Hosts = DataManager.ToString(values, 7);
 
@@ -74,11 +66,7 @@ namespace Carespace.Bot.Web.Models.Events
                     throw new ArgumentOutOfRangeException($"Unknown type \"{type}\" in \"{Name}\"");
             }
 
-            Uri = DataManager.ToUri(values, 10);
-            if (Uri == null)
-            {
-                throw new ArgumentNullException($"Empty uri in \"{Name}\"");
-            }
+            Uri = DataManager.ToUri(values, 10) ?? throw new ArgumentNullException($"Empty uri in \"{Name}\"");
         }
 
         public void MoveToWeek(DateTime weekStart)

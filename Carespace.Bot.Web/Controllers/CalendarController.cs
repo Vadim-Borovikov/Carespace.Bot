@@ -9,7 +9,7 @@ namespace Carespace.Bot.Web.Controllers
     {
         private readonly IBot _bot;
 
-        public CalendarController(IBot bot) { _bot = bot; }
+        public CalendarController(IBot bot) => _bot = bot;
 
         [HttpGet("{id}")]
         public IActionResult GetCalendar(int id)

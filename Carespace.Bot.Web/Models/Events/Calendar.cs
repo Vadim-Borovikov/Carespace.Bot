@@ -72,10 +72,10 @@ namespace Carespace.Bot.Web.Models.Events
 
             var queryString = new Dictionary<string, string>
             {
-                { "action", "TEMPLATE" },
-                { "text", template.Name },
-                { "dates", $"{template.Start.ToUniversalTime():yyyyMMddTHHmmssZ}/{template.End.ToUniversalTime():yyyyMMddTHHmmssZ}" },
-                { "details", details }
+                ["action"] = "TEMPLATE" ,
+                ["text"] = template.Name,
+                ["dates"] = $"{template.Start.ToUniversalTime():yyyyMMddTHHmmssZ}/{template.End.ToUniversalTime():yyyyMMddTHHmmssZ}",
+                ["details"] = details
             };
             if (template.IsWeekly)
             {

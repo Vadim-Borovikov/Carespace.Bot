@@ -9,10 +9,10 @@ namespace Carespace.Bot.Web.Models.Events
 {
     internal sealed class Timer : IDisposable
     {
-        public Timer() { _timer = new System.Timers.Timer(); }
+        public Timer() => _timer = new System.Timers.Timer();
 
-        public void Stop() { _timer.Stop(); }
-        public void Dispose() { _timer.Dispose(); }
+        public void Stop() => _timer.Stop();
+        public void Dispose() => _timer.Dispose();
 
         public void DoOnce(DateTime at, Func<Task> func, string funcName)
         {

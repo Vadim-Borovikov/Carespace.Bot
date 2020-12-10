@@ -38,12 +38,9 @@ namespace Carespace.Bot.Web.Models.Commands
 
         internal virtual Task HandleExceptionAsync(Exception exception, long chatId, ITelegramBotClient client)
         {
-            if (!IsUsageLimitExceed(exception))
-            {
-                throw exception;
-            }
-
-            return HandleUsageLimitExcessAsync(chatId, client);
+            return IsUsageLimitExceed(exception)
+                ? HandleUsageLimitExcessAsync(chatId, client)
+                : throw exception;
         }
 
         internal bool ShouldProceed(bool isAdmin)
