@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -87,29 +86,10 @@ namespace Carespace.Bot.Web
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        public static DateTime GetMonday()
-        {
-            DateTime today = Now().Date;
-            int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
-            return today.AddDays(-diff);
-        }
-
-        public static string ShowDate(DateTime date)
-        {
-            string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
-            return $"{day}, {date:d MMMM}";
-        }
-
         public static void LogException(Exception ex)
         {
             File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
         }
-
-        public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
-
-        public static DateTime Now() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _timeZoneInfo);
-
-        public static void SetupTimeZoneInfo(string id) => _timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(id);
 
         private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
@@ -146,10 +126,5 @@ namespace Carespace.Bot.Web
             new ConcurrentDictionary<string, string>();
 
         private const string ExceptionsLogPath = "errors.txt";
-        private const string TimersLogPath = "timers.txt";
-
-        public const string CalendarUriFormat = "{0}/calendar/{1}";
-
-        private static TimeZoneInfo _timeZoneInfo;
     }
 }

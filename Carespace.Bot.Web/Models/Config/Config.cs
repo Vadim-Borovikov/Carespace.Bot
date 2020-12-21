@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
@@ -44,36 +43,6 @@ namespace Carespace.Bot.Web.Models.Config
 
         [JsonProperty]
         public List<string> ExersisesLinks { get; set; }
-
-        [JsonProperty]
-        public string GoogleSheetId { get; set; }
-
-        [JsonProperty]
-        public string GoogleRange { get; set; }
-
-        [JsonProperty]
-        public string EventsChannelLogin { get; set; }
-
-        [JsonProperty]
-        public Uri EventsFormUri { get; set; }
-
-        [JsonProperty]
-        public DateTime EventsUpdateAt { get; set; }
-
-        [JsonProperty]
-        public string SavePath { get; set; }
-
-        [JsonProperty]
-        public string LogsChatId { get; set; }
-
-        [JsonProperty]
-        public string DiscussGroupLogin { get; set; }
-
-        [JsonProperty]
-        public string SystemTimeZoneId { get; set; }
-
-        [JsonProperty]
-        public string CultureInfoName { get; set; }
 
         internal string Url => $"{Host}:{Port}/{Token}";
 

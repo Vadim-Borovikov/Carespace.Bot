@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoogleDocumentsUnifier.Logi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Carespace.Bot.Web", "Carespace.Bot.Web\Carespace.Bot.Web.csproj", "{0358F930-E481-4568-89FE-7A8959112C61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoogleSheetsManager", "GoogleSheetsManager\GoogleSheetsManager.csproj", "{DD50AB93-E1D1-4FA5-A4B9-60D8E13CB42A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{0358F930-E481-4568-89FE-7A8959112C61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0358F930-E481-4568-89FE-7A8959112C61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0358F930-E481-4568-89FE-7A8959112C61}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD50AB93-E1D1-4FA5-A4B9-60D8E13CB42A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD50AB93-E1D1-4FA5-A4B9-60D8E13CB42A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DD50AB93-E1D1-4FA5-A4B9-60D8E13CB42A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DD50AB93-E1D1-4FA5-A4B9-60D8E13CB42A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
