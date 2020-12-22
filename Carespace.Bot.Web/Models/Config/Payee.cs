@@ -11,5 +11,7 @@ namespace Carespace.Bot.Web.Models.Config
         public string PhotoPath { get; set; }
         [JsonProperty]
         public List<Account> Accounts { get; set; }
+        [JsonProperty]
+        public string ThanksString { get; set; }
     }
 }

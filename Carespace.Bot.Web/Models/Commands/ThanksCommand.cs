@@ -30,8 +30,8 @@ namespace Carespace.Bot.Web.Models.Commands
 
         private Task SendMessage(ITelegramBotClient client, Payee payee, ChatId chatId)
         {
-            string caption = Utils.GetCaption(payee.Name, payee.Accounts, _banks);
-            return client.SendPhotoAsync(chatId, payee.PhotoPath, caption, ParseMode.Markdown);
+            string caption = Utils.GetCaption(payee.Name, payee, _banks);
+            return Utils.SendPhotoAsync(client, chatId, payee.PhotoPath, caption, ParseMode.Markdown);
         }
 
         private readonly List<Payee> _payees;

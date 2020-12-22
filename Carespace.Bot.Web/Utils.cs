@@ -28,12 +28,19 @@ namespace Carespace.Bot.Web
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
         }
 
-        public static string GetCaption(string name, IEnumerable<Account> accounts,
-            IReadOnlyDictionary<string, Link> banks)
+        public static string GetCaption(string name, Payee payee, IReadOnlyDictionary<string, Link> banks)
         {
-            IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
-            string options = string.Join($" или{Environment.NewLine}", texts);
-            return $"{name}:{Environment.NewLine}{options}";
+            string options;
+            if (payee.Accounts?.Count > 0)
+            {
+                IEnumerable<string> texts = payee.Accounts.Select(a => GetText(a, banks[a.BankId]));
+                options = string.Join($" или{Environment.NewLine}", texts);
+            }
+            else
+            {
+                options = payee.ThanksString;
+            }
+            return $"{name}: {options}";
         }
 
         public static void LogException(Exception ex)
@@ -41,7 +48,7 @@ namespace Carespace.Bot.Web
             File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
         }
 
-        private static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
+        public static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
         {
             bool success = PhotoIds.TryGetValue(photoPath, out string fileId);
@@ -74,7 +81,7 @@ namespace Carespace.Bot.Web
 
         private static string GetText(Account account, Link bank)
         {
-            return $"`{account.CardNumber}` в [{bank.Name}]({bank.Url})";
+            return $"{account.CardNumber} в [{bank.Name}]({bank.Url})";
         }
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =

@@ -15,12 +15,6 @@ namespace Carespace.Bot.Web.Models.Config
         public int Port { get; set; }
 
         [JsonProperty]
-        public string PdfFolderId { get; set; }
-
-        [JsonProperty]
-        public string PdfFolderPath { get; set; }
-
-        [JsonProperty]
         public List<string> CheckListLines { get; set; }
 
         [JsonProperty]
