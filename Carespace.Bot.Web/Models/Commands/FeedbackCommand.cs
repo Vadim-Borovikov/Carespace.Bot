@@ -10,11 +10,9 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "feedback";
         internal override string Description => "оставить обратную связь";
 
-        internal override AccessType Type => AccessType.Users;
-
         public FeedbackCommand(Link link) => _link = link;
 
-        protected override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
+        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             return client.SendMessageAsync(_link, chatId);
         }

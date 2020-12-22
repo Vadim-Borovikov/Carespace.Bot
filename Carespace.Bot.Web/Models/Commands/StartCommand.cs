@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -12,28 +11,14 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "start";
         internal override string Description => "список команд";
 
-        internal override AccessType Type => AccessType.All;
+        public StartCommand(IReadOnlyCollection<Command> commands) => _commands = commands;
 
-        public StartCommand(IReadOnlyCollection<Command> commands)
-        {
-            _commands = commands;
-        }
-
-        protected override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool fromAdmin)
+        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             var builder = new StringBuilder();
             builder.AppendLine("Привет!");
             builder.AppendLine();
-            if (fromAdmin)
-            {
-                builder.AppendLine("Ведущим:");
-                AppendCommands(builder, _commands.Where(c => c.Type == AccessType.Admins));
-
-                builder.AppendLine();
-                builder.AppendLine("Участникам:");
-            }
-
-            AppendCommands(builder, _commands.Where(c => c.Type != AccessType.Admins));
+            AppendCommands(builder, _commands);
 
             return client.SendTextMessageAsync(chatId, builder.ToString());
         }

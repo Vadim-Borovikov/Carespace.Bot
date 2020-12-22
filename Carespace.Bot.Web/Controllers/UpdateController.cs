@@ -15,46 +15,19 @@ namespace Carespace.Bot.Web.Controllers
         [HttpPost]
         public async Task<OkResult> Post([FromBody]Update update)
         {
-            if (update != null)
+            if ((update != null) && (update.Type == UpdateType.Message))
             {
-                Command command;
-                bool isAdmin;
-                switch (update.Type)
+                Message message = update.Message;
+
+                Command command = _bot.Commands.FirstOrDefault(c => c.Contains(message));
+                if (command != null)
                 {
-                    case UpdateType.Message:
-                        Message message = update.Message;
-
-                        command = _bot.Commands.FirstOrDefault(c => c.Contains(message));
-                        if (command != null)
-                        {
-                            isAdmin = IsAdmin(message.From);
-                            if (command.ShouldProceed(isAdmin))
-                            {
-                                await command.ExecuteAsyncWrapper(message, _bot.Client, isAdmin);
-                            }
-                        }
-                        break;
-                    case UpdateType.CallbackQuery:
-                        CallbackQuery query = update.CallbackQuery;
-
-                        command = _bot.Commands.FirstOrDefault(c => query.Data.Contains(c.Name));
-                        if (command != null)
-                        {
-                            isAdmin = IsAdmin(query.From);
-                            if (command.ShouldProceed(isAdmin))
-                            {
-                                string queryData = query.Data.Replace(command.Name, "");
-                                await command.InvokeAsyncWrapper(query.Message, _bot.Client, queryData, isAdmin);
-                            }
-                        }
-                        break;
+                    await command.ExecuteAsync(message.Chat, _bot.Client);
                 }
             }
 
             return Ok();
         }
-
-        private bool IsAdmin(User user) => _bot.AdminIds.Contains(user.Id);
 
         private readonly IBot _bot;
     }

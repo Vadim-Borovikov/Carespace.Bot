@@ -12,15 +12,13 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "thanks";
         internal override string Description => "поблагодарить ведущих";
 
-        internal override AccessType Type => AccessType.Users;
-
         public ThanksCommand(List<Payee> payees, Dictionary<string, Link> banks)
         {
             _payees = payees;
             _banks = banks;
         }
 
-        protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
+        internal override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             foreach (Payee payee in _payees)
             {

@@ -10,7 +10,6 @@ namespace Carespace.Bot.Web.Models
         public TelegramBotClient Client { get; }
 
         public IReadOnlyCollection<Command> Commands => _commands.AsReadOnly();
-        public IEnumerable<int> AdminIds => Config.AdminIds;
 
         public Config.Config Config { get; }
 

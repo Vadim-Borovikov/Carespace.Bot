@@ -11,7 +11,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         public CheckListCommand(string text) => _text = text;
 
-        protected override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
+        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             return client.SendTextMessageAsync(chatId, _text);
         }

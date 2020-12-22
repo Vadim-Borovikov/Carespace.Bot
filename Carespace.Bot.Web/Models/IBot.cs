@@ -8,7 +8,6 @@ namespace Carespace.Bot.Web.Models
     {
         TelegramBotClient Client { get; }
         IReadOnlyCollection<Command> Commands { get; }
-        IEnumerable<int> AdminIds { get; }
         Config.Config Config { get; }
 
         void InitCommands();

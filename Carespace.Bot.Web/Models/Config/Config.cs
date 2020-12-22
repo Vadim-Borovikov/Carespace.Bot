@@ -18,9 +18,6 @@ namespace Carespace.Bot.Web.Models.Config
         public List<string> CheckListLines { get; set; }
 
         [JsonProperty]
-        public List<int> AdminIds { get; set; }
-
-        [JsonProperty]
         public List<Link> Links { get; set; }
 
         [JsonProperty]
