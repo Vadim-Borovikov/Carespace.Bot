@@ -19,14 +19,22 @@ namespace Carespace.Bot.Web.Controllers
             {
                 Message message = update.Message;
 
-                if (message.Chat.Id != message.From.Id)
+                string botName = null;
+                bool fromChat = message.Chat.Id != message.From.Id;
+                if (fromChat)
                 {
-                    await _bot.Client.DeleteMessageAsync(message.Chat, message.MessageId);
+                    User me = await _bot.Client.GetMeAsync();
+                    botName = me.Username;
                 }
 
-                Command command = _bot.Commands.FirstOrDefault(c => c.Contains(message));
+                Command command = _bot.Commands.FirstOrDefault(c => c.IsInvokingBy(message, fromChat, botName));
                 if (command != null)
                 {
+                    if (fromChat)
+                    {
+                        await _bot.Client.DeleteMessageAsync(message.Chat, message.MessageId);
+                    }
+
                     await command.ExecuteAsync(message.From.Id, _bot.Client);
                 }
             }
