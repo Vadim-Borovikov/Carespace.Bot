@@ -27,7 +27,7 @@ namespace Carespace.Bot.Web.Models.Commands
             if (fromAdmin)
             {
                 builder.AppendLine("Ведущим:");
-                AppendCommands(builder, _commands.Where(c => c.Type != AccessType.Users));
+                AppendCommands(builder, _commands.Where(c => c.Type == AccessType.Admins));
 
                 builder.AppendLine();
                 builder.AppendLine("Участникам:");

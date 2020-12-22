@@ -12,6 +12,8 @@ namespace Carespace.Bot.Web.Models.Commands
         internal override string Name => "exercises";
         internal override string Description => "упражнения";
 
+        internal override AccessType Type => AccessType.Users;
+
         public ExercisesCommand(string template, IEnumerable<string> links)
         {
             _template = template;
