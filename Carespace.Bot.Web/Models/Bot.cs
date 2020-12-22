@@ -28,6 +28,7 @@ namespace Carespace.Bot.Web.Models
                 new CheckListCommand(Config.CheckList),
                 new ExercisesCommand(Config.Template, Config.ExersisesLinks),
                 new FeedbackCommand(Config.FeedbackLink),
+                new ThanksCommand(Config.Payees, Config.Banks),
                 new LinksCommand(Config.Links)
             };
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,13 +16,6 @@ namespace Carespace.Bot.Web
 {
     internal static class Utils
     {
-        public static Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client, Message message,
-            string postfix = "")
-        {
-            string text = $"_{message.Text}_ Готово.{postfix}";
-            return client.EditMessageTextAsync(message.Chat, message.MessageId, text, ParseMode.Markdown);
-        }
-
         public static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
@@ -32,6 +26,14 @@ namespace Carespace.Bot.Web
 
             InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
+        }
+
+        public static string GetCaption(string name, IEnumerable<Account> accounts,
+            IReadOnlyDictionary<string, Link> banks)
+        {
+            IEnumerable<string> texts = accounts.Select(a => GetText(a, banks[a.BankId]));
+            string options = string.Join($" или{Environment.NewLine}", texts);
+            return $"{name}:{Environment.NewLine}{options}";
         }
 
         public static void LogException(Exception ex)
@@ -68,6 +70,11 @@ namespace Carespace.Bot.Web
                 Url = link.Url
             };
             return new InlineKeyboardMarkup(button);
+        }
+
+        private static string GetText(Account account, Link bank)
+        {
+            return $"`{account.CardNumber}` в [{bank.Name}]({bank.Url})";
         }
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
