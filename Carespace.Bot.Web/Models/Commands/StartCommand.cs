@@ -30,7 +30,7 @@ namespace Carespace.Bot.Web.Models.Commands
                 builder.AppendLine(GetCommandLine(command));
             }
         }
-        private static string GetCommandLine(Command command) => $"/{command.Name} – {command.Description}";
+        private static string GetCommandLine(Command command) => $"/{command.Name} — {command.Description}";
 
         private readonly IReadOnlyCollection<Command> _commands;
     }
