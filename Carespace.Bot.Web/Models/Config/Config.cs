@@ -15,15 +15,6 @@ namespace Carespace.Bot.Web.Models.Config
         public int Port { get; set; }
 
         [JsonProperty]
-        public Dictionary<string, string> GoogleCredentials { get; set; }
-
-        [JsonProperty]
-        public string GoogleCredentialsJson { get; set; }
-
-        [JsonProperty]
-        public List<string> DocumentIds { get; set; }
-
-        [JsonProperty]
         public string PdfFolderId { get; set; }
 
         [JsonProperty]

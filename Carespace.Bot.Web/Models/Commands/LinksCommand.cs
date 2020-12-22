@@ -13,10 +13,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         internal override AccessType Type => AccessType.Users;
 
-        public LinksCommand(IEnumerable<Link> links)
-        {
-            _links = links;
-        }
+        public LinksCommand(IEnumerable<Link> links) => _links = links;
 
         protected override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client, bool _)
         {

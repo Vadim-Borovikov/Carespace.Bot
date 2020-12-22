@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Config;
-using Carespace.Bot.Web.Models.Pdf;
-using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 using File = System.IO.File;
-using FileInfo = GoogleDocumentsUnifier.Logic.FileInfo;
 
 namespace Carespace.Bot.Web
 {
@@ -24,54 +20,6 @@ namespace Carespace.Bot.Web
         {
             string text = $"_{message.Text}_ Готово.{postfix}";
             return client.EditMessageTextAsync(message.Chat, message.MessageId, text, ParseMode.Markdown);
-        }
-
-        public static async Task<List<Data>> CheckAsync(IEnumerable<string> sources,
-            Func<string, Task<Data>> check)
-        {
-            Data[] datas = await Task.WhenAll(sources.Select(check));
-            return datas.Where(d => d.Status != Data.FileStatus.Ok).ToList();
-        }
-
-        public static Task CreateOrUpdateAsync(IEnumerable<Data> sources, Func<Data, Task> createOrUpdate)
-        {
-            List<Task> updateTasks = sources.Select(createOrUpdate).ToList();
-            return Task.WhenAll(updateTasks);
-        }
-
-        public static async Task<Data> CheckLocalPdfAsync(string sourceId, DataManager googleDataManager,
-            string pdfFolderPath)
-        {
-            FileInfo fileInfo = await googleDataManager.GetFileInfoAsync(sourceId);
-
-            string path = Path.Combine(pdfFolderPath, $"{fileInfo.Name}.pdf");
-            if (!File.Exists(path))
-            {
-                return Data.CreateNoneLocal(sourceId, path);
-            }
-
-            if (File.GetLastWriteTime(path) < fileInfo.ModifiedTime)
-            {
-                return Data.CreateOutdatedLocal(sourceId, path);
-            }
-
-            return Data.CreateOk();
-        }
-
-        public static async Task CreateOrUpdateLocalAsync(Data data, DataManager googleDataManager,
-            string pdfFolderPath)
-        {
-            var info = new DocumentInfo(data.SourceId, DocumentType.Document);
-            string path = Path.Combine(pdfFolderPath, data.Name);
-            switch (data.Status)
-            {
-                case Data.FileStatus.None:
-                case Data.FileStatus.Outdated:
-                    await googleDataManager.DownloadAsync(info, path);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(data.Status), data.Status, "Unexpected Pdf status!");
-            }
         }
 
         public static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)

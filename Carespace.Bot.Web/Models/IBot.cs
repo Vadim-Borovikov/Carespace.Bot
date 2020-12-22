@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Carespace.Bot.Web.Models.Commands;
-using GoogleDocumentsUnifier.Logic;
 using Telegram.Bot;
 
 namespace Carespace.Bot.Web.Models
@@ -12,6 +11,6 @@ namespace Carespace.Bot.Web.Models
         IEnumerable<int> AdminIds { get; }
         Config.Config Config { get; }
 
-        void InitCommands(DataManager googleDataManager);
+        void InitCommands();
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Google;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -36,13 +34,6 @@ namespace Carespace.Bot.Web.Models.Commands
             return InvokeAsync(message, client, data);
         }
 
-        internal virtual Task HandleExceptionAsync(Exception exception, long chatId, ITelegramBotClient client)
-        {
-            return IsUsageLimitExceed(exception)
-                ? HandleUsageLimitExcessAsync(chatId, client)
-                : throw exception;
-        }
-
         internal bool ShouldProceed(bool isAdmin)
         {
             switch (Type)
@@ -64,19 +55,6 @@ namespace Carespace.Bot.Web.Models.Commands
             return Task.CompletedTask;
         }
 
-        private static bool IsUsageLimitExceed(Exception exception)
-        {
-            return exception is GoogleApiException googleException &&
-                (googleException.Error.Code == UsageLimitsExceededCode) &&
-                googleException.Error.Errors.Any(e => e.Domain == UsageLimitsExceededDomain);
-        }
-
-        private static Task<Message> HandleUsageLimitExcessAsync(long chatId, ITelegramBotClient client)
-        {
-            return client.SendTextMessageAsync(chatId,
-                "Google хочет отдохнуть от меня какое-то время. Попробуй позже, пожалуйста!");
-        }
-
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private void CheckAccess(User user, bool isAdmin)
         {
@@ -95,8 +73,5 @@ namespace Carespace.Bot.Web.Models.Commands
                     throw new ArgumentOutOfRangeException();
             }
         }
-
-        private const int UsageLimitsExceededCode = 403;
-        private const string UsageLimitsExceededDomain = "usageLimits";
     }
 }

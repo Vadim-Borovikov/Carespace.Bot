@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Commands;
 using Carespace.Bot.Web.Models;
@@ -31,14 +30,7 @@ namespace Carespace.Bot.Web.Controllers
                             isAdmin = IsAdmin(message.From);
                             if (command.ShouldProceed(isAdmin))
                             {
-                                try
-                                {
-                                    await command.ExecuteAsyncWrapper(message, _bot.Client, isAdmin);
-                                }
-                                catch (Exception exception)
-                                {
-                                    await command.HandleExceptionAsync(exception, message.Chat.Id, _bot.Client);
-                                }
+                                await command.ExecuteAsyncWrapper(message, _bot.Client, isAdmin);
                             }
                         }
                         break;
@@ -52,15 +44,7 @@ namespace Carespace.Bot.Web.Controllers
                             if (command.ShouldProceed(isAdmin))
                             {
                                 string queryData = query.Data.Replace(command.Name, "");
-                                try
-                                {
-                                    await command.InvokeAsyncWrapper(query.Message, _bot.Client, queryData,
-                                        isAdmin);
-                                }
-                                catch (Exception exception)
-                                {
-                                    await command.HandleExceptionAsync(exception, query.Message.Chat.Id, _bot.Client);
-                                }
+                                await command.InvokeAsyncWrapper(query.Message, _bot.Client, queryData, isAdmin);
                             }
                         }
                         break;

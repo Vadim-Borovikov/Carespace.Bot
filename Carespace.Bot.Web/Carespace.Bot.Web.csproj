@@ -23,10 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GoogleDocumentsUnifier\GoogleDocumentsUnifier.Logic\GoogleDocumentsUnifier.Logic.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="Photos\CareSpace.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
