@@ -15,7 +15,7 @@ namespace Carespace.Bot.Web.Models.Config
         public int Port { get; set; }
 
         [JsonProperty]
-        public List<string> CheckListLines { get; set; }
+        public List<string> IntroductionLines { get; set; }
 
         [JsonProperty]
         public List<Link> Links { get; set; }
@@ -37,6 +37,6 @@ namespace Carespace.Bot.Web.Models.Config
 
         internal string Url => $"{Host}:{Port}/{Token}";
 
-        internal string CheckList => string.Join('\n', CheckListLines);
+        internal string Introduction => string.Join('\n', IntroductionLines);
     }
 }

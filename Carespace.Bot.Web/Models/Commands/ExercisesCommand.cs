@@ -20,13 +20,15 @@ namespace Carespace.Bot.Web.Models.Commands
 
         internal override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
-            foreach (string text in _links.Select(l => string.Format(_template, l)))
+            foreach (string text in _links.Select(l => string.Format(_template, WordJoiner, l)))
             {
-                await client.SendTextMessageAsync(chatId, text, ParseMode.Html);
+                await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown);
             }
         }
 
         private readonly string _template;
         private readonly IEnumerable<string> _links;
+
+        private const string WordJoiner = "\u2060";
     }
 }
