@@ -38,5 +38,8 @@ namespace Carespace.Bot.Web.Models.Config
         internal string Url => $"{Host}:{Port}/{Token}";
 
         internal string CheckList => string.Join('\n', CheckListLines);
+
+        [JsonProperty]
+        public Link FeedbackLink { get; set; }
     }
 }
