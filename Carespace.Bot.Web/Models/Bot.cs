@@ -25,10 +25,11 @@ namespace Carespace.Bot.Web.Models
             _commands = new List<Command>
             {
                 new IntroCommand(Config.Introduction),
+                new ScheduleCommand(Config.Schedule),
                 new ExercisesCommand(Config.Template, Config.ExersisesLinks),
                 new LinksCommand(Config.Links),
                 new FeedbackCommand(Config.FeedbackLink),
-                new ThanksCommand(Config.Payees, Config.Banks),
+                new ThanksCommand(Config.Payees, Config.Banks)
             };
 
             var startCommand = new StartCommand(Commands);
