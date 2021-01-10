@@ -15,7 +15,7 @@ namespace Carespace.Bot.Web.Controllers
         [HttpPost]
         public async Task<OkResult> Post([FromBody]Update update)
         {
-            if ((update != null) && (update.Type == UpdateType.Message))
+            if (update?.Type == UpdateType.Message)
             {
                 Message message = update.Message;
 
