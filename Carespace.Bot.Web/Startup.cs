@@ -8,12 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Carespace.Bot.Web
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class Startup
     {
         public Startup(IConfiguration config) => _config = config;
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IBot, Models.Bot>();
@@ -23,6 +22,7 @@ namespace Carespace.Bot.Web
             services.AddMvc();
         }
 
+        [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
