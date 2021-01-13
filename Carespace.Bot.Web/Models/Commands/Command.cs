@@ -12,12 +12,8 @@ namespace Carespace.Bot.Web.Models.Commands
 
         internal bool IsInvokingBy(Message message, bool fromChat, string botName)
         {
-            if (message.Type != MessageType.Text)
-            {
-                return false;
-            }
-
-            return fromChat ? message.Text == $"/{Name}@{botName}" : message.Text == $"/{Name}";
+            return (message.Type == MessageType.Text)
+                   && (message.Text == (fromChat ? $"/{Name}@{botName}" : $"/{Name}"));
         }
 
         internal abstract Task ExecuteAsync(ChatId chatId, ITelegramBotClient client);
