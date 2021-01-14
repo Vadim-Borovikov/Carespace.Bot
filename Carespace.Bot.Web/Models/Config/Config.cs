@@ -38,6 +38,9 @@ namespace Carespace.Bot.Web.Models.Config
         [JsonProperty]
         public Dictionary<string, Link> Banks { get; set; }
 
+        [JsonProperty]
+        public string DontUnderstandStickerFileId { get; set; }
+
         internal string Url => $"{Host}:{Port}/{Token}";
 
         internal string Introduction => string.Join('\n', IntroductionLines);

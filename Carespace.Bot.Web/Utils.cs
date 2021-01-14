@@ -43,6 +43,12 @@ namespace Carespace.Bot.Web
             return $"{name}: {options}";
         }
 
+        public static Task<Message> SendStickerAsync(this ITelegramBotClient client, Message message,
+            InputOnlineFile sticker)
+        {
+            return client.SendStickerAsync(message.Chat, sticker, replyToMessageId: message.MessageId);
+        }
+
         public static void LogException(Exception ex)
         {
             File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
