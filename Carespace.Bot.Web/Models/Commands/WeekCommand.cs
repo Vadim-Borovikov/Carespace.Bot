@@ -7,6 +7,8 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class WeekCommand : Command
     {
+        internal override string Name => "week";
+
         internal override bool AdminsOnly => true;
 
         public WeekCommand(Manager eventManager) => _eventManager = eventManager;

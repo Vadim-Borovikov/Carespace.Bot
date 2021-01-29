@@ -7,7 +7,7 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     public abstract class Command
     {
-        internal virtual string Name => "";
+        internal abstract string Name { get; }
         internal virtual string Description => "";
         internal virtual bool AdminsOnly => false;
 
