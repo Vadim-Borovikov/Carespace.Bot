@@ -11,8 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="errors.txt" />
-    <None Remove="timers.txt" />
+    <Content Include="Carespace.Bot.Web.wpp.targets" />
   </ItemGroup>
 
   <ItemGroup>
