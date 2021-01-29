@@ -7,8 +7,9 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     public abstract class Command
     {
-        internal abstract string Name { get; }
-        internal abstract string Description { get; }
+        internal virtual string Name => "";
+        internal virtual string Description => "";
+        internal virtual bool AdminsOnly => false;
 
         internal bool IsInvokingBy(Message message, bool fromChat, string botName)
         {

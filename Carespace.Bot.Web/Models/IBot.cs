@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Carespace.Bot.Web.Models.Commands;
+using Carespace.Bot.Web.Models.Events;
 using Telegram.Bot;
 
 namespace Carespace.Bot.Web.Models
@@ -8,8 +9,10 @@ namespace Carespace.Bot.Web.Models
     {
         TelegramBotClient Client { get; }
         IReadOnlyCollection<Command> Commands { get; }
+        IEnumerable<int> AdminIds { get; }
+        IDictionary<int, Calendar> Calendars { get; }
         Config.Config Config { get; }
 
-        void InitCommands();
+        void InitCommands(Manager eventManager);
     }
 }

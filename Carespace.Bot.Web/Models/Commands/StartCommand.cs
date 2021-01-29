@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -25,7 +26,7 @@ namespace Carespace.Bot.Web.Models.Commands
 
         private static void AppendCommands(StringBuilder builder, IEnumerable<Command> commands)
         {
-            foreach (Command command in commands)
+            foreach (Command command in commands.Where(c => !c.AdminsOnly))
             {
                 builder.AppendLine(GetCommandLine(command));
             }

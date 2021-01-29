@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -60,6 +61,8 @@ namespace Carespace.Bot.Web
             File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
         }
 
+        public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
+
         public static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
             string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
         {
@@ -81,6 +84,30 @@ namespace Carespace.Bot.Web
             }
         }
 
+        public static Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client, Message message,
+            string postfix = "")
+        {
+            string text = $"_{message.Text}_ Готово.{postfix}";
+            return client.EditMessageTextAsync(message.Chat, message.MessageId, text, ParseMode.Markdown);
+        }
+
+        public static DateTime GetMonday()
+        {
+            DateTime today = Now().Date;
+            int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
+            return today.AddDays(-diff);
+        }
+
+        public static void SetupTimeZoneInfo(string id) => _timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(id);
+
+        public static DateTime Now() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _timeZoneInfo);
+
+        public static string ShowDate(DateTime date)
+        {
+            string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
+            return $"{day}, {date:d MMMM}";
+        }
+
         private static InlineKeyboardMarkup GetReplyMarkup(Link link)
         {
             var button = new InlineKeyboardButton
@@ -96,9 +123,14 @@ namespace Carespace.Bot.Web
             return $"{account.CardNumber} в [{bank.Name}]({bank.Url})";
         }
 
+        public const string CalendarUriFormat = "{0}/calendar/{1}";
+
+        private const string ExceptionsLogPath = "errors.txt";
+        private const string TimersLogPath = "timers.txt";
+
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
             new ConcurrentDictionary<string, string>();
 
-        private const string ExceptionsLogPath = "errors.txt";
+        private static TimeZoneInfo _timeZoneInfo;
     }
 }

@@ -16,6 +16,7 @@ namespace Carespace.Bot.Web.Controllers
         {
             _bot = bot;
             _dontUnderstandSticker = new InputOnlineFile(_bot.Config.DontUnderstandStickerFileId);
+            _forbiddenSticker = new InputOnlineFile(_bot.Config.ForbiddenStickerFileId);
         }
 
         [HttpPost]
@@ -36,41 +37,56 @@ namespace Carespace.Bot.Web.Controllers
             bool fromChat = message.Chat.Id != message.From.Id;
             string botName = fromChat ? await _bot.Client.GetNameAsync() : null;
             Command command = _bot.Commands.FirstOrDefault(c => c.IsInvokingBy(message, fromChat, botName));
-            if (command != null)
-            {
-                if (fromChat)
-                {
-                    try
-                    {
-                        await _bot.Client.DeleteMessageAsync(message.Chat, message.MessageId);
-                    }
-                    catch (ApiRequestException e)
-                        when ((e.ErrorCode == MessageToDeleteNotFoundCode)
-                              && (e.Message == MessageToDeleteNotFoundText))
-                    {
-                        return;
-                    }
-                }
 
-                try
+            if (command == null)
+            {
+                if (!fromChat)
                 {
-                    await command.ExecuteAsync(message.From.Id, _bot.Client);
-                }
-                catch (ApiRequestException e)
-                    when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
-                {
+                    await _bot.Client.SendStickerAsync(message, _dontUnderstandSticker);
                 }
                 return;
             }
 
-            if (!fromChat)
+            if (fromChat)
             {
-                await _bot.Client.SendStickerAsync(message, _dontUnderstandSticker);
+                try
+                {
+                    await _bot.Client.DeleteMessageAsync(message.Chat, message.MessageId);
+                }
+                catch (ApiRequestException e)
+                    when ((e.ErrorCode == MessageToDeleteNotFoundCode)
+                            && (e.Message == MessageToDeleteNotFoundText))
+                {
+                    return;
+                }
+            }
+
+            if (command.AdminsOnly)
+            {
+                bool isAdmin = _bot.AdminIds.Contains(message.From.Id);
+                if (!isAdmin)
+                {
+                    if (!fromChat)
+                    {
+                        await _bot.Client.SendStickerAsync(message, _forbiddenSticker);
+                    }
+                    return;
+                }
+            }
+
+            try
+            {
+                await command.ExecuteAsync(message.From.Id, _bot.Client);
+            }
+            catch (ApiRequestException e)
+                when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
+            {
             }
         }
 
         private readonly IBot _bot;
         private readonly InputOnlineFile _dontUnderstandSticker;
+        private readonly InputOnlineFile _forbiddenSticker;
         private const int MessageToDeleteNotFoundCode = 400;
         private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
         private const int CantInitiateConversationCode = 403;
