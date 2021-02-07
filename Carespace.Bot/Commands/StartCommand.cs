@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Web.Models.Commands
+namespace Carespace.Bot.Commands
 {
     internal sealed class StartCommand : Command
     {

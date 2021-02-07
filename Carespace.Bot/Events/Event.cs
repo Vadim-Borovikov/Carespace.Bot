@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Carespace.Bot.Web.Models.Events
+namespace Carespace.Bot.Events
 {
     internal sealed class Event : IDisposable
     {

@@ -1,4 +1,4 @@
-﻿namespace Carespace.Bot.Web.Models.Commands
+﻿namespace Carespace.Bot.Commands
 {
     internal sealed class ScheduleCommand : TextCommand
     {

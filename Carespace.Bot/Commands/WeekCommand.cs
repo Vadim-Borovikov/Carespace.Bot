@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
-using Carespace.Bot.Web.Models.Events;
+using Carespace.Bot.Events;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Web.Models.Commands
+namespace Carespace.Bot.Commands
 {
     internal sealed class WeekCommand : Command
     {

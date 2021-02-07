@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Carespace.Bot.Web.Models.Config;
+using Carespace.Bot.Config;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Web.Models.Commands
+namespace Carespace.Bot.Commands
 {
     internal sealed class LinksCommand : Command
     {

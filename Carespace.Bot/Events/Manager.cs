@@ -9,7 +9,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Carespace.Bot.Web.Models.Events
+namespace Carespace.Bot.Events
 {
     internal sealed class Manager : IDisposable
     {

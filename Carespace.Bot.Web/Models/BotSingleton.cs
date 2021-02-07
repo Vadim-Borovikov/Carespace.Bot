@@ -7,7 +7,7 @@ namespace Carespace.Bot.Web.Models
     {
         internal readonly Bot Bot;
 
-        public BotSingleton(IOptions<Config.Config> options) => Bot = new Bot(options.Value);
+        public BotSingleton(IOptions<Config> options) => Bot = new Bot(options.Value);
 
         public void Dispose() => Bot.Dispose();
     }

@@ -3,7 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Web.Models.Commands
+namespace Carespace.Bot.Commands
 {
     internal abstract class TextCommand : Command
     {

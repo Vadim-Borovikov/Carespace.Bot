@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Events
+namespace Carespace.Bot.Events
 {
     internal sealed class EventData
     {

@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\Events\**" />
+    <Content Remove="Models\Events\**" />
+    <EmbeddedResource Remove="Models\Events\**" />
+    <None Remove="Models\Events\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="save.json" />
   </ItemGroup>
 
@@ -15,13 +22,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GoogleSheetsManager" Version="3.1.0" />
-    <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="Karambolo.Extensions.Logging.File" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="Telegram.Bot" Version="15.7.1" />
     <PackageReference Include="UAParser" Version="3.1.46" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Carespace.Bot\Carespace.Bot.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,10 +63,6 @@
     <None Update="Photos\zvoochi.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\Events\" />
   </ItemGroup>
 
 </Project>

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Carespace.Bot.Web.Models.Events;
+using Carespace.Bot.Events;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Save
+namespace Carespace.Bot.Save
 {
     internal sealed class Data
     {

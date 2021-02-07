@@ -1,7 +1,7 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Save
+namespace Carespace.Bot.Save
 {
     internal sealed class Manager
     {

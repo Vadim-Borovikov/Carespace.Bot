@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Config
+namespace Carespace.Bot.Config
 {
-    public sealed class Config
+    public class Config
     {
         [JsonProperty]
         public string Token { get; set; }
@@ -17,9 +17,6 @@ namespace Carespace.Bot.Web.Models.Config
 
         [JsonProperty]
         public Dictionary<string, string> GoogleCredentials { get; set; }
-
-        [JsonProperty]
-        public string GoogleCredentialsJson { get; set; }
 
         [JsonProperty]
         public List<string> IntroductionLines { get; set; }
@@ -80,9 +77,6 @@ namespace Carespace.Bot.Web.Models.Config
 
         [JsonProperty]
         public string SystemTimeZoneId { get; set; }
-
-        [JsonProperty]
-        public string CultureInfoName { get; set; }
 
         internal string Url => $"{Host}:{Port}/{Token}";
 

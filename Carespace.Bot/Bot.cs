@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Carespace.Bot.Web.Models.Commands;
-using Carespace.Bot.Web.Models.Events;
+using Carespace.Bot.Commands;
+using Carespace.Bot.Events;
 using GoogleSheetsManager;
 using Newtonsoft.Json;
 using Telegram.Bot;
@@ -13,11 +12,11 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
-using Calendar = Carespace.Bot.Web.Models.Events.Calendar;
+using Calendar = Carespace.Bot.Events.Calendar;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot
 {
-    internal sealed class Bot : IDisposable
+    public sealed class Bot : IDisposable
     {
         public Bot(Config.Config config)
         {
@@ -25,14 +24,8 @@ namespace Carespace.Bot.Web.Models
 
             _client = new TelegramBotClient(_config.Token);
 
-            if (string.IsNullOrWhiteSpace(_config.GoogleCredentialsJson))
-            {
-                _config.GoogleCredentialsJson = JsonConvert.SerializeObject(_config.GoogleCredentials);
-            }
-            _googleSheetsProvider =
-                new Provider(_config.GoogleCredentialsJson, ApplicationName, _config.GoogleSheetId);
-
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(_config.CultureInfoName);
+            string googleCredentialsJson = JsonConvert.SerializeObject(_config.GoogleCredentials);
+            _googleSheetsProvider = new Provider(googleCredentialsJson, ApplicationName, _config.GoogleSheetId);
 
             Utils.SetupTimeZoneInfo(_config.SystemTimeZoneId);
 

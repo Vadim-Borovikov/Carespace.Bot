@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models.Config
+namespace Carespace.Bot.Config
 {
     public sealed class Payee
     {
