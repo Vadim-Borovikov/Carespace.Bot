@@ -9,8 +9,8 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class ExercisesCommand : Command
     {
-        internal override string Name => "exercises";
-        internal override string Description => "упражнения";
+        public override string Name => "exercises";
+        public override string Description => "упражнения";
 
         public ExercisesCommand(string template, IEnumerable<string> links)
         {
@@ -18,7 +18,7 @@ namespace Carespace.Bot.Web.Models.Commands
             _links = links;
         }
 
-        internal override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             foreach (string text in _links.Select(l => string.Format(_template, WordJoiner, l)))
             {

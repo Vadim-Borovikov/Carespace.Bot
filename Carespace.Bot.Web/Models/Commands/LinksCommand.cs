@@ -8,12 +8,12 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class LinksCommand : Command
     {
-        internal override string Name => "links";
-        internal override string Description => "полезные ссылки";
+        public override string Name => "links";
+        public override string Description => "полезные ссылки";
 
         public LinksCommand(IEnumerable<Link> links) => _links = links;
 
-        internal override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             foreach (Link link in _links)
             {

@@ -9,7 +9,7 @@ namespace Carespace.Bot.Web.Models.Commands
     {
         protected TextCommand(string text) => _text = text;
 
-        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             return client.SendTextMessageAsync(chatId, _text, ParseMode.Markdown);
         }

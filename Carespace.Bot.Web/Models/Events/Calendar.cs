@@ -9,12 +9,12 @@ using NodaTime.Extensions;
 
 namespace Carespace.Bot.Web.Models.Events
 {
-    public sealed class Calendar
+    internal sealed class Calendar
     {
-        internal readonly byte[] IcsContent;
-        internal readonly string GoogleCalendarLink;
+        public readonly byte[] IcsContent;
+        public readonly string GoogleCalendarLink;
 
-        internal Calendar(Template template)
+        public Calendar(Template template)
         {
             var sb = new StringBuilder();
             sb.AppendLine(template.Description);

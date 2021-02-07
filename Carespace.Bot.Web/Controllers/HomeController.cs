@@ -11,9 +11,9 @@ namespace Carespace.Bot.Web.Controllers
     {
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Index([FromServices]Models.Bot bot)
+        public async Task<IActionResult> Index([FromServices]BotSingleton singleton)
         {
-            User model = await bot.GetUserAsunc();
+            User model = await singleton.Bot.GetUserAsunc();
             return View(model);
         }
 

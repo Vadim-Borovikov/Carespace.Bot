@@ -15,8 +15,8 @@ namespace Carespace.Bot.Web
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<Models.Bot>();
-            services.AddHostedService<Service>();
+            services.AddSingleton<BotSingleton>();
+            services.AddHostedService<BotService>();
             services.Configure<Config>(_config);
 
             services.AddMvc();

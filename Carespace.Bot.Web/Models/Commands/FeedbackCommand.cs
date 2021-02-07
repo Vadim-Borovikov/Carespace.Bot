@@ -7,12 +7,12 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class FeedbackCommand : Command
     {
-        internal override string Name => "feedback";
-        internal override string Description => "оставить обратную связь";
+        public override string Name => "feedback";
+        public override string Description => "оставить обратную связь";
 
         public FeedbackCommand(Link link) => _link = link;
 
-        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             return client.SendMessageAsync(_link, chatId);
         }

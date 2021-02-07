@@ -9,8 +9,8 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class ThanksCommand : Command
     {
-        internal override string Name => "thanks";
-        internal override string Description => "поблагодарить ведущих";
+        public override string Name => "thanks";
+        public override string Description => "поблагодарить ведущих";
 
         public ThanksCommand(List<Payee> payees, Dictionary<string, Link> banks)
         {
@@ -18,7 +18,7 @@ namespace Carespace.Bot.Web.Models.Commands
             _banks = banks;
         }
 
-        internal override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             foreach (Payee payee in _payees)
             {

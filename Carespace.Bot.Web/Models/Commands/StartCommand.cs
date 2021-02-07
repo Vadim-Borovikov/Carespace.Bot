@@ -9,12 +9,12 @@ namespace Carespace.Bot.Web.Models.Commands
 {
     internal sealed class StartCommand : Command
     {
-        internal override string Name => "start";
-        internal override string Description => "список команд";
+        public override string Name => "start";
+        public override string Description => "список команд";
 
         public StartCommand(IReadOnlyCollection<Command> commands) => _commands = commands;
 
-        internal override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
         {
             var builder = new StringBuilder();
             builder.AppendLine("Привет!");

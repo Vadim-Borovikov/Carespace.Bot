@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Carespace.Bot.Web.Models.Commands;
 using Carespace.Bot.Web.Models.Events;
 using GoogleSheetsManager;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -18,11 +17,11 @@ using Calendar = Carespace.Bot.Web.Models.Events.Calendar;
 
 namespace Carespace.Bot.Web.Models
 {
-    public sealed class Bot : IDisposable
+    internal sealed class Bot : IDisposable
     {
-        public Bot(IOptions<Config.Config> options)
+        public Bot(Config.Config config)
         {
-            _config = options.Value;
+            _config = config;
 
             _client = new TelegramBotClient(_config.Token);
 
@@ -61,14 +60,14 @@ namespace Carespace.Bot.Web.Models
             _forbiddenSticker = new InputOnlineFile(_config.ForbiddenStickerFileId);
         }
 
-        internal async Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             await _client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
             await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync,
                 nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
-        internal async Task UpdateAsync(Update update)
+        public async Task UpdateAsync(Update update)
         {
             if (update?.Type != UpdateType.Message)
             {
@@ -126,7 +125,7 @@ namespace Carespace.Bot.Web.Models
             }
         }
 
-        internal async Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             _weeklyUpdateTimer.Stop();
             await _client.DeleteWebhookAsync(cancellationToken);
@@ -139,7 +138,7 @@ namespace Carespace.Bot.Web.Models
             _eventManager?.Dispose();
         }
 
-        internal Task<User> GetUserAsunc() => _client.GetMeAsync();
+        public Task<User> GetUserAsunc() => _client.GetMeAsync();
 
         private async Task DoAndSchedule(Func<Task> func, string funcName)
         {
@@ -154,7 +153,7 @@ namespace Carespace.Bot.Web.Models
             _weeklyUpdateTimer.DoWeekly(func, funcName);
         }
 
-        internal readonly IDictionary<int, Calendar> Calendars;
+        public readonly IDictionary<int, Calendar> Calendars;
 
         private readonly List<Command> _commands;
         private readonly TelegramBotClient _client;

@@ -4,9 +4,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace Carespace.Bot.Web.Models
 {
-    internal sealed class Service : IHostedService
+    internal sealed class BotService : IHostedService
     {
-        public Service(Bot bot) => _bot = bot;
+        public BotService(BotSingleton singleton) => _bot = singleton.Bot;
 
         public Task StartAsync(CancellationToken cancellationToken) => _bot.StartAsync(cancellationToken);
 

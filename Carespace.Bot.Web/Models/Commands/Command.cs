@@ -5,18 +5,18 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Web.Models.Commands
 {
-    public abstract class Command
+    internal abstract class Command
     {
-        internal abstract string Name { get; }
-        internal virtual string Description => "";
-        internal virtual bool AdminsOnly => false;
+        public abstract string Name { get; }
+        public virtual string Description => "";
+        public virtual bool AdminsOnly => false;
 
-        internal bool IsInvokingBy(Message message, bool fromChat, string botName)
+        public bool IsInvokingBy(Message message, bool fromChat, string botName)
         {
             return (message.Type == MessageType.Text)
                    && (message.Text == (fromChat ? $"/{Name}@{botName}" : $"/{Name}"));
         }
 
-        internal abstract Task ExecuteAsync(ChatId chatId, ITelegramBotClient client);
+        public abstract Task ExecuteAsync(ChatId chatId, ITelegramBotClient client);
     }
 }
