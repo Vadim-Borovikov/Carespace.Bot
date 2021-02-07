@@ -1,5 +1,4 @@
-﻿using Carespace.Bot.Web.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using UAParser;
 
 namespace Carespace.Bot.Web.Controllers
@@ -7,19 +6,15 @@ namespace Carespace.Bot.Web.Controllers
     [Route("calendar")]
     public sealed class CalendarController : Controller
     {
-        private readonly IBot _bot;
-
-        public CalendarController(IBot bot) => _bot = bot;
-
         [HttpGet("{id}")]
-        public IActionResult GetCalendar(int id)
+        public IActionResult GetCalendar(int id, [FromServices]Models.Bot bot)
         {
             if (IsApple())
             {
-                return File(_bot.Calendars[id].IcsContent, ContentType);
+                return File(bot.Calendars[id].IcsContent, ContentType);
             }
 
-            return Redirect(_bot.Calendars[id].GoogleCalendarLink);
+            return Redirect(bot.Calendars[id].GoogleCalendarLink);
         }
 
         private bool IsApple()

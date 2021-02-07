@@ -9,13 +9,11 @@ namespace Carespace.Bot.Web.Controllers
     [Route("")]
     public sealed class HomeController : Controller
     {
-        public HomeController(IBot bot) => _bot = bot;
-
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index([FromServices]Models.Bot bot)
         {
-            User model = await _bot.Client.GetMeAsync();
+            User model = await bot.GetUserAsunc();
             return View(model);
         }
 
@@ -25,7 +23,5 @@ namespace Carespace.Bot.Web.Controllers
             var model = new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier };
             return View(model);
         }
-
-        private readonly IBot _bot;
     }
 }
