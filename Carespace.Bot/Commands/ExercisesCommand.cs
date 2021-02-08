@@ -6,7 +6,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class ExercisesCommand : CommandBase<Config.Config>
+    internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "exercises";
         protected override string Description => "упражнения";

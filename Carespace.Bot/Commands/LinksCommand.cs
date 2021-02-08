@@ -5,7 +5,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class LinksCommand : CommandBase<Config.Config>
+    internal sealed class LinksCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "links";
         protected override string Description => "полезные ссылки";

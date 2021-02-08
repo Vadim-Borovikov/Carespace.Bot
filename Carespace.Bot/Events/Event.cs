@@ -1,4 +1,5 @@
 ﻿using System;
+using AbstractBot;
 
 namespace Carespace.Bot.Events
 {
@@ -8,11 +9,11 @@ namespace Carespace.Bot.Events
         public readonly EventData Data;
         public readonly Timer Timer;
 
-        public Event(Template template, EventData data)
+        public Event(Template template, EventData data, TimeManager timeManager)
         {
             Template = template;
             Data = data;
-            Timer = new Timer();
+            Timer = new Timer(timeManager);
         }
 
         public void Dispose() => DisposeTimer();

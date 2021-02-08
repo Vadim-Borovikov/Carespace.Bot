@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using AbstractBot;
 using Carespace.Bot.Config;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -17,6 +17,11 @@ namespace Carespace.Bot
 {
     public static class Utils
     {
+        public static void LogException(Exception ex)
+        {
+            File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
+        }
+
         internal static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
@@ -27,26 +32,6 @@ namespace Carespace.Bot
 
             InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
             return SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
-        }
-
-        internal static string GetCaption(string name, Payee payee, IReadOnlyDictionary<string, Link> banks)
-        {
-            string options;
-            if (payee.Accounts?.Count > 0)
-            {
-                IEnumerable<string> texts = payee.Accounts.Select(a => GetText(a, banks[a.BankId]));
-                options = string.Join($" или{Environment.NewLine}", texts);
-            }
-            else
-            {
-                options = payee.ThanksString;
-            }
-            return $"{name}: {options}";
-        }
-
-        public static void LogException(Exception ex)
-        {
-            File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
         }
 
         internal static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
@@ -72,16 +57,9 @@ namespace Carespace.Bot
             }
         }
 
-        internal static Task<Message> FinalizeStatusMessageAsync(this ITelegramBotClient client, Message message,
-            string postfix = "")
+        internal static DateTime GetMonday(TimeManager timeManager)
         {
-            string text = $"_{message.Text}_ Готово.{postfix}";
-            return client.EditMessageTextAsync(message.Chat, message.MessageId, text, ParseMode.Markdown);
-        }
-
-        internal static DateTime GetMonday()
-        {
-            DateTime today = AbstractBot.Utils.Now().Date;
+            DateTime today = timeManager.Now().Date;
             int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
@@ -92,6 +70,11 @@ namespace Carespace.Bot
             return $"{day}, {date:d MMMM}";
         }
 
+        internal static string GetText(Account account, Link bank)
+        {
+            return $"{account.CardNumber} в [{bank.Name}]({bank.Url})";
+        }
+
         private static InlineKeyboardMarkup GetReplyMarkup(Link link)
         {
             var button = new InlineKeyboardButton
@@ -100,11 +83,6 @@ namespace Carespace.Bot
                 Url = link.Url
             };
             return new InlineKeyboardMarkup(button);
-        }
-
-        private static string GetText(Account account, Link bank)
-        {
-            return $"{account.CardNumber} в [{bank.Name}]({bank.Url})";
         }
 
         internal const string CalendarUriFormat = "{0}/calendar/{1}";

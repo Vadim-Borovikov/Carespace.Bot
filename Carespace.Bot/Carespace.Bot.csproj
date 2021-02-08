@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AbstractBot" Version="3.0.0-alpha-10" />
+    <PackageReference Include="AbstractBot" Version="4.0.0" />
     <PackageReference Include="GoogleSheetsManager" Version="3.1.0" />
     <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />

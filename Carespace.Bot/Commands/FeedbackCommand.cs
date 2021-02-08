@@ -4,7 +4,7 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class FeedbackCommand : CommandBase<Config.Config>
+    internal sealed class FeedbackCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "feedback";
         protected override string Description => "оставить обратную связь";

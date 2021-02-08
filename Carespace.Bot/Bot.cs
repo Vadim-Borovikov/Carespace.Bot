@@ -13,18 +13,14 @@ using Calendar = Carespace.Bot.Events.Calendar;
 
 namespace Carespace.Bot
 {
-    public sealed class Bot : BotBaseGoogleSheets<Config.Config>
+    public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     {
         public Bot(Config.Config config) : base(config)
         {
             var saveManager = new SaveManager<SaveData>(Config.SavePath);
 
             Calendars = new Dictionary<int, Calendar>();
-            var eventsChatId = new ChatId($"@{Config.EventsChannelLogin}");
-            var discussChatId = new ChatId($"@{Config.DiscussGroupLogin}");
-            _eventManager = new Manager(GoogleSheetsProvider, saveManager, Config.GoogleRange,
-                Config.EventsFormUri, Client, eventsChatId, Config.LogsChatId, discussChatId,
-                Config.Host, Calendars);
+            EventManager = new Manager(this, saveManager);
 
             Commands.Add(new StartCommand(this));
             Commands.Add(new IntroCommand(this));
@@ -33,16 +29,16 @@ namespace Carespace.Bot
             Commands.Add(new LinksCommand(this));
             Commands.Add(new FeedbackCommand(this));
             Commands.Add(new ThanksCommand(this));
-            Commands.Add(new WeekCommand(this, _eventManager));
+            Commands.Add(new WeekCommand(this));
 
-            _weeklyUpdateTimer = new Events.Timer();
+            _weeklyUpdateTimer = new Events.Timer(TimeManager);
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             await base.StartAsync(cancellationToken);
-            await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync,
-                nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
+            await DoAndSchedule(EventManager.PostOrUpdateWeekEventsAndScheduleAsync,
+                nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
@@ -54,11 +50,11 @@ namespace Carespace.Bot
         public override void Dispose()
         {
             _weeklyUpdateTimer?.Dispose();
-            _eventManager?.Dispose();
+            EventManager?.Dispose();
             base.Dispose();
         }
 
-        protected override async Task UpdateAsync(Message message, CommandBase<Config.Config> command,
+        protected override async Task UpdateAsync(Message message, CommandBase<Bot, Config.Config> command,
             bool fromChat = false)
         {
             if (command == null)
@@ -122,7 +118,7 @@ namespace Carespace.Bot
                 User user = await GetUserAsunc();
                 botName = user.Username;
             }
-            CommandBase<Config.Config> command =
+            CommandBase<Bot, Config.Config> command =
                 Commands.FirstOrDefault(c => c.IsInvokingBy(message.Text, fromChat, botName));
             await UpdateAsync(message, command, fromChat);
         }
@@ -130,7 +126,7 @@ namespace Carespace.Bot
         private async Task DoAndSchedule(Func<Task> func, string funcName)
         {
             await func();
-            DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
+            DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
             _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeekly(func, funcName), funcName);
         }
 
@@ -142,7 +138,8 @@ namespace Carespace.Bot
 
         public readonly IDictionary<int, Calendar> Calendars;
 
-        private readonly Manager _eventManager;
+        internal readonly Manager EventManager;
+
         private readonly Events.Timer _weeklyUpdateTimer;
 
         private const int MessageToDeleteNotFoundCode = 400;

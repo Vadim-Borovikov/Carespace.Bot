@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
 using GoogleSheetsManager;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -14,35 +13,25 @@ namespace Carespace.Bot.Events
 {
     internal sealed class Manager : IDisposable
     {
-        private readonly Provider _googleSheetsProvider;
-        private readonly string _googleRange;
+        private readonly Bot _bot;
         private readonly SaveManager<SaveData> _saveManager;
-        private readonly Uri _formUri;
-        private readonly ITelegramBotClient _client;
         private readonly ChatId _eventsChatId;
         private readonly ChatId _logsChatId;
         private readonly ChatId _discussChatId;
-        private readonly string _host;
-        private readonly IDictionary<int, Calendar> _calendars;
         private readonly InlineKeyboardButton _discussButton;
         private readonly InlineKeyboardMarkup _discussKeyboard;
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
-        public Manager(Provider googleSheetsProvider, SaveManager<SaveData> saveManager, string googleRange,
-            Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
-            string host, IDictionary<int, Calendar> calendars)
+        public Manager(Bot bot, SaveManager<SaveData> saveManager)
         {
-            _googleSheetsProvider = googleSheetsProvider;
-            _googleRange = googleRange;
+            _bot = bot;
+
+            _eventsChatId = new ChatId($"@{_bot.Config.EventsChannelLogin}");
+            _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
+
             _saveManager = saveManager;
-            _formUri = formUri;
-            _client = client;
-            _eventsChatId = eventsChatId;
-            _logsChatId = logsChatId;
-            _discussChatId = discussChatId;
-            _host = host;
-            _calendars = calendars;
+            _logsChatId = _bot.Config.LogsChatId;
 
             _discussButton = new InlineKeyboardButton
             {
@@ -55,9 +44,9 @@ namespace Carespace.Bot.Events
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
             Message statusMessage =
-                await _client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
+                await _bot.Client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
 
-            DateTime weekStart = Utils.GetMonday();
+            DateTime weekStart = Utils.GetMonday(_bot.TimeManager);
             DateTime weekEnd = weekStart.AddDays(7);
 
             await PostOrUpdateEvents(weekStart, weekEnd);
@@ -72,7 +61,7 @@ namespace Carespace.Bot.Events
 
             _saveManager.Save();
 
-            await _client.FinalizeStatusMessageAsync(statusMessage);
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
         }
 
         public void Dispose() => DisposeEvents();
@@ -106,9 +95,9 @@ namespace Carespace.Bot.Events
                     InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                     await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                         keyboard: MessageData.KeyboardType.Full);
-                    _calendars[template.Id] = new Calendar(template);
+                    _bot.Calendars[template.Id] = new Calendar(template);
 
-                    _events[template.Id] = new Event(template, data);
+                    _events[template.Id] = new Event(template, data, _bot.TimeManager);
                 }
                 else
                 {
@@ -122,9 +111,9 @@ namespace Carespace.Bot.Events
                 .OrderBy(t => t.Start);
             foreach (Template template in toPost)
             {
-                _calendars[template.Id] = new Calendar(template);
+                _bot.Calendars[template.Id] = new Calendar(template);
                 EventData data = await PostEventAsync(template);
-                _events[template.Id] = new Event(template, data);
+                _events[template.Id] = new Event(template, data, _bot.TimeManager);
             }
 
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
@@ -143,8 +132,8 @@ namespace Carespace.Bot.Events
             {
                 _saveManager.Data.ScheduleId = await PostForwardAndAddButton(text, MessageData.KeyboardType.None,
                     MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
-                await _client.UnpinChatMessageAsync(_eventsChatId);
-                await _client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
+                await _bot.Client.UnpinChatMessageAsync(_eventsChatId);
+                await _bot.Client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
             }
         }
 
@@ -158,7 +147,7 @@ namespace Carespace.Bot.Events
 
         private Task CreateOrUpdateNotificationAsync(Event e, DateTime end)
         {
-            DateTime now = AbstractBot.Utils.Now();
+            DateTime now = _bot.TimeManager.Now();
 
             if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= end))
             {
@@ -250,7 +239,7 @@ namespace Carespace.Bot.Events
             bool disableWebPagePreview = false)
         {
             int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
-            await _client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
+            await _bot.Client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
             await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
             return messageId;
         }
@@ -260,7 +249,7 @@ namespace Carespace.Bot.Events
             bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
         {
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
+            Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
                 disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
             _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
             return message.MessageId;
@@ -268,7 +257,7 @@ namespace Carespace.Bot.Events
 
         private IEnumerable<Template> LoadRelevantTemplates(DateTime weekStart, DateTime weekEnd)
         {
-            IList<Template> templates = DataManager.GetValues<Template>(_googleSheetsProvider, _googleRange);
+            IList<Template> templates = DataManager.GetValues<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
             foreach (Template t in templates.Where(t => t.IsApproved))
             {
                 if (t.IsWeekly)
@@ -311,7 +300,7 @@ namespace Carespace.Bot.Events
                 scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri}){weekly}");
             }
             scheduleBuilder.AppendLine();
-            scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_formUri}.");
+            scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_bot.Config.EventsFormUri}.");
             return scheduleBuilder.ToString();
         }
 
@@ -339,7 +328,7 @@ namespace Carespace.Bot.Events
                 return;
             }
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
+            Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
                 disableWebPagePreview, keyboardMarkup);
             if (data == null)
             {
@@ -379,7 +368,7 @@ namespace Carespace.Bot.Events
         {
             if (!weekStart.HasValue || (_saveManager.Data.Messages[messageId].Date >= weekStart))
             {
-                await _client.DeleteMessageAsync(_eventsChatId, messageId);
+                await _bot.Client.DeleteMessageAsync(_eventsChatId, messageId);
             }
             _saveManager.Data.Messages.Remove(messageId);
         }
@@ -452,7 +441,7 @@ namespace Carespace.Bot.Events
             return new InlineKeyboardButton
             {
                 Text = "📅 В календарь",
-                Url = string.Format(Utils.CalendarUriFormat, _host, template.Id)
+                Url = string.Format(Utils.CalendarUriFormat, _bot.Config.Host, template.Id)
             };
         }
 

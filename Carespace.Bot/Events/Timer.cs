@@ -4,12 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using AbstractBot;
 
 namespace Carespace.Bot.Events
 {
     internal sealed class Timer : IDisposable
     {
-        public Timer() => _timer = new System.Timers.Timer();
+        public Timer(TimeManager timeManager)
+        {
+            _timeManager = timeManager;
+            _timer = new System.Timers.Timer();
+        }
 
         public void Stop() => _timer.Stop();
         public void Dispose() => _timer.Dispose();
@@ -17,7 +22,7 @@ namespace Carespace.Bot.Events
         public void DoOnce(DateTime at, Func<Task> func, string funcName)
         {
             _at = at;
-            _after = _at - AbstractBot.Utils.Now();
+            _after = _at - _timeManager.Now();
 
             _funcName = funcName;
 
@@ -27,7 +32,7 @@ namespace Carespace.Bot.Events
         public void DoWeekly(Func<Task> func, string funcName)
         {
             _after = TimeSpan.FromDays(7);
-            _at = AbstractBot.Utils.Now() + _after;
+            _at = _timeManager.Now() + _after;
 
             _funcName = funcName;
 
@@ -97,7 +102,9 @@ namespace Carespace.Bot.Events
 
         private static readonly Dictionary<DateTime, string> Logs = new Dictionary<DateTime, string>();
 
+        private readonly TimeManager _timeManager;
         private readonly System.Timers.Timer _timer;
+
         private ElapsedEventHandler _handler;
         private DateTime _at;
         private TimeSpan _after;
