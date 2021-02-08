@@ -21,7 +21,8 @@ namespace Carespace.Bot.Commands
             foreach (Payee payee in Bot.Config.Payees)
             {
                 string caption = GetCaption(payee, Bot.Config.Banks);
-                await Utils.SendPhotoAsync(Bot.Client, message.From.Id, payee.PhotoPath, caption, ParseMode.Markdown);
+                await PhotoRepository.SendPhotoAsync(Bot.Client, message.From.Id, payee.PhotoPath, caption,
+                    ParseMode.Markdown);
             }
         }
 
