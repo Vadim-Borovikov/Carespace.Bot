@@ -1,38 +1,20 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot;
+﻿using System.Threading.Tasks;
+using AbstractBot;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class StartCommand : Command
+    internal sealed class StartCommand : CommandBase<Config.Config>
     {
-        public override string Name => "start";
-        public override string Description => "список команд";
+        protected override string Name => "start";
+        protected override string Description => "команды";
 
-        public StartCommand(IReadOnlyCollection<Command> commands) => _commands = commands;
+        public StartCommand(Bot bot) : base(bot) { }
 
-        public override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine("Привет!");
-            builder.AppendLine();
-            AppendCommands(builder, _commands);
-
-            return client.SendTextMessageAsync(chatId, builder.ToString());
+            bool fromAdmin = Bot.FromAdmin(message);
+            return Bot.Client.SendTextMessageAsync(message.From.Id, Bot.GetDescription(fromAdmin));
         }
-
-        private static void AppendCommands(StringBuilder builder, IEnumerable<Command> commands)
-        {
-            foreach (Command command in commands.Where(c => !c.AdminsOnly))
-            {
-                builder.AppendLine(GetCommandLine(command));
-            }
-        }
-        private static string GetCommandLine(Command command) => $"/{command.Name} — {command.Description}";
-
-        private readonly IReadOnlyCollection<Command> _commands;
     }
 }

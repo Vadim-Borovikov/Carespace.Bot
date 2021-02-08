@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using Carespace.Bot.Events;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Save
+namespace Carespace.Bot
 {
-    internal sealed class Data
+    internal sealed class SaveData
     {
         [JsonProperty]
         public int ScheduleId { get; set; }

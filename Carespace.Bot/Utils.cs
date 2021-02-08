@@ -44,18 +44,6 @@ namespace Carespace.Bot
             return $"{name}: {options}";
         }
 
-        internal static Task<Message> SendStickerAsync(this ITelegramBotClient client, Message message,
-            InputOnlineFile sticker)
-        {
-            return client.SendStickerAsync(message.Chat, sticker, replyToMessageId: message.MessageId);
-        }
-
-        internal static async Task<string> GetNameAsync(this ITelegramBotClient client)
-        {
-            User me = await client.GetMeAsync();
-            return me.Username;
-        }
-
         public static void LogException(Exception ex)
         {
             File.AppendAllText(ExceptionsLogPath, $"{ex}{Environment.NewLine}");
@@ -93,14 +81,10 @@ namespace Carespace.Bot
 
         internal static DateTime GetMonday()
         {
-            DateTime today = Now().Date;
+            DateTime today = AbstractBot.Utils.Now().Date;
             int diff = (7 + today.DayOfWeek - DayOfWeek.Monday) % 7;
             return today.AddDays(-diff);
         }
-
-        internal static void SetupTimeZoneInfo(string id) => _timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(id);
-
-        internal static DateTime Now() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _timeZoneInfo);
 
         internal static string ShowDate(DateTime date)
         {
@@ -130,7 +114,5 @@ namespace Carespace.Bot
 
         private static readonly ConcurrentDictionary<string, string> PhotoIds =
             new ConcurrentDictionary<string, string>();
-
-        private static TimeZoneInfo _timeZoneInfo;
     }
 }

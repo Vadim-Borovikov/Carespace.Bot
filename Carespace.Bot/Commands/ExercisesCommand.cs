@@ -1,33 +1,26 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Telegram.Bot;
+using AbstractBot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class ExercisesCommand : Command
+    internal sealed class ExercisesCommand : CommandBase<Config.Config>
     {
-        public override string Name => "exercises";
-        public override string Description => "упражнения";
+        protected override string Name => "exercises";
+        protected override string Description => "упражнения";
 
-        public ExercisesCommand(string template, IEnumerable<string> links)
-        {
-            _template = template;
-            _links = links;
-        }
+        public ExercisesCommand(Bot bot) : base(bot) { }
 
-        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            foreach (string text in _links.Select(l => string.Format(_template, WordJoiner, l)))
+            foreach (string text in
+                Bot.Config.ExersisesLinks.Select(l => string.Format(Bot.Config.Template, WordJoiner, l)))
             {
-                await client.SendTextMessageAsync(chatId, text, ParseMode.Markdown);
+                await Bot.Client.SendTextMessageAsync(message.From.Id, text, ParseMode.Markdown);
             }
         }
-
-        private readonly string _template;
-        private readonly IEnumerable<string> _links;
 
         private const string WordJoiner = "\u2060";
     }

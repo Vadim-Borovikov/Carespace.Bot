@@ -2,9 +2,9 @@
 {
     internal sealed class IntroCommand : TextCommand
     {
-        public override string Name => "intro";
-        public override string Description => "о практикуме";
+        protected override string Name => "intro";
+        protected override string Description => "о практикуме";
 
-        public IntroCommand(string text) : base(text) { }
+        public IntroCommand(Bot bot) : base(bot, bot.Config.Introduction) { }
     }
 }

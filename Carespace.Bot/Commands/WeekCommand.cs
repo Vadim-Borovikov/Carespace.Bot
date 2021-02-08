@@ -1,19 +1,20 @@
 ﻿using System.Threading.Tasks;
+using AbstractBot;
 using Carespace.Bot.Events;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class WeekCommand : Command
+    internal sealed class WeekCommand : CommandBase<Config.Config>
     {
-        public override string Name => "week";
+        protected override string Name => "week";
+        protected override string Description => "обновить расписание";
 
         public override bool AdminsOnly => true;
 
-        public WeekCommand(Manager eventManager) => _eventManager = eventManager;
+        public WeekCommand(Bot bot, Manager eventManager) : base(bot) => _eventManager = eventManager;
 
-        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
             await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync();
         }

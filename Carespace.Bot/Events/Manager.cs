@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AbstractBot;
 using GoogleSheetsManager;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -15,7 +16,7 @@ namespace Carespace.Bot.Events
     {
         private readonly Provider _googleSheetsProvider;
         private readonly string _googleRange;
-        private readonly Save.Manager _saveManager;
+        private readonly SaveManager<SaveData> _saveManager;
         private readonly Uri _formUri;
         private readonly ITelegramBotClient _client;
         private readonly ChatId _eventsChatId;
@@ -28,7 +29,7 @@ namespace Carespace.Bot.Events
 
         private readonly Dictionary<int, Event> _events = new Dictionary<int, Event>();
 
-        public Manager(Provider googleSheetsProvider, Save.Manager saveManager, string googleRange,
+        public Manager(Provider googleSheetsProvider, SaveManager<SaveData> saveManager, string googleRange,
             Uri formUri, ITelegramBotClient client, ChatId eventsChatId, ChatId logsChatId, ChatId discussChatId,
             string host, IDictionary<int, Calendar> calendars)
         {
@@ -157,7 +158,7 @@ namespace Carespace.Bot.Events
 
         private Task CreateOrUpdateNotificationAsync(Event e, DateTime end)
         {
-            DateTime now = Utils.Now();
+            DateTime now = AbstractBot.Utils.Now();
 
             if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= end))
             {

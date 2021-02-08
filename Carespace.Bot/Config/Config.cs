@@ -1,23 +1,12 @@
 using System;
 using System.Collections.Generic;
+using AbstractBot;
 using Newtonsoft.Json;
 
 namespace Carespace.Bot.Config
 {
-    public class Config
+    public class Config : ConfigGoogleSheets
     {
-        [JsonProperty]
-        public string Token { get; set; }
-
-        [JsonProperty]
-        public string Host { get; set; }
-
-        [JsonProperty]
-        public int Port { get; set; }
-
-        [JsonProperty]
-        public Dictionary<string, string> GoogleCredentials { get; set; }
-
         [JsonProperty]
         public List<string> IntroductionLines { get; set; }
 
@@ -43,18 +32,6 @@ namespace Carespace.Bot.Config
         public Dictionary<string, Link> Banks { get; set; }
 
         [JsonProperty]
-        public string DontUnderstandStickerFileId { get; set; }
-
-        [JsonProperty]
-        public string ForbiddenStickerFileId { get; set; }
-
-        [JsonProperty]
-        public List<int> AdminIds { get; set; }
-
-        [JsonProperty]
-        public string GoogleSheetId { get; set; }
-
-        [JsonProperty]
         public string GoogleRange { get; set; }
 
         [JsonProperty]
@@ -74,11 +51,6 @@ namespace Carespace.Bot.Config
 
         [JsonProperty]
         public string DiscussGroupLogin { get; set; }
-
-        [JsonProperty]
-        public string SystemTimeZoneId { get; set; }
-
-        internal string Url => $"{Host}:{Port}/{Token}";
 
         internal string Introduction => string.Join('\n', IntroductionLines);
         internal string Schedule => string.Join('\n', ScheduleLines);

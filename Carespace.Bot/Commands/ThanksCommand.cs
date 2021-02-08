@@ -1,38 +1,25 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using AbstractBot;
 using Carespace.Bot.Config;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class ThanksCommand : Command
+    internal sealed class ThanksCommand : CommandBase<Config.Config>
     {
-        public override string Name => "thanks";
-        public override string Description => "поблагодарить ведущих";
+        protected override string Name => "thanks";
+        protected override string Description => "поблагодарить ведущих";
 
-        public ThanksCommand(List<Payee> payees, Dictionary<string, Link> banks)
-        {
-            _payees = payees;
-            _banks = banks;
-        }
+        public ThanksCommand(Bot bot) : base(bot) { }
 
-        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            foreach (Payee payee in _payees)
+            foreach (Payee payee in Bot.Config.Payees)
             {
-                await SendMessage(client, payee, chatId);
+                string caption = Utils.GetCaption(payee.Name, payee, Bot.Config.Banks);
+                await Utils.SendPhotoAsync(Bot.Client, message.From.Id, payee.PhotoPath, caption, ParseMode.Markdown);
             }
         }
-
-        private Task SendMessage(ITelegramBotClient client, Payee payee, ChatId chatId)
-        {
-            string caption = Utils.GetCaption(payee.Name, payee, _banks);
-            return Utils.SendPhotoAsync(client, chatId, payee.PhotoPath, caption, ParseMode.Markdown);
-        }
-
-        private readonly List<Payee> _payees;
-        private readonly Dictionary<string, Link> _banks;
     }
 }

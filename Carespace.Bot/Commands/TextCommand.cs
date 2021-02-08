@@ -1,17 +1,17 @@
 ﻿using System.Threading.Tasks;
-using Telegram.Bot;
+using AbstractBot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands
 {
-    internal abstract class TextCommand : Command
+    internal abstract class TextCommand : CommandBase<Config.Config>
     {
-        protected TextCommand(string text) => _text = text;
+        protected TextCommand(Bot bot, string text) : base(bot) => _text = text;
 
-        public override Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            return client.SendTextMessageAsync(chatId, _text, ParseMode.Markdown);
+            return Bot.Client.SendTextMessageAsync(message.From.Id, _text, ParseMode.Markdown);
         }
 
         private readonly string _text;

@@ -3,80 +3,69 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
-using GoogleSheetsManager;
-using Newtonsoft.Json;
-using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InputFiles;
 using Calendar = Carespace.Bot.Events.Calendar;
 
 namespace Carespace.Bot
 {
-    public sealed class Bot : IDisposable
+    public sealed class Bot : BotBaseGoogleSheets<Config.Config>
     {
-        public Bot(Config.Config config)
+        public Bot(Config.Config config) : base(config)
         {
-            _config = config;
-
-            _client = new TelegramBotClient(_config.Token);
-
-            string googleCredentialsJson = JsonConvert.SerializeObject(_config.GoogleCredentials);
-            _googleSheetsProvider = new Provider(googleCredentialsJson, ApplicationName, _config.GoogleSheetId);
-
-            Utils.SetupTimeZoneInfo(_config.SystemTimeZoneId);
-
-            var saveManager = new Save.Manager(_config.SavePath);
+            var saveManager = new SaveManager<SaveData>(Config.SavePath);
 
             Calendars = new Dictionary<int, Calendar>();
-            var eventsChatId = new ChatId($"@{_config.EventsChannelLogin}");
-            var discussChatId = new ChatId($"@{_config.DiscussGroupLogin}");
-            _eventManager = new Manager(_googleSheetsProvider, saveManager, _config.GoogleRange,
-                _config.EventsFormUri, _client, eventsChatId, _config.LogsChatId, discussChatId,
-                _config.Host, Calendars);
+            var eventsChatId = new ChatId($"@{Config.EventsChannelLogin}");
+            var discussChatId = new ChatId($"@{Config.DiscussGroupLogin}");
+            _eventManager = new Manager(GoogleSheetsProvider, saveManager, Config.GoogleRange,
+                Config.EventsFormUri, Client, eventsChatId, Config.LogsChatId, discussChatId,
+                Config.Host, Calendars);
 
-            _commands = new List<Command>();
-            _commands.Add(new StartCommand(_commands));
-            _commands.Add(new IntroCommand(_config.Introduction));
-            _commands.Add(new ScheduleCommand(_config.Schedule));
-            _commands.Add(new ExercisesCommand(_config.Template, _config.ExersisesLinks));
-            _commands.Add(new LinksCommand(_config.Links));
-            _commands.Add(new FeedbackCommand(_config.FeedbackLink));
-            _commands.Add(new ThanksCommand(_config.Payees, _config.Banks));
-            _commands.Add(new WeekCommand(_eventManager));
+            Commands.Add(new StartCommand(this));
+            Commands.Add(new IntroCommand(this));
+            Commands.Add(new ScheduleCommand(this));
+            Commands.Add(new ExercisesCommand(this));
+            Commands.Add(new LinksCommand(this));
+            Commands.Add(new FeedbackCommand(this));
+            Commands.Add(new ThanksCommand(this));
+            Commands.Add(new WeekCommand(this, _eventManager));
 
             _weeklyUpdateTimer = new Events.Timer();
-            _dontUnderstandSticker = new InputOnlineFile(_config.DontUnderstandStickerFileId);
-            _forbiddenSticker = new InputOnlineFile(_config.ForbiddenStickerFileId);
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public override async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _client.SetWebhookAsync(_config.Url, cancellationToken: cancellationToken);
+            await base.StartAsync(cancellationToken);
             await DoAndSchedule(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync,
                 nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
-        public async Task UpdateAsync(Update update)
+        public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (update?.Type != UpdateType.Message)
-            {
-                return;
-            }
+            _weeklyUpdateTimer.Stop();
+            await base.StopAsync(cancellationToken);
+        }
 
-            Message message = update.Message;
-            bool fromChat = message.Chat.Id != message.From.Id;
-            string botName = fromChat ? await _client.GetNameAsync() : null;
-            Command command = _commands.FirstOrDefault(c => c.IsInvokingBy(message, fromChat, botName));
+        public override void Dispose()
+        {
+            _weeklyUpdateTimer?.Dispose();
+            _eventManager?.Dispose();
+            base.Dispose();
+        }
 
+        protected override async Task UpdateAsync(Message message, CommandBase<Config.Config> command,
+            bool fromChat = false)
+        {
             if (command == null)
             {
                 if (!fromChat)
                 {
-                    await _client.SendStickerAsync(message, _dontUnderstandSticker);
+                    await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
                 }
                 return;
             }
@@ -85,7 +74,7 @@ namespace Carespace.Bot
             {
                 try
                 {
-                    await _client.DeleteMessageAsync(message.Chat, message.MessageId);
+                    await Client.DeleteMessageAsync(message.Chat, message.MessageId);
                 }
                 catch (ApiRequestException e)
                     when ((e.ErrorCode == MessageToDeleteNotFoundCode)
@@ -95,22 +84,18 @@ namespace Carespace.Bot
                 }
             }
 
-            if (command.AdminsOnly)
+            if (command.AdminsOnly && !FromAdmin(message))
             {
-                bool isAdmin = _config.AdminIds.Contains(message.From.Id);
-                if (!isAdmin)
+                if (!fromChat)
                 {
-                    if (!fromChat)
-                    {
-                        await _client.SendStickerAsync(message, _forbiddenSticker);
-                    }
-                    return;
+                    await Client.SendStickerAsync(message.Chat, ForbiddenSticker);
                 }
+                return;
             }
 
             try
             {
-                await command.ExecuteAsync(message.From.Id, _client);
+                await command.ExecuteAsync(message, fromChat);
             }
             catch (ApiRequestException e)
                 when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
@@ -118,25 +103,34 @@ namespace Carespace.Bot
             }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        protected override async Task UpdateAsync(Message message)
         {
-            _weeklyUpdateTimer.Stop();
-            await _client.DeleteWebhookAsync(cancellationToken);
-        }
+            bool fromChat = message.Chat.Id != message.From.Id;
 
-        public void Dispose()
-        {
-            _weeklyUpdateTimer?.Dispose();
-            _googleSheetsProvider?.Dispose();
-            _eventManager?.Dispose();
-        }
+            if (message.Type != MessageType.Text)
+            {
+                if (!fromChat)
+                {
+                    await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
+                }
+                return;
+            }
 
-        public Task<User> GetUserAsunc() => _client.GetMeAsync();
+            string botName = null;
+            if (fromChat)
+            {
+                User user = await GetUserAsunc();
+                botName = user.Username;
+            }
+            CommandBase<Config.Config> command =
+                Commands.FirstOrDefault(c => c.IsInvokingBy(message.Text, fromChat, botName));
+            await UpdateAsync(message, command, fromChat);
+        }
 
         private async Task DoAndSchedule(Func<Task> func, string funcName)
         {
             await func();
-            DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + _config.EventsUpdateAt.TimeOfDay;
+            DateTime nextUpdateAt = Utils.GetMonday().AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
             _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeekly(func, funcName), funcName);
         }
 
@@ -148,13 +142,6 @@ namespace Carespace.Bot
 
         public readonly IDictionary<int, Calendar> Calendars;
 
-        private readonly List<Command> _commands;
-        private readonly TelegramBotClient _client;
-        private readonly Config.Config _config;
-        private readonly InputOnlineFile _dontUnderstandSticker;
-        private readonly InputOnlineFile _forbiddenSticker;
-
-        private readonly Provider _googleSheetsProvider;
         private readonly Manager _eventManager;
         private readonly Events.Timer _weeklyUpdateTimer;
 
@@ -162,7 +149,5 @@ namespace Carespace.Bot
         private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
         private const int CantInitiateConversationCode = 403;
         private const string CantInitiateConversationText = "Forbidden: bot can't initiate conversation with a user";
-
-        private const string ApplicationName = "Carespace.Bot";
     }
 }

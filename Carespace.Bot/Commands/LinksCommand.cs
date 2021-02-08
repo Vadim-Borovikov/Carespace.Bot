@@ -1,26 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using AbstractBot;
 using Carespace.Bot.Config;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
 {
-    internal sealed class LinksCommand : Command
+    internal sealed class LinksCommand : CommandBase<Config.Config>
     {
-        public override string Name => "links";
-        public override string Description => "полезные ссылки";
+        protected override string Name => "links";
+        protected override string Description => "полезные ссылки";
 
-        public LinksCommand(IEnumerable<Link> links) => _links = links;
+        public LinksCommand(Bot bot) : base(bot)  { }
 
-        public override async Task ExecuteAsync(ChatId chatId, ITelegramBotClient client)
+        public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            foreach (Link link in _links)
+            foreach (Link link in Bot.Config.Links)
             {
-                await client.SendMessageAsync(link, chatId);
+                await Bot.Client.SendMessageAsync(link, message.From.Id);
             }
         }
-
-        private readonly IEnumerable<Link> _links;
     }
 }
