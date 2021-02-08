@@ -8,6 +8,9 @@ namespace Carespace.Bot.Web.Models
         public string GoogleCredentialJson { get; set; }
 
         [JsonProperty]
+        public string AdminIdsJson { get; set; }
+
+        [JsonProperty]
         public string CultureInfoName { get; set; }
     }
 }

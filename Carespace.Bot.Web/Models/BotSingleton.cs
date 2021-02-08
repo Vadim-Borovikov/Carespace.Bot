@@ -18,6 +18,10 @@ namespace Carespace.Bot.Web.Models
                 config.GoogleCredential =
                     JsonConvert.DeserializeObject<Dictionary<string, string>>(config.GoogleCredentialJson);
             }
+            if ((config.AdminIds == null) || (config.AdminIds.Count == 0))
+            {
+                config.AdminIds = JsonConvert.DeserializeObject<List<int>>(config.AdminIdsJson);
+            }
             Bot = new Bot(config);
         }
 
