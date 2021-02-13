@@ -106,7 +106,7 @@ namespace Carespace.Bot.Events
             sb.AppendLine("Я собираюсь опубликовать события:");
             foreach (Template template in _toPost)
             {
-                sb.AppendLine($"    {template.Name}");
+                sb.AppendLine($"• {template.Name}");
             }
             sb.AppendLine();
             sb.AppendLine("ОК?");
