@@ -30,6 +30,7 @@ namespace Carespace.Bot
             Commands.Add(new FeedbackCommand(this));
             Commands.Add(new ThanksCommand(this));
             Commands.Add(new WeekCommand(this));
+            Commands.Add(new ConfirmCommand(this));
 
             _weeklyUpdateTimer = new Events.Timer(TimeManager);
         }
@@ -37,7 +38,8 @@ namespace Carespace.Bot
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             await base.StartAsync(cancellationToken);
-            await DoAndScheduleAsync(EventManager.PostOrUpdateWeekEventsAndScheduleAsync,
+            await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(true);
+            Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(false),
                 nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
@@ -123,9 +125,8 @@ namespace Carespace.Bot
             await UpdateAsync(message, command, fromChat);
         }
 
-        private async Task DoAndScheduleAsync(Func<Task> func, string funcName)
+        private void Schedule(Func<Task> func, string funcName)
         {
-            await func();
             DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
             _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
         }

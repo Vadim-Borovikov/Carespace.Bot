@@ -41,17 +41,42 @@ namespace Carespace.Bot.Events
             _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
         }
 
+        public Task PostOrUpdateWeekEventsAndScheduleAsync(bool shouldConfirm)
+        {
+            _weekStart = Utils.GetMonday(_bot.TimeManager);
+            _weekEnd = _weekStart.AddDays(7);
+
+            _templates = LoadRelevantTemplates().ToDictionary(t => t.Id, t => t);
+            _saveManager.Load();
+
+            ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
+            _toPost = _templates.Values.Where(t => !savedTemplateIds.Contains(t.Id)).OrderBy(t => t.Start).ToList();
+
+            shouldConfirm = shouldConfirm && _toPost.Any();
+
+            _confirmationPending = !shouldConfirm;
+
+            return shouldConfirm
+                ? AskForConfirmationAsync()
+                : PostOrUpdateWeekEventsAndScheduleAsync();
+        }
+
         public async Task PostOrUpdateWeekEventsAndScheduleAsync()
         {
+            if (!_confirmationPending)
+            {
+                await _bot.Client.SendTextMessageAsync(_logsChatId, "Обновлений не запланировано.");
+                return;
+            }
+
+            _confirmationPending = false;
+
             Message statusMessage =
                 await _bot.Client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
 
-            DateTime weekStart = Utils.GetMonday(_bot.TimeManager);
-            DateTime weekEnd = weekStart.AddDays(7);
-
-            await PostOrUpdateEventsAsync(weekStart, weekEnd);
-            await PostOrUpdateScheduleAsync(weekStart, weekEnd);
-            await CreateOrUpdateNotificationsAsync(weekEnd);
+            await PostOrUpdateEventsAsync();
+            await PostOrUpdateScheduleAsync();
+            await CreateOrUpdateNotificationsAsync();
 
             List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
             foreach (int id in toRemove)
@@ -75,21 +100,34 @@ namespace Carespace.Bot.Events
             _events.Clear();
         }
 
-        private async Task PostOrUpdateEventsAsync(DateTime weekStart, DateTime weekEnd)
+        private Task AskForConfirmationAsync()
         {
-            Dictionary<int, Template> templates =
-                LoadRelevantTemplates(weekStart, weekEnd).ToDictionary(t => t.Id, t => t);
+            var sb = new StringBuilder();
+            sb.AppendLine("Я собираюсь опубликовать события:");
+            foreach (Template template in _toPost)
+            {
+                sb.AppendLine($"    {template.Name}");
+            }
+            sb.AppendLine();
+            sb.AppendLine("ОК?");
 
+            _confirmationPending = true;
+
+            return _bot.Client.SendTextMessageAsync(_logsChatId, sb.ToString());
+        }
+
+
+        private async Task PostOrUpdateEventsAsync()
+        {
             DisposeEvents();
 
-            _saveManager.Load();
             ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
             foreach (int savedTemplateId in savedTemplateIds)
             {
                 EventData data = _saveManager.Data.Events[savedTemplateId];
-                if (templates.ContainsKey(savedTemplateId))
+                if (_templates.ContainsKey(savedTemplateId))
                 {
-                    Template template = templates[savedTemplateId];
+                    Template template = _templates[savedTemplateId];
 
                     string messageText = GetMessageText(template);
                     InlineKeyboardButton icsButton = GetMessageIcsButton(template);
@@ -102,14 +140,11 @@ namespace Carespace.Bot.Events
                 else
                 {
                     await DeleteNotificationAsync(data);
-                    await DeleteMessageAsync(data.MessageId, weekStart);
+                    await DeleteMessageAsync(data.MessageId);
                 }
             }
 
-            IOrderedEnumerable<Template> toPost = templates.Values
-                .Where(t => !savedTemplateIds.Contains(t.Id))
-                .OrderBy(t => t.Start);
-            foreach (Template template in toPost)
+            foreach (Template template in _toPost)
             {
                 _bot.Calendars[template.Id] = new Calendar(template);
                 EventData data = await PostEventAsync(template);
@@ -119,11 +154,11 @@ namespace Carespace.Bot.Events
             _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
         }
 
-        private async Task PostOrUpdateScheduleAsync(DateTime weekStart, DateTime weekEnd)
+        private async Task PostOrUpdateScheduleAsync()
         {
-            string text = PrepareWeekSchedule(weekStart, weekEnd);
+            string text = PrepareWeekSchedule();
 
-            if (IsScheduleRelevant(weekStart))
+            if (IsScheduleRelevant())
             {
                 await EditMessageTextAsync(_saveManager.Data.ScheduleId, text, MessageData.KeyboardType.Discuss,
                     disableWebPagePreview: true);
@@ -137,11 +172,11 @@ namespace Carespace.Bot.Events
             }
         }
 
-        private async Task CreateOrUpdateNotificationsAsync(DateTime end)
+        private async Task CreateOrUpdateNotificationsAsync()
         {
             foreach (Event e in _events.Values)
             {
-                await CreateOrUpdateNotificationAsync(e, end);
+                await CreateOrUpdateNotificationAsync(e, _weekEnd);
             }
         }
 
@@ -255,20 +290,20 @@ namespace Carespace.Bot.Events
             return message.MessageId;
         }
 
-        private IEnumerable<Template> LoadRelevantTemplates(DateTime weekStart, DateTime weekEnd)
+        private IEnumerable<Template> LoadRelevantTemplates()
         {
             IList<Template> templates = DataManager.GetValues<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
             foreach (Template t in templates.Where(t => t.IsApproved))
             {
                 if (t.IsWeekly)
                 {
-                    if (t.Start >= weekEnd)
+                    if (t.Start >= _weekEnd)
                     {
                         continue;
                     }
-                    t.MoveToWeek(weekStart);
+                    t.MoveToWeek(_weekStart);
                 }
-                else if (t.Start < weekStart)
+                else if (t.Start < _weekStart)
                 {
                     continue;
                 }
@@ -277,13 +312,13 @@ namespace Carespace.Bot.Events
             }
         }
 
-        private string PrepareWeekSchedule(DateTime start, DateTime end)
+        private string PrepareWeekSchedule()
         {
             var scheduleBuilder = new StringBuilder();
             scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
-            DateTime date = start.AddDays(-1);
+            DateTime date = _weekStart.AddDays(-1);
             foreach (Event e in _events.Values
-                .Where(e => e.Template.Active && (e.Template.Start < end))
+                .Where(e => e.Template.Active && (e.Template.Start < _weekEnd))
                 .OrderBy(e => e.Template.Start))
             {
                 if (e.Template.Start.Date > date)
@@ -445,10 +480,10 @@ namespace Carespace.Bot.Events
             };
         }
 
-        private bool IsScheduleRelevant(DateTime start)
+        private bool IsScheduleRelevant()
         {
             MessageData data = GetMessageData(_saveManager.Data.ScheduleId);
-            return data?.Date >= start;
+            return data?.Date >= _weekStart;
         }
 
         private MessageData GetMessageData(int id)
@@ -461,6 +496,12 @@ namespace Carespace.Bot.Events
             return (id != _saveManager.Data.ScheduleId)
                 && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
         }
+
+        private DateTime _weekStart;
+        private DateTime _weekEnd;
+        private Dictionary<int, Template> _templates;
+        private ICollection<Template> _toPost;
+        private bool _confirmationPending;
 
         private const string ChannelUriFormat = "https://t.me/{0}";
         private const string ChannelMessageUriFormat = "{0}/{1}";

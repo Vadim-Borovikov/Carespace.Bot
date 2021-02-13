@@ -15,7 +15,7 @@ namespace Carespace.Bot.Commands
 
         public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            await Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync();
+            await Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(true);
         }
     }
 }
