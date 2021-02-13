@@ -49,7 +49,7 @@ namespace Carespace.Bot.Events
             DateTime weekStart = Utils.GetMonday(_bot.TimeManager);
             DateTime weekEnd = weekStart.AddDays(7);
 
-            await PostOrUpdateEvents(weekStart, weekEnd);
+            await PostOrUpdateEventsAsync(weekStart, weekEnd);
             await PostOrUpdateScheduleAsync(weekStart, weekEnd);
             await CreateOrUpdateNotificationsAsync(weekEnd);
 
@@ -75,7 +75,7 @@ namespace Carespace.Bot.Events
             _events.Clear();
         }
 
-        private async Task PostOrUpdateEvents(DateTime weekStart, DateTime weekEnd)
+        private async Task PostOrUpdateEventsAsync(DateTime weekStart, DateTime weekEnd)
         {
             Dictionary<int, Template> templates =
                 LoadRelevantTemplates(weekStart, weekEnd).ToDictionary(t => t.Id, t => t);
@@ -130,7 +130,7 @@ namespace Carespace.Bot.Events
             }
             else
             {
-                _saveManager.Data.ScheduleId = await PostForwardAndAddButton(text, MessageData.KeyboardType.None,
+                _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
                     MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
                 await _bot.Client.UnpinChatMessageAsync(_eventsChatId);
                 await _bot.Client.PinChatMessageAsync(_eventsChatId, _saveManager.Data.ScheduleId, true);
@@ -229,12 +229,12 @@ namespace Carespace.Bot.Events
         {
             string text = GetMessageText(template);
             InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-            int messageId = await PostForwardAndAddButton(text, MessageData.KeyboardType.Ics,
+            int messageId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Ics,
                 MessageData.KeyboardType.Full, icsButton);
             return new EventData(messageId);
         }
 
-        private async Task<int> PostForwardAndAddButton(string text, MessageData.KeyboardType chatKeyboard,
+        private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
             MessageData.KeyboardType keyboard, InlineKeyboardButton icsButton = null,
             bool disableWebPagePreview = false)
         {
