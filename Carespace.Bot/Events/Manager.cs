@@ -140,7 +140,6 @@ namespace Carespace.Bot.Events
                 else
                 {
                     await DeleteNotificationAsync(data);
-                    await DeleteMessageAsync(data.MessageId);
                 }
             }
 
