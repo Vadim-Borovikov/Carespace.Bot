@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <PackageReference Include="AbstractBot" Version="5.0.0" />
-    <PackageReference Include="GoogleSheetsManager" Version="4.0.0" />
     <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />
     <PackageReference Include="Telegram.Bot" Version="15.7.1" />
