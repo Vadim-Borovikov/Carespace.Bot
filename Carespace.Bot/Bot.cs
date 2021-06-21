@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
@@ -37,6 +38,8 @@ namespace Carespace.Bot
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
+            _emeilChecker = new EmailChecker(this, Config.SellerId, Config.ProductId, Config.SellsStart, Config.SellerSecret, Config.BookPromo);
+
             await base.StartAsync(cancellationToken);
             await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(true);
             Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(false),
@@ -63,7 +66,15 @@ namespace Carespace.Bot
             {
                 if (!fromChat)
                 {
-                    await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
+                    MailAddress email = message.Text.AsEmail();
+                    if (email == null)
+                    {
+                        await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
+                    }
+                    else
+                    {
+                        await _emeilChecker.CheckEmailAsync(message.Chat, email);
+                    }
                 }
                 return;
             }
@@ -142,6 +153,8 @@ namespace Carespace.Bot
         internal readonly Manager EventManager;
 
         private readonly Events.Timer _weeklyUpdateTimer;
+
+        private EmailChecker _emeilChecker;
 
         private const int MessageToDeleteNotFoundCode = 400;
         private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";

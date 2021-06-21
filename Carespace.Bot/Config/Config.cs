@@ -52,6 +52,21 @@ namespace Carespace.Bot.Config
         [JsonProperty]
         public string DiscussGroupLogin { get; set; }
 
+        [JsonProperty]
+        public int SellerId { get; set; }
+
+        [JsonProperty]
+        public int ProductId { get; set; }
+
+        [JsonProperty]
+        public DateTime SellsStart { get; set; }
+
+        [JsonProperty]
+        public string SellerSecret { get; set; }
+
+        [JsonProperty]
+        public string BookPromo { get; set; }
+
         internal string Introduction => string.Join('\n', IntroductionLines);
         internal string Schedule => string.Join('\n', ScheduleLines);
     }
