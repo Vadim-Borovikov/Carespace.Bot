@@ -39,8 +39,9 @@ namespace Carespace.Bot
         private bool CheckEmail(MailAddress email)
         {
             DateTime finish = DateTime.Today.AddDays(1);
-            IEnumerable<string> eMails = Utils.GetDigisellerSellsEmails(_sellerId, _productId, _dateStat, finish, _sellerSecret);
-            return eMails.Contains(email.Address);
+            IEnumerable<string> eMails =
+                Utils.GetDigisellerSellsEmails(_sellerId, _productId, _dateStat, finish, _sellerSecret);
+            return eMails.Contains(email.Address.ToLowerInvariant());
         }
 
         private readonly Bot _bot;

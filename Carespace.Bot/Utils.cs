@@ -28,7 +28,7 @@ namespace Carespace.Bot
                 SellsResult dto = DigisellerProvider.GetSells(sellerId, new List<int> { productId }, start, end, page, sellerSecret);
                 foreach (SellsResult.Sell sell in dto.Sells)
                 {
-                    yield return sell.Email;
+                    yield return sell.Email.ToLowerInvariant();
                 }
                 ++page;
                 totalPages = dto.Pages;
