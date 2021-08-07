@@ -26,12 +26,6 @@ namespace Carespace.Bot.Config
         public Link FeedbackLink { get; set; }
 
         [JsonProperty]
-        public List<Payee> Payees { get; set; }
-
-        [JsonProperty]
-        public Dictionary<string, Link> Banks { get; set; }
-
-        [JsonProperty]
         public string GoogleRange { get; set; }
 
         [JsonProperty]

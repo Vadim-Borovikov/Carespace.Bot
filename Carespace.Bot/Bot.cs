@@ -29,7 +29,6 @@ namespace Carespace.Bot
             Commands.Add(new ExercisesCommand(this));
             Commands.Add(new LinksCommand(this));
             Commands.Add(new FeedbackCommand(this));
-            Commands.Add(new ThanksCommand(this));
             Commands.Add(new WeekCommand(this));
             Commands.Add(new ConfirmCommand(this));
 

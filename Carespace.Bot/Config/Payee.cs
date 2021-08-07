@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Carespace.Bot.Config
 {
-    public sealed class Payee
+    public sealed class Payee1
     {
         [JsonProperty]
         public string Name { get; set; }
