@@ -7,7 +7,7 @@ namespace Carespace.Bot.Commands
     internal sealed class FeedbackCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "feedback";
-        protected override string Description => "оставить обратную связь";
+        protected override string Description => "Оставить обратную связь";
 
         public FeedbackCommand(Bot bot) : base(bot) { }
 

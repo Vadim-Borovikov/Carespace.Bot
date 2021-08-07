@@ -7,7 +7,7 @@ namespace Carespace.Bot.Commands
     internal sealed class WeekCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "week";
-        protected override string Description => "обновить расписание";
+        protected override string Description => "Обновить расписание";
 
         public override bool AdminsOnly => true;
 

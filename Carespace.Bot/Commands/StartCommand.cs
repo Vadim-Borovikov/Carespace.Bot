@@ -7,7 +7,7 @@ namespace Carespace.Bot.Commands
     internal sealed class StartCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "start";
-        protected override string Description => "команды";
+        protected override string Description => "Список команд";
 
         public StartCommand(Bot bot) : base(bot) { }
 

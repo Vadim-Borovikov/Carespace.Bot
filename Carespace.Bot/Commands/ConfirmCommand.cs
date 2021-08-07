@@ -7,7 +7,7 @@ namespace Carespace.Bot.Commands
     internal sealed class ConfirmCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "confirm";
-        protected override string Description => "подтвердить отправку событий";
+        protected override string Description => "Подтвердить отправку событий";
 
         public override bool AdminsOnly => true;
 

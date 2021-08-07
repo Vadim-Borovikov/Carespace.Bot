@@ -8,7 +8,7 @@ namespace Carespace.Bot.Commands
     internal sealed class LinksCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "links";
-        protected override string Description => "полезные ссылки";
+        protected override string Description => "Полезные ссылки";
 
         public LinksCommand(Bot bot) : base(bot)  { }
 

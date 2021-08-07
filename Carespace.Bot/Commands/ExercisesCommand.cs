@@ -9,7 +9,7 @@ namespace Carespace.Bot.Commands
     internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
     {
         protected override string Name => "exercises";
-        protected override string Description => "упражнения";
+        protected override string Description => "Упражнения";
 
         public ExercisesCommand(Bot bot) : base(bot) { }
 
