@@ -20,7 +20,7 @@ namespace Carespace.Bot.Web.Models
             }
             if ((config.AdminIds == null) || (config.AdminIds.Count == 0))
             {
-                config.AdminIds = JsonConvert.DeserializeObject<List<int>>(config.AdminIdsJson);
+                config.AdminIds = JsonConvert.DeserializeObject<List<long>>(config.AdminIdsJson);
             }
             Bot = new Bot(config);
         }

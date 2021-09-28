@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using AbstractBot;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
@@ -14,8 +15,9 @@ namespace Carespace.Bot.Events
         public readonly byte[] IcsContent;
         public readonly string GoogleCalendarLink;
 
-        internal Calendar(Template template)
+        internal Calendar(Template template, TimeManager timeManager)
         {
+            _timeManager = timeManager;
             var sb = new StringBuilder();
             sb.AppendLine(template.Description);
             sb.AppendLine();
@@ -49,12 +51,12 @@ namespace Carespace.Bot.Events
             return Encoding.UTF8.GetBytes(content);
         }
 
-        private static CalendarEvent AsIcsEvent(Template template, string description, RecurrencePattern rule)
+        private CalendarEvent AsIcsEvent(Template template, string description, RecurrencePattern rule)
         {
             var e = new CalendarEvent
             {
-                Start = new CalDateTime(template.Start.ToUniversalTime()),
-                End = new CalDateTime(template.End.ToUniversalTime()),
+                Start = new CalDateTime(_timeManager.ToUtc(template.Start)),
+                End = new CalDateTime(_timeManager.ToUtc(template.End)),
                 Summary = template.Name,
                 Description = description,
                 Url = template.Uri
@@ -66,15 +68,13 @@ namespace Carespace.Bot.Events
             return e;
         }
 
-        private static string AsGoogleLink(Template template, string details, string rule)
+        private string AsGoogleLink(Template template, string details, string rule)
         {
-            template.Start.ToLocalDateTime();
-
             var queryString = new Dictionary<string, string>
             {
                 ["action"] = "TEMPLATE" ,
                 ["text"] = template.Name,
-                ["dates"] = $"{template.Start.ToUniversalTime():yyyyMMddTHHmmssZ}/{template.End.ToUniversalTime():yyyyMMddTHHmmssZ}",
+                ["dates"] = $"{_timeManager.ToUtc(template.Start):yyyyMMddTHHmmssZ}/{_timeManager.ToUtc(template.End):yyyyMMddTHHmmssZ}",
                 ["details"] = details
             };
             if (template.IsWeekly)
@@ -86,5 +86,6 @@ namespace Carespace.Bot.Events
         }
 
         private const string GoogleUri = "https://www.google.com/calendar/render";
+        private readonly TimeManager _timeManager;
     }
 }

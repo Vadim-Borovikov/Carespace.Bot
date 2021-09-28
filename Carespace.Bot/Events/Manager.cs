@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
+using Google.Apis.Sheets.v4;
 using GoogleSheetsManager;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -116,7 +117,6 @@ namespace Carespace.Bot.Events
             return _bot.Client.SendTextMessageAsync(_logsChatId, sb.ToString());
         }
 
-
         private async Task PostOrUpdateEventsAsync()
         {
             DisposeEvents();
@@ -133,7 +133,7 @@ namespace Carespace.Bot.Events
                     InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                     await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                         keyboard: MessageData.KeyboardType.Full);
-                    _bot.Calendars[template.Id] = new Calendar(template);
+                    _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
 
                     _events[template.Id] = new Event(template, data, _bot.TimeManager);
                 }
@@ -145,7 +145,7 @@ namespace Carespace.Bot.Events
 
             foreach (Template template in _toPost)
             {
-                _bot.Calendars[template.Id] = new Calendar(template);
+                _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
                 EventData data = await PostEventAsync(template);
                 _events[template.Id] = new Event(template, data, _bot.TimeManager);
             }
@@ -283,15 +283,16 @@ namespace Carespace.Bot.Events
             bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
         {
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown,
-                disableWebPagePreview, disableNotification, replyToMessageId, keyboardMarkup);
+            Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown, null,
+                disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
             _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
             return message.MessageId;
         }
 
         private IEnumerable<Template> LoadRelevantTemplates()
         {
-            IList<Template> templates = DataManager.GetValues<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+            IList<Template> templates = DataManager.GetValues<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange,
+                SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.UNFORMATTEDVALUE);
             foreach (Template t in templates.Where(t => t.IsApproved))
             {
                 if (t.IsWeekly)
@@ -362,7 +363,7 @@ namespace Carespace.Bot.Events
                 return;
             }
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown,
+            Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown, null,
                 disableWebPagePreview, keyboardMarkup);
             if (data == null)
             {
