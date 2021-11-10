@@ -17,7 +17,6 @@ namespace Carespace.Bot.Events
         private readonly Bot _bot;
         private readonly SaveManager<SaveData> _saveManager;
         private readonly ChatId _eventsChatId;
-        private readonly ChatId _logsChatId;
         private readonly ChatId _discussChatId;
         private readonly InlineKeyboardButton _discussButton;
         private readonly InlineKeyboardMarkup _discussKeyboard;
@@ -32,7 +31,6 @@ namespace Carespace.Bot.Events
             _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
 
             _saveManager = saveManager;
-            _logsChatId = _bot.Config.LogsChatId;
 
             _discussButton = new InlineKeyboardButton
             {
@@ -42,7 +40,7 @@ namespace Carespace.Bot.Events
             _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
         }
 
-        public Task PostOrUpdateWeekEventsAndScheduleAsync(bool shouldConfirm)
+        public Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
         {
             _weekStart = Utils.GetMonday(_bot.TimeManager);
             _weekEnd = _weekStart.AddDays(7);
@@ -58,22 +56,22 @@ namespace Carespace.Bot.Events
             _confirmationPending = !shouldConfirm;
 
             return shouldConfirm
-                ? AskForConfirmationAsync()
-                : PostOrUpdateWeekEventsAndScheduleAsync();
+                ? AskForConfirmationAsync(chatId)
+                : PostOrUpdateWeekEventsAndScheduleAsync(chatId);
         }
 
-        public async Task PostOrUpdateWeekEventsAndScheduleAsync()
+        public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
         {
             if (!_confirmationPending)
             {
-                await _bot.Client.SendTextMessageAsync(_logsChatId, "Обновлений не запланировано.");
+                await _bot.Client.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
                 return;
             }
 
             _confirmationPending = false;
 
             Message statusMessage =
-                await _bot.Client.SendTextMessageAsync(_logsChatId, "_Обновляю расписание…_", ParseMode.Markdown);
+                await _bot.Client.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.Markdown);
 
             await PostOrUpdateEventsAsync();
             await PostOrUpdateScheduleAsync();
@@ -101,7 +99,7 @@ namespace Carespace.Bot.Events
             _events.Clear();
         }
 
-        private Task AskForConfirmationAsync()
+        private Task AskForConfirmationAsync(ChatId chatId)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Я собираюсь опубликовать события:");
@@ -114,7 +112,7 @@ namespace Carespace.Bot.Events
 
             _confirmationPending = true;
 
-            return _bot.Client.SendTextMessageAsync(_logsChatId, sb.ToString());
+            return _bot.Client.SendTextMessageAsync(chatId, sb.ToString());
         }
 
         private async Task PostOrUpdateEventsAsync()

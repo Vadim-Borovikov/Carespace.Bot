@@ -40,8 +40,8 @@ namespace Carespace.Bot
             _emeilChecker = new EmailChecker(this, Config.SellerId, Config.ProductId, Config.SellsStart, Config.SellerSecret, Config.BookPromo);
 
             await base.StartAsync(cancellationToken);
-            await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(true);
-            Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(false),
+            await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(Config.LogsChatId, true);
+            Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(Config.LogsChatId, false),
                 nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
         }
 
