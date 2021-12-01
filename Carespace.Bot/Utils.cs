@@ -79,11 +79,6 @@ namespace Carespace.Bot
             return $"{day}, {date:d MMMM}";
         }
 
-        internal static string GetText(Account account, Link bank)
-        {
-            return $"{account.CardNumber} в [{bank.Name}]({bank.Url})";
-        }
-
         private static InlineKeyboardMarkup GetReplyMarkup(Link link)
         {
             var button = new InlineKeyboardButton

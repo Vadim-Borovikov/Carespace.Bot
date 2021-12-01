@@ -6,7 +6,6 @@ using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
 using Ical.Net.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
-using NodaTime.Extensions;
 
 namespace Carespace.Bot.Events
 {
