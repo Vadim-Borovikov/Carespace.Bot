@@ -10,7 +10,7 @@ namespace Carespace.Bot.Web.Controllers
         [HttpGet("{id}")]
         public IActionResult GetCalendar(int id, [FromServices]BotSingleton singleton)
         {
-            if (!singleton.Bot.Calendars.ContainsKey(id))
+            if (!singleton.Bot.Calendars.ContainsKey(id) || singleton.Bot.Calendars[id].IsOver)
             {
                 return Redirect(singleton.Bot.Config.ErrorPageUrl);
             }

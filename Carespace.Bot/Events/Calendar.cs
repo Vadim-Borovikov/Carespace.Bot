@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using AbstractBot;
 using Ical.Net;
@@ -14,9 +15,13 @@ namespace Carespace.Bot.Events
         public readonly byte[] IcsContent;
         public readonly string GoogleCalendarLink;
 
+        public bool IsOver => DateTime.UtcNow > _endTime;
+
         internal Calendar(Template template, TimeManager timeManager)
         {
             _timeManager = timeManager;
+            _endTime = _timeManager.ToUtc(template.End);
+
             var sb = new StringBuilder();
             sb.AppendLine(template.Description);
             sb.AppendLine();
@@ -55,7 +60,7 @@ namespace Carespace.Bot.Events
             var e = new CalendarEvent
             {
                 Start = new CalDateTime(_timeManager.ToUtc(template.Start)),
-                End = new CalDateTime(_timeManager.ToUtc(template.End)),
+                End = new CalDateTime(_endTime),
                 Summary = template.Name,
                 Description = description,
                 Url = template.Uri
@@ -86,5 +91,6 @@ namespace Carespace.Bot.Events
 
         private const string GoogleUri = "https://www.google.com/calendar/render";
         private readonly TimeManager _timeManager;
+        private readonly DateTime _endTime;
     }
 }
