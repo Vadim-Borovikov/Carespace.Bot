@@ -81,9 +81,8 @@ namespace Carespace.Bot
 
         private static InlineKeyboardMarkup GetReplyMarkup(Link link)
         {
-            var button = new InlineKeyboardButton
+            var button = new InlineKeyboardButton(link.Name)
             {
-                Text = link.Name,
                 Url = link.Url
             };
             return new InlineKeyboardMarkup(button);

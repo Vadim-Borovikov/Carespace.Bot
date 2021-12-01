@@ -13,7 +13,7 @@ namespace Carespace.Bot
     internal static class PhotoRepository
     {
         public static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
-            string caption = null, ParseMode parseMode = ParseMode.Default, IReplyMarkup replyMarkup = null)
+            string caption = null, ParseMode? parseMode = null, IReplyMarkup replyMarkup = null)
         {
             bool success = PhotoIds.TryGetValue(photoPath, out string fileId);
             if (success)

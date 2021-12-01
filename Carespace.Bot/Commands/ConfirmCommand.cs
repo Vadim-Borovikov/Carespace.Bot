@@ -9,7 +9,7 @@ namespace Carespace.Bot.Commands
         protected override string Name => "confirm";
         protected override string Description => "Подтвердить отправку событий";
 
-        public override bool AdminsOnly => true;
+        public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.Admins;
 
         public ConfirmCommand(Bot bot) : base(bot) { }
 

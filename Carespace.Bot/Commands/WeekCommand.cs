@@ -9,7 +9,7 @@ namespace Carespace.Bot.Commands
         protected override string Name => "week";
         protected override string Description => "Обновить расписание";
 
-        public override bool AdminsOnly => true;
+        public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.Admins;
 
         public WeekCommand(Bot bot) : base(bot) { }
 

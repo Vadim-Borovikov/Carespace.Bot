@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
+using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -92,7 +93,9 @@ namespace Carespace.Bot
                 }
             }
 
-            if (command.AdminsOnly && !FromAdmin(message))
+            long userId = message.From.Id;
+            if (((command.Access == AccessType.SuperAdmin) && !IsSuperAdmin(userId))
+                || ((command.Access == AccessType.Admins) && !IsAdmin(userId)))
             {
                 if (!fromChat)
                 {

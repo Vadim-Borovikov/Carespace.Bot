@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AbstractBot;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands
@@ -13,8 +14,7 @@ namespace Carespace.Bot.Commands
 
         public override Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            bool fromAdmin = Bot.FromAdmin(message);
-            return Bot.Client.SendTextMessageAsync(message.From.Id, Bot.GetDescription(fromAdmin));
+            return Bot.Client.SendTextMessageAsync(message.From.Id, Bot.GetDescriptionFor(message.From.Id));
         }
     }
 }

@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
-using Google.Apis.Sheets.v4;
 using GoogleSheetsManager;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -32,20 +32,20 @@ namespace Carespace.Bot.Events
 
             _saveManager = saveManager;
 
-            _discussButton = new InlineKeyboardButton
+            _discussButton = new InlineKeyboardButton("💬 Обсудить")
             {
-                Text = "💬 Обсудить",
                 Url = GetUri(_discussChatId).AbsoluteUri
             };
             _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
         }
 
-        public Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
+        public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
         {
             _weekStart = Utils.GetMonday(_bot.TimeManager);
             _weekEnd = _weekStart.AddDays(7);
 
-            _templates = LoadRelevantTemplates().ToDictionary(t => t.Id, t => t);
+            IEnumerable<Template> templates = await LoadRelevantTemplatesAsync();
+            _templates = templates.ToDictionary(t => t.Id, t => t);
             _saveManager.Load();
 
             ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
@@ -55,9 +55,14 @@ namespace Carespace.Bot.Events
 
             _confirmationPending = !shouldConfirm;
 
-            return shouldConfirm
-                ? AskForConfirmationAsync(chatId)
-                : PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            if (shouldConfirm)
+            {
+                await AskForConfirmationAsync(chatId);
+            }
+            else
+            {
+                await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            }
         }
 
         public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
@@ -287,10 +292,15 @@ namespace Carespace.Bot.Events
             return message.MessageId;
         }
 
-        private IEnumerable<Template> LoadRelevantTemplates()
+        private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
         {
-            IList<Template> templates = DataManager.GetValues<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange,
-                SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.UNFORMATTEDVALUE);
+            IList<Template> templates =
+                await DataManager.GetValuesAsync<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+            return LoadRelevantTemplates(templates).ToList();
+        }
+
+        private IEnumerable<Template> LoadRelevantTemplates(IEnumerable<Template> templates)
+        {
             foreach (Template t in templates.Where(t => t.IsApproved))
             {
                 if (t.IsWeekly)
@@ -471,9 +481,8 @@ namespace Carespace.Bot.Events
 
         private InlineKeyboardButton GetMessageIcsButton(Template template)
         {
-            return new InlineKeyboardButton
+            return new InlineKeyboardButton("📅 В календарь")
             {
-                Text = "📅 В календарь",
                 Url = string.Format(Utils.CalendarUriFormat, _bot.Config.Host, template.Id)
             };
         }

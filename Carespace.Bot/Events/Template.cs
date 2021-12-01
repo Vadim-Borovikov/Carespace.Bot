@@ -19,9 +19,9 @@ namespace Carespace.Bot.Events
 
         public bool Active => !IsWeekly || (_skip != Start.Date);
 
-        public void Load(IList<object> values)
+        public void Load(IDictionary<string, object> valueSet)
         {
-            int? id = values.ToInt(0);
+            int? id = valueSet[IdTitle]?.ToInt();
             IsApproved = id.HasValue;
             if (!id.HasValue)
             {
@@ -29,30 +29,30 @@ namespace Carespace.Bot.Events
             }
             Id = id.Value;
 
-            Name = values.ToString(1);
+            Name = valueSet[NameTitle]?.ToString();
 
-            Description = values.ToString(2);
+            Description = valueSet[DescriptionTitle]?.ToString();
 
             DateTime startDate =
-                values.ToDateTime(3) ?? throw new ArgumentNullException($"Empty start date in \"{Name}\"");
+                valueSet[StartDateTitle]?.ToDateTime() ?? throw new ArgumentNullException($"Empty start date in \"{Name}\"");
 
-            _skip = values.ToDateTime(4);
+            _skip = valueSet[SkipTitle]?.ToDateTime();
 
             DateTime startTime =
-                values.ToDateTime(5) ?? throw new ArgumentNullException($"Empty start time in \"{Name}\"");
+                valueSet[StartTimeTitle]?.ToDateTime() ?? throw new ArgumentNullException($"Empty start time in \"{Name}\"");
 
             Start = startDate.Date + startTime.TimeOfDay;
 
             TimeSpan duration =
-                values.ToTimeSpan(6) ?? throw new ArgumentNullException($"Empty duration in \"{Name}\"");
+                valueSet[DurationTitle]?.ToTimeSpan() ?? throw new ArgumentNullException($"Empty duration in \"{Name}\"");
 
             End = Start + duration;
 
-            Hosts = values.ToString(7);
+            Hosts = valueSet[HostsTitle]?.ToString();
 
-            Price = values.ToString(8);
+            Price = valueSet[PriceTitle]?.ToString();
 
-            string type = values.ToString(9);
+            string type = valueSet[TypeTitle]?.ToString();
             switch (type)
             {
                 case "Еженедельное":
@@ -65,7 +65,7 @@ namespace Carespace.Bot.Events
                     throw new ArgumentOutOfRangeException($"Unknown type \"{type}\" in \"{Name}\"");
             }
 
-            Uri = values.ToUri(10) ?? throw new ArgumentNullException($"Empty uri in \"{Name}\"");
+            Uri = valueSet[UriTitle]?.ToUri() ?? throw new ArgumentNullException($"Empty uri in \"{Name}\"");
         }
 
         public void MoveToWeek(DateTime weekStart)
@@ -74,6 +74,18 @@ namespace Carespace.Bot.Events
             Start = Start.AddDays(7 * weeks);
             End = End.AddDays(7 * weeks);
         }
+
+        private const string IdTitle = "Id";
+        private const string NameTitle = "Как называется ваше мероприятие?";
+        private const string DescriptionTitle = "Расскажите о нём побольше";
+        private const string StartDateTitle = "Дата проведения";
+        private const string SkipTitle = "Пропуск";
+        private const string StartTimeTitle = "Время начала";
+        private const string DurationTitle = "Продолжительность";
+        private const string HostsTitle = "Кто будет вести?";
+        private const string PriceTitle = "Цена";
+        private const string TypeTitle = "Тип события";
+        private const string UriTitle = "Ссылка для регистрации или участия";
 
         private DateTime? _skip;
     }

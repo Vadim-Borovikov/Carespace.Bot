@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -28,7 +29,8 @@ namespace Carespace.Bot
             await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
             if (found)
             {
-                await _bot.Client.SendTextMessageAsync(chatId, $"Email найден! Твой промокод: `{_bookPromo}`", ParseMode.Markdown);
+                await _bot.Client.SendTextMessageAsync(chatId, $"Email найден! Твой промокод: `{_bookPromo}`",
+                    ParseMode.Markdown);
             }
             else
             {
