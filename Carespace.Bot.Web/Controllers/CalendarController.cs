@@ -10,6 +10,11 @@ namespace Carespace.Bot.Web.Controllers
         [HttpGet("{id}")]
         public IActionResult GetCalendar(int id, [FromServices]BotSingleton singleton)
         {
+            if (!singleton.Bot.Calendars.ContainsKey(id))
+            {
+                return Redirect(singleton.Bot.Config.ErrorPageUrl);
+            }
+
             if (IsApple())
             {
                 return File(singleton.Bot.Calendars[id].IcsContent, ContentType);

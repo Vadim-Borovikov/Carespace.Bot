@@ -61,6 +61,9 @@ namespace Carespace.Bot.Config
         [JsonProperty]
         public string BookPromo { get; set; }
 
+        [JsonProperty]
+        public string ErrorPageUrl { get; set; }
+
         internal string Introduction => string.Join('\n', IntroductionLines);
         internal string Schedule => string.Join('\n', ScheduleLines);
     }
