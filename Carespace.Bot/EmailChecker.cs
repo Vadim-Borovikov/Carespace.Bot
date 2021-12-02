@@ -24,13 +24,13 @@ namespace Carespace.Bot
 
         public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
         {
-            Message statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Проверяю..._", ParseMode.Markdown);
+            Message statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
             bool found = CheckEmail(email);
             await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
             if (found)
             {
-                await _bot.Client.SendTextMessageAsync(chatId, $"Email найден! Твой промокод: `{_bookPromo}`",
-                    ParseMode.Markdown);
+                await _bot.Client.SendTextMessageAsync(chatId, $"Email найден\\! Твой промокод: `{_bookPromo}`",
+                    ParseMode.MarkdownV2);
             }
             else
             {

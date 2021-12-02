@@ -16,11 +16,15 @@ namespace Carespace.Bot.Commands
 
         public override async Task ExecuteAsync(Message message, bool fromChat = false)
         {
-            foreach (string text in
-                Bot.Config.ExersisesLinks.Select(l => string.Format(Bot.Config.Template, WordJoiner, l)))
+            foreach (string text in Bot.Config.ExersisesLinks.Select(GetMessage))
             {
-                await Bot.Client.SendTextMessageAsync(message.From.Id, text, ParseMode.Markdown);
+                await Bot.Client.SendTextMessageAsync(message.From.Id, text, ParseMode.MarkdownV2);
             }
+        }
+
+        private string GetMessage(string link)
+        {
+            return string.Format(Bot.Config.Template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
         }
 
         private const string WordJoiner = "\u2060";

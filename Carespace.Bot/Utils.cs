@@ -56,8 +56,8 @@ namespace Carespace.Bot
         {
             if (string.IsNullOrWhiteSpace(link.PhotoPath))
             {
-                string text = $"[{link.Name}]({link.Url})";
-                return client.SendTextMessageAsync(chatId, text, ParseMode.Markdown);
+                string text = $"[{AbstractBot.Utils.EscapeCharacters(link.Name)}]({link.Url})";
+                return client.SendTextMessageAsync(chatId, text, ParseMode.MarkdownV2);
             }
 
             InlineKeyboardMarkup keyboard = GetReplyMarkup(link);

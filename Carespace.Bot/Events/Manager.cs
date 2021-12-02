@@ -76,7 +76,7 @@ namespace Carespace.Bot.Events
             _confirmationPending = false;
 
             Message statusMessage =
-                await _bot.Client.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.Markdown);
+                await _bot.Client.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
 
             await PostOrUpdateEventsAsync();
             await PostOrUpdateScheduleAsync();
@@ -235,7 +235,7 @@ namespace Carespace.Bot.Events
 
         private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
         {
-            string text = $"{prefix} мероприятие [{e.Template.Name}]({e.Template.Uri}).";
+            string text = $"{prefix} мероприятие [{AbstractBot.Utils.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
 
             if (e.Data.NotificationId.HasValue)
             {
@@ -286,7 +286,7 @@ namespace Carespace.Bot.Events
             bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
         {
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.Markdown, null,
+            Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.MarkdownV2, null,
                 disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
             _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
             return message.MessageId;
@@ -323,7 +323,7 @@ namespace Carespace.Bot.Events
         private string PrepareWeekSchedule()
         {
             var scheduleBuilder = new StringBuilder();
-            scheduleBuilder.AppendLine("🗓 *Расписание* (время московское, 🔄 — еженедельные)");
+            scheduleBuilder.AppendLine("🗓 *Расписание* \\(время московское, 🔄 — еженедельные\\)");
             DateTime date = _weekStart.AddDays(-1);
             foreach (Event e in _events.Values
                 .Where(e => e.Template.Active && (e.Template.Start < _weekEnd))
@@ -338,12 +338,15 @@ namespace Carespace.Bot.Events
                     date = e.Template.Start.Date;
                     scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
                 }
+                string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
                 Uri messageUri = GetMessageUri(_eventsChatId, e.Data.MessageId);
+                string messageUrl = AbstractBot.Utils.EscapeCharacters(messageUri.AbsoluteUri);
                 string weekly = e.Template.IsWeekly ? " 🔄" : "";
-                scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{e.Template.Name}]({messageUri}){weekly}");
+                scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{name}]({messageUrl}){weekly}");
             }
             scheduleBuilder.AppendLine();
-            scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {_bot.Config.EventsFormUri}.");
+            string url = AbstractBot.Utils.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
+            scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
             return scheduleBuilder.ToString();
         }
 
@@ -371,8 +374,8 @@ namespace Carespace.Bot.Events
                 return;
             }
             InlineKeyboardMarkup keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-            Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.Markdown, null,
-                disableWebPagePreview, keyboardMarkup);
+            Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.MarkdownV2,
+                null, disableWebPagePreview, keyboardMarkup);
             if (data == null)
             {
                 _saveManager.Data.Messages[messageId] = new MessageData(message, text, keyboard);
@@ -420,11 +423,11 @@ namespace Carespace.Bot.Events
         {
             var builder = new StringBuilder();
 
-            builder.Append($"[{WordJoiner}]({template.Uri})");
-            builder.AppendLine($"*{template.Name}*");
+            builder.Append($"[{WordJoiner}]({AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)})");
+            builder.AppendLine($"*{AbstractBot.Utils.EscapeCharacters(template.Name)}*");
 
             builder.AppendLine();
-            builder.AppendLine(template.Description);
+            builder.AppendLine(AbstractBot.Utils.EscapeCharacters(template.Description));
 
             builder.AppendLine();
             builder.Append("🕰️ *Когда:* ");
@@ -462,21 +465,21 @@ namespace Carespace.Bot.Events
             {
                 builder.Append($"{template.Start:d MMMM}");
             }
-            builder.AppendLine($", {template.Start:HH:mm}-{template.End:HH:mm} (Мск).");
+            builder.AppendLine($", {template.Start:HH:mm}\\-{template.End:HH:mm} \\(Мск\\)\\.");
 
             if (!string.IsNullOrWhiteSpace(template.Hosts))
             {
                 builder.AppendLine();
-                builder.AppendLine($"🎤 *Кто ведёт*: {template.Hosts}.");
+                builder.AppendLine($"🎤 *Кто ведёт*: {AbstractBot.Utils.EscapeCharacters(template.Hosts)}\\.");
             }
 
             builder.AppendLine();
-            builder.AppendLine($"💰 *Цена*: {template.Price}.");
+            builder.AppendLine($"💰 *Цена*: {AbstractBot.Utils.EscapeCharacters(template.Price)}\\.");
 
             builder.AppendLine();
-            builder.AppendLine($"🗞️ *Принять участие*: {template.Uri}.");
+            builder.AppendLine($"🗞️ *Принять участие*: {AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
 
-            return builder.ToString().Replace("_", "\\_");
+            return builder.ToString();
         }
 
         private InlineKeyboardButton GetMessageIcsButton(Template template)
