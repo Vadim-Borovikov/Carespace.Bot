@@ -12,12 +12,12 @@ namespace Carespace.Bot
 {
     internal sealed class EmailChecker
     {
-        public EmailChecker(Bot bot, int sellerId, int productId, DateTime dateStat, string sellerSecret, string bookPromo)
+        public EmailChecker(Bot bot, int sellerId, int productId, DateTime dateStart, string sellerSecret, string bookPromo)
         {
             _bot = bot;
             _sellerId = sellerId;
             _productId = productId;
-            _dateStat = dateStat;
+            _dateStart = dateStart;
             _sellerSecret = sellerSecret;
             _bookPromo = bookPromo;
         }
@@ -25,7 +25,7 @@ namespace Carespace.Bot
         public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
         {
             Message statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
-            bool found = CheckEmail(email);
+            bool found = await CheckEmailAsync(email);
             await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
             if (found)
             {
@@ -38,18 +38,19 @@ namespace Carespace.Bot
             }
         }
 
-        private bool CheckEmail(MailAddress email)
+        private async Task<bool> CheckEmailAsync(MailAddress email)
         {
+            var productIds = new List<int>(_productId);
             DateTime finish = DateTime.Today.AddDays(1);
-            IEnumerable<string> eMails =
-                Utils.GetDigisellerSellsEmails(_sellerId, _productId, _dateStat, finish, _sellerSecret);
-            return eMails.Contains(email.Address.ToLowerInvariant());
+            IEnumerable<string> eMails = await FinanceHelper.Utils.GetDigisellerSellsEmailsAsync(_sellerId, productIds,
+                _dateStart, finish, _sellerSecret);
+            return eMails.Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
         }
 
         private readonly Bot _bot;
         private readonly int _sellerId;
         private readonly int _productId;
-        private readonly DateTime _dateStat;
+        private readonly DateTime _dateStart;
         private readonly string _sellerSecret;
         private readonly string _bookPromo;
     }

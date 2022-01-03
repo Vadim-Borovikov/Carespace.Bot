@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Config;
-using Carespace.Bot.Dto;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -16,26 +14,6 @@ namespace Carespace.Bot
 {
     public static class Utils
     {
-        internal static IEnumerable<string> GetDigisellerSellsEmails(int sellerId, int productId, DateTime dateStart,
-            DateTime dateFinish, string sellerSecret)
-        {
-            string start = dateStart.ToString(GoogleDateTimeFormat);
-            string end = dateFinish.ToString(GoogleDateTimeFormat);
-            int page = 1;
-            int totalPages;
-            var productIds = new List<int> { productId };
-            do
-            {
-                SellsResult dto = DigisellerProvider.GetSells(sellerId, productIds, start, end, page, sellerSecret);
-                foreach (SellsResult.Sell sell in dto.Sells)
-                {
-                    yield return sell.Email.ToLowerInvariant();
-                }
-                ++page;
-                totalPages = dto.Pages;
-            } while (page <= totalPages);
-        }
-
         internal static MailAddress AsEmail(this string email)
         {
             try
@@ -88,8 +66,6 @@ namespace Carespace.Bot
             };
             return new InlineKeyboardMarkup(button);
         }
-
-        private const string GoogleDateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
         internal const string CalendarUriFormat = "{0}/calendar/{1}";
 

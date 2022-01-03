@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Carespace.Bot.Dto
+namespace Carespace.FinanceHelper.Dto.Digiseller
 {
     public sealed class SellsRequest
     {
