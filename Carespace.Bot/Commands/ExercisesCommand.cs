@@ -14,7 +14,7 @@ namespace Carespace.Bot.Commands
 
         public ExercisesCommand(Bot bot) : base(bot) { }
 
-        public override async Task ExecuteAsync(Message message, bool fromChat = false)
+        public override async Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             foreach (string text in Bot.Config.ExersisesLinks.Select(GetMessage))
             {

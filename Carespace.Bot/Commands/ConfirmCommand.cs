@@ -13,7 +13,7 @@ namespace Carespace.Bot.Commands
 
         public ConfirmCommand(Bot bot) : base(bot) { }
 
-        public override async Task ExecuteAsync(Message message, bool fromChat = false)
+        public override async Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             await Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat);
         }

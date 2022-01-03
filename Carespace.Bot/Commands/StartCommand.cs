@@ -12,7 +12,7 @@ namespace Carespace.Bot.Commands
 
         public StartCommand(Bot bot) : base(bot) { }
 
-        public override Task ExecuteAsync(Message message, bool fromChat = false)
+        public override Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             return Bot.Client.SendTextMessageAsync(message.From.Id, Bot.GetDescriptionFor(message.From.Id));
         }

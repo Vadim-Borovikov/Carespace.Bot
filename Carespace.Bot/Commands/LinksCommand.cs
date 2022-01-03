@@ -12,7 +12,7 @@ namespace Carespace.Bot.Commands
 
         public LinksCommand(Bot bot) : base(bot)  { }
 
-        public override async Task ExecuteAsync(Message message, bool fromChat = false)
+        public override async Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             foreach (Link link in Bot.Config.Links)
             {

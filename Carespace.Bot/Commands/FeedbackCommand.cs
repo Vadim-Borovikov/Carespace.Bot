@@ -11,7 +11,7 @@ namespace Carespace.Bot.Commands
 
         public FeedbackCommand(Bot bot) : base(bot) { }
 
-        public override Task ExecuteAsync(Message message, bool fromChat = false)
+        public override Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             return Bot.Client.SendMessageAsync(Bot.Config.FeedbackLink, message.From.Id);
         }

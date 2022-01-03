@@ -10,7 +10,7 @@ namespace Carespace.Bot.Commands
     {
         protected TextCommand(Bot bot, string text) : base(bot) => _text = text;
 
-        public override Task ExecuteAsync(Message message, bool fromChat = false)
+        public override Task ExecuteAsync(Message message, bool fromChat, string payload)
         {
             return Bot.Client.SendTextMessageAsync(message.From.Id, _text, ParseMode.MarkdownV2);
         }

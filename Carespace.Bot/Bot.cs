@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,31 +58,32 @@ namespace Carespace.Bot
             base.Dispose();
         }
 
-        protected override async Task UpdateAsync(Message message, CommandBase<Bot, Config.Config> command,
-            bool fromChat = false)
+        protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+            CommandBase<Bot, Config.Config> command = null, string payload = null)
         {
             if (command == null)
             {
                 if (!fromChat)
                 {
-                    MailAddress email = message.Text.AsEmail();
+                    MailAddress email = textMessage.Text.AsEmail();
                     if (email == null)
                     {
-                        await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
+                        await Client.SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
                     }
                     else
                     {
-                        await _emeilChecker.CheckEmailAsync(message.Chat, email);
+                        await _emeilChecker.CheckEmailAsync(textMessage.Chat, email);
                     }
                 }
                 return;
             }
 
+            long userId = textMessage.From.Id;
             if (fromChat)
             {
                 try
                 {
-                    await Client.DeleteMessageAsync(message.Chat, message.MessageId);
+                    await Client.DeleteMessageAsync(textMessage.Chat, textMessage.MessageId);
                 }
                 catch (ApiRequestException e)
                     when ((e.ErrorCode == MessageToDeleteNotFoundCode)
@@ -93,20 +93,19 @@ namespace Carespace.Bot
                 }
             }
 
-            long userId = message.From.Id;
-            if (((command.Access == AccessType.SuperAdmin) && !IsSuperAdmin(userId))
-                || ((command.Access == AccessType.Admins) && !IsAdmin(userId)))
+            bool shouldExecute = IsAccessSuffice(userId, command.Access);
+            if (!shouldExecute)
             {
                 if (!fromChat)
                 {
-                    await Client.SendStickerAsync(message.Chat, ForbiddenSticker);
+                    await Client.SendStickerAsync(textMessage.Chat, ForbiddenSticker);
                 }
                 return;
             }
 
             try
             {
-                await command.ExecuteAsync(message, fromChat);
+                await command.ExecuteAsync(textMessage, fromChat, payload);
             }
             catch (ApiRequestException e)
                 when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
@@ -114,28 +113,15 @@ namespace Carespace.Bot
             }
         }
 
-        protected override async Task UpdateAsync(Message message)
+        protected override Task UpdateAsync(Message message, bool fromChat,
+            CommandBase<Bot, Config.Config> command = null, string payload = null)
         {
-            bool fromChat = message.Chat.Id != message.From.Id;
-
-            if (message.Type != MessageType.Text)
+            if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
             {
-                if (!fromChat)
-                {
-                    await Client.SendStickerAsync(message.Chat, DontUnderstandSticker);
-                }
-                return;
+                return Task.CompletedTask;
             }
 
-            string botName = null;
-            if (fromChat)
-            {
-                User user = await GetUserAsunc();
-                botName = user.Username;
-            }
-            CommandBase<Bot, Config.Config> command =
-                Commands.FirstOrDefault(c => c.IsInvokingBy(message.Text, fromChat, botName));
-            await UpdateAsync(message, command, fromChat);
+            return base.UpdateAsync(message, fromChat, command, payload);
         }
 
         private void Schedule(Func<Task> func, string funcName)
