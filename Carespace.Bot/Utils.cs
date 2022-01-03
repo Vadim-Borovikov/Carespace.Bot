@@ -16,16 +16,17 @@ namespace Carespace.Bot
 {
     public static class Utils
     {
-        internal static IEnumerable<string> GetDigisellerSellsEmails(int sellerId, int productId,
-            DateTime dateStat, DateTime dateFinish, string sellerSecret)
+        internal static IEnumerable<string> GetDigisellerSellsEmails(int sellerId, int productId, DateTime dateStart,
+            DateTime dateFinish, string sellerSecret)
         {
-            string start = dateStat.ToString(GoogleDateTimeFormat);
+            string start = dateStart.ToString(GoogleDateTimeFormat);
             string end = dateFinish.ToString(GoogleDateTimeFormat);
             int page = 1;
             int totalPages;
+            var productIds = new List<int> { productId };
             do
             {
-                SellsResult dto = DigisellerProvider.GetSells(sellerId, new List<int> { productId }, start, end, page, sellerSecret);
+                SellsResult dto = DigisellerProvider.GetSells(sellerId, productIds, start, end, page, sellerSecret);
                 foreach (SellsResult.Sell sell in dto.Sells)
                 {
                     yield return sell.Email.ToLowerInvariant();
