@@ -52,6 +52,12 @@ namespace Carespace.Bot
             return today.AddDays(-diff);
         }
 
+        internal static DateTime GetNextThursday(DateTime date)
+        {
+            int diff = (7 + DayOfWeek.Thursday - date.DayOfWeek) % 7;
+            return date.AddDays(diff);
+        }
+
         internal static string ShowDate(DateTime date)
         {
             string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));

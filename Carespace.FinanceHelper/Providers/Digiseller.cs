@@ -10,7 +10,7 @@ using SelfWork;
 
 namespace Carespace.FinanceHelper.Providers
 {
-    public static class Digiseller
+    internal static class Digiseller
     {
         public static Task<ProductResult> GetProductsInfoAsync(int productId)
         {

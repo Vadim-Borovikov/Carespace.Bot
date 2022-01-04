@@ -331,12 +331,6 @@ namespace Carespace.FinanceHelper
             return value.Substring(prefixLength, value.Length - prefixLength - postfixLenght);
         }
 
-        public static DateTime GetNextThursday(DateTime date)
-        {
-            int diff = (7 + DayOfWeek.Thursday - date.DayOfWeek) % 7;
-            return date.AddDays(diff);
-        }
-
         internal static string GetHyperlink(string urlFormat, object parameter)
         {
             string caption = parameter?.ToString();

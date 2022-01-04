@@ -19,6 +19,7 @@ namespace Carespace.Bot
         public Bot(Config.Config config) : base(config)
         {
             var saveManager = new SaveManager<SaveData>(Config.SavePath);
+            var financeManager = new FinanceManager(this);
 
             Calendars = new Dictionary<int, Calendar>();
             EventManager = new Manager(this, saveManager);
@@ -29,6 +30,7 @@ namespace Carespace.Bot
             Commands.Add(new ExercisesCommand(this));
             Commands.Add(new LinksCommand(this));
             Commands.Add(new FeedbackCommand(this));
+            Commands.Add(new FinanceCommand(this, financeManager));
             Commands.Add(new WeekCommand(this));
             Commands.Add(new ConfirmCommand(this));
 
@@ -37,7 +39,7 @@ namespace Carespace.Bot
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
-            _emeilChecker = new EmailChecker(this, Config.SellerId, Config.ProductId, Config.SellsStart, Config.SellerSecret, Config.BookPromo);
+            _emeilChecker = new EmailChecker(this);
 
             await base.StartAsync(cancellationToken);
             await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(Config.LogsChatId, true);
