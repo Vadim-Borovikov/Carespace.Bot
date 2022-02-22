@@ -97,8 +97,9 @@ public sealed class Transaction : ISavable
 
     public IDictionary<string, object?> Convert()
     {
-        Uri? taxReceiptUri =
-            TaxReceiptId is null ? null : SelfWork.DataManager.GetReceiptUri(TaxPayerId, TaxReceiptId);
+        Uri? taxReceiptUri = string.IsNullOrWhiteSpace(TaxReceiptId)
+            ? null
+            : SelfWork.DataManager.GetReceiptUri(TaxPayerId, TaxReceiptId);
         string? taxHyperLink = taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, TaxReceiptId);
         Dictionary<string, object?> result = new()
         {
