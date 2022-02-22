@@ -1,4 +1,5 @@
-﻿using Carespace.Bot.Web.Models;
+﻿using System.Globalization;
+using Carespace.Bot.Web.Models;
 using GryphonUtilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -32,6 +33,10 @@ internal sealed class Startup
         app.UseCors();
 
         ConfigJson botConfig = _config.Get<ConfigJson>();
+
+        string cultureInfoName = botConfig.CultureInfoName.GetValue(nameof(botConfig.Token));
+        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(cultureInfoName);
+
         string token = botConfig.Token.GetValue(nameof(botConfig.Token));
         object defaults = new
         {
