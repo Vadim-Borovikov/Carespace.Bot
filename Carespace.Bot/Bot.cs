@@ -6,149 +6,158 @@ using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
+using Carespace.Bot.Save;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Calendar = Carespace.Bot.Events.Calendar;
 
-namespace Carespace.Bot
+namespace Carespace.Bot;
+
+public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 {
-    public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
+    public Bot(Config.Config config) : base(config)
     {
-        public Bot(Config.Config config) : base(config)
+        string savePath = Config.SavePath.GetValue(nameof(Config.SavePath));
+        _saveManager = new SaveManager<Data, JsonData>(savePath);
+
+        Calendars = new Dictionary<int, Calendar>();
+
+        _weeklyUpdateTimer = new Events.Timer(TimeManager);
+    }
+
+    public override async Task StartAsync(CancellationToken cancellationToken)
+    {
+        FinanceManager financeManager = new(this);
+
+        Commands.Add(new StartCommand(this));
+        Commands.Add(new IntroCommand(this));
+        Commands.Add(new ScheduleCommand(this));
+        Commands.Add(new ExercisesCommand(this));
+        Commands.Add(new LinksCommand(this));
+        Commands.Add(new FeedbackCommand(this));
+        Commands.Add(new FinanceCommand(this, financeManager));
+        Commands.Add(new WeekCommand(this));
+        Commands.Add(new ConfirmCommand(this));
+
+        long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
+
+        await base.StartAsync(cancellationToken);
+        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
+        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
+            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _weeklyUpdateTimer.Stop();
+        await base.StopAsync(cancellationToken);
+    }
+
+    public override void Dispose()
+    {
+        _weeklyUpdateTimer.Dispose();
+        _eventManager?.Dispose();
+        base.Dispose();
+    }
+
+    protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+        CommandBase<Bot, Config.Config>? command = null, string? payload = null)
+    {
+        if (command is null)
         {
-            var saveManager = new SaveManager<SaveData>(Config.SavePath);
-            var financeManager = new FinanceManager(this);
-
-            Calendars = new Dictionary<int, Calendar>();
-            EventManager = new Manager(this, saveManager);
-
-            Commands.Add(new StartCommand(this));
-            Commands.Add(new IntroCommand(this));
-            Commands.Add(new ScheduleCommand(this));
-            Commands.Add(new ExercisesCommand(this));
-            Commands.Add(new LinksCommand(this));
-            Commands.Add(new FeedbackCommand(this));
-            Commands.Add(new FinanceCommand(this, financeManager));
-            Commands.Add(new WeekCommand(this));
-            Commands.Add(new ConfirmCommand(this));
-
-            _weeklyUpdateTimer = new Events.Timer(TimeManager);
-        }
-
-        public override async Task StartAsync(CancellationToken cancellationToken)
-        {
-            _emeilChecker = new EmailChecker(this);
-
-            await base.StartAsync(cancellationToken);
-            await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(Config.LogsChatId, true);
-            Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(Config.LogsChatId, false),
-                nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
-        }
-
-        public override async Task StopAsync(CancellationToken cancellationToken)
-        {
-            _weeklyUpdateTimer.Stop();
-            await base.StopAsync(cancellationToken);
-        }
-
-        public override void Dispose()
-        {
-            _weeklyUpdateTimer?.Dispose();
-            EventManager?.Dispose();
-            base.Dispose();
-        }
-
-        protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
-            CommandBase<Bot, Config.Config> command = null, string payload = null)
-        {
-            if (command == null)
-            {
-                if (!fromChat)
-                {
-                    MailAddress email = textMessage.Text.AsEmail();
-                    if (email == null)
-                    {
-                        await Client.SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
-                    }
-                    else
-                    {
-                        await _emeilChecker.CheckEmailAsync(textMessage.Chat, email);
-                    }
-                }
-                return;
-            }
-
-            long userId = textMessage.From.Id;
             if (fromChat)
             {
-                try
-                {
-                    await Client.DeleteMessageAsync(textMessage.Chat, textMessage.MessageId);
-                }
-                catch (ApiRequestException e)
-                    when ((e.ErrorCode == MessageToDeleteNotFoundCode)
-                          && (e.Message == MessageToDeleteNotFoundText))
-                {
-                    return;
-                }
-            }
-
-            bool shouldExecute = IsAccessSuffice(userId, command.Access);
-            if (!shouldExecute)
-            {
-                if (!fromChat)
-                {
-                    await Client.SendStickerAsync(textMessage.Chat, ForbiddenSticker);
-                }
                 return;
             }
 
+            MailAddress? email = textMessage.Text?.AsEmail();
+            if (email is null)
+            {
+                await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+            }
+            else
+            {
+                await EmailChecker.CheckEmailAsync(textMessage.Chat.Id, email);
+            }
+            return;
+        }
+
+        if (fromChat)
+        {
             try
             {
-                await command.ExecuteAsync(textMessage, fromChat, payload);
+                await Client.DeleteMessageAsync(textMessage.Chat.Id, textMessage.MessageId);
             }
             catch (ApiRequestException e)
-                when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
+                when ((e.ErrorCode == MessageToDeleteNotFoundCode)
+                      && (e.Message == MessageToDeleteNotFoundText))
             {
+                return;
             }
         }
 
-        protected override Task UpdateAsync(Message message, bool fromChat,
-            CommandBase<Bot, Config.Config> command = null, string payload = null)
+        User user = textMessage.From.GetValue(nameof(textMessage.From));
+        bool shouldExecute = IsAccessSuffice(user.Id, command.Access);
+        if (!shouldExecute)
         {
-            if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
+            if (!fromChat)
             {
-                return Task.CompletedTask;
+                await Client.SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
             }
-
-            return base.UpdateAsync(message, fromChat, command, payload);
+            return;
         }
 
-        private void Schedule(Func<Task> func, string funcName)
+        try
         {
-            DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
-            _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
+            await command.ExecuteAsync(textMessage, fromChat, payload);
         }
-
-        private async Task DoAndScheduleWeeklyAsync(Func<Task> func, string funcName)
+        catch (ApiRequestException e)
+            when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
         {
-            await func();
-            _weeklyUpdateTimer.DoWeekly(func, funcName);
         }
-
-        public readonly IDictionary<int, Calendar> Calendars;
-
-        internal readonly Manager EventManager;
-
-        private readonly Events.Timer _weeklyUpdateTimer;
-
-        private EmailChecker _emeilChecker;
-
-        private const int MessageToDeleteNotFoundCode = 400;
-        private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
-        private const int CantInitiateConversationCode = 403;
-        private const string CantInitiateConversationText = "Forbidden: bot can't initiate conversation with a user";
     }
+
+    protected override Task UpdateAsync(Message message, bool fromChat,
+        CommandBase<Bot, Config.Config>? command = null, string? payload = null)
+    {
+        if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.UpdateAsync(message, fromChat, command, payload);
+    }
+
+    private void Schedule(Func<Task> func, string funcName)
+    {
+        DateTime eventsUpdateAt = Config.EventsUpdateAt.GetValue(nameof(Config.EventsUpdateAt));
+        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + eventsUpdateAt.TimeOfDay;
+        _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
+    }
+
+    private async Task DoAndScheduleWeeklyAsync(Func<Task> func, string funcName)
+    {
+        await func();
+        _weeklyUpdateTimer.DoWeekly(func, funcName);
+    }
+
+    public readonly IDictionary<int, Calendar> Calendars;
+
+    internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
+
+    private EmailChecker EmailChecker => _emailChecker ??= new EmailChecker(this);
+
+    private Manager? _eventManager;
+    private EmailChecker? _emailChecker;
+
+    private readonly Events.Timer _weeklyUpdateTimer;
+    private readonly SaveManager<Data, JsonData> _saveManager;
+
+    private const int MessageToDeleteNotFoundCode = 400;
+    private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
+    private const int CantInitiateConversationCode = 403;
+    private const string CantInitiateConversationText = "Forbidden: bot can't initiate conversation with a user";
 }

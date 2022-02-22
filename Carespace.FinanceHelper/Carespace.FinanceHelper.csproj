@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GoogleSheetsManager" Version="8.4.1" />
-    <PackageReference Include="SelfWork" Version="4.0.0" />
+    <PackageReference Include="GoogleSheetsManager" Version="14.0.1" />
+    <PackageReference Include="SelfWork" Version="5.0.1" />
   </ItemGroup>
 
 </Project>

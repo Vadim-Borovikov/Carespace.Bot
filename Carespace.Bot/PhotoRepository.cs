@@ -2,38 +2,37 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Carespace.Bot
-{
-    internal static class PhotoRepository
-    {
-        public static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
-            string caption = null, ParseMode? parseMode = null, IReplyMarkup replyMarkup = null)
-        {
-            bool success = PhotoIds.TryGetValue(photoPath, out string fileId);
-            if (success)
-            {
-                var photo = new InputOnlineFile(fileId);
-                return await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
-            }
+namespace Carespace.Bot;
 
-            using (var stream = new FileStream(photoPath, FileMode.Open))
-            {
-                var photo = new InputOnlineFile(stream);
-                Message message =
-                    await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
-                fileId = message.Photo.First().FileId;
-                PhotoIds.TryAdd(photoPath, fileId);
-                return message;
-            }
+internal static class PhotoRepository
+{
+    public static async Task<Message> SendPhotoAsync(ITelegramBotClient client, ChatId chatId, string photoPath,
+        string? caption = null, ParseMode? parseMode = null, IReplyMarkup? replyMarkup = null)
+    {
+        bool success = PhotoIds.TryGetValue(photoPath, out string? fileId);
+        if (success && !string.IsNullOrWhiteSpace(fileId))
+        {
+            InputOnlineFile photo = new(fileId);
+            return await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
         }
 
-        private static readonly ConcurrentDictionary<string, string> PhotoIds =
-            new ConcurrentDictionary<string, string>();
+        await using (FileStream stream = new(photoPath, FileMode.Open))
+        {
+            InputOnlineFile photo = new(stream);
+            Message message = await client.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
+            PhotoSize[] photoSizes = message.Photo.GetValue(nameof(message.Photo));
+            fileId = photoSizes.First().FileId;
+            PhotoIds.TryAdd(photoPath, fileId);
+            return message;
+        }
     }
+
+    private static readonly ConcurrentDictionary<string, string> PhotoIds = new();
 }

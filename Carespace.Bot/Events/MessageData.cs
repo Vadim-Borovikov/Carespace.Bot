@@ -2,34 +2,33 @@
 using Newtonsoft.Json;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Events
+namespace Carespace.Bot.Events;
+
+internal sealed class MessageData
 {
-    internal sealed class MessageData
+    public enum KeyboardType
     {
-        public enum KeyboardType
-        {
-            None,
-            Ics,
-            Discuss,
-            Full
-        }
+        None,
+        Ics,
+        Discuss,
+        Full
+    }
 
-        [JsonProperty]
-        public string Text { get; set; }
+    [JsonProperty]
+    public string? Text { get; set; }
 
-        [JsonProperty]
-        public KeyboardType Keyboard { get; set; }
+    [JsonProperty]
+    public KeyboardType? Keyboard { get; set; }
 
-        [JsonProperty]
-        public DateTime Date { get; set; }
+    [JsonProperty]
+    public DateTime? Date { get; set; }
 
-        public MessageData() { }
+    public MessageData() { }
 
-        public MessageData(Message message, string text, KeyboardType keyboard)
-        {
-            Text = text;
-            Date = message.Date.ToLocalTime();
-            Keyboard = keyboard;
-        }
+    public MessageData(Message message, string text, KeyboardType keyboard)
+    {
+        Text = text;
+        Date = message.Date.ToLocalTime();
+        Keyboard = keyboard;
     }
 }

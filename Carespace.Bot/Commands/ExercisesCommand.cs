@@ -1,32 +1,34 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AbstractBot;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Commands
+namespace Carespace.Bot.Commands;
+
+internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
 {
-    internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
+    protected override string Name => "exercises";
+    protected override string Description => "Упражнения";
+
+    public ExercisesCommand(Bot bot) : base(bot) { }
+
+    public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        protected override string Name => "exercises";
-        protected override string Description => "Упражнения";
-
-        public ExercisesCommand(Bot bot) : base(bot) { }
-
-        public override async Task ExecuteAsync(Message message, bool fromChat, string payload)
+        User user = message.From.GetValue(nameof(message.From));
+        foreach (string text in Bot.Config.ExercisesLinks.Select(GetMessage))
         {
-            foreach (string text in Bot.Config.ExersisesLinks.Select(GetMessage))
-            {
-                await Bot.Client.SendTextMessageAsync(message.From.Id, text, ParseMode.MarkdownV2);
-            }
+            await Bot.Client.SendTextMessageAsync(user.Id, text, ParseMode.MarkdownV2);
         }
-
-        private string GetMessage(string link)
-        {
-            return string.Format(Bot.Config.Template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
-        }
-
-        private const string WordJoiner = "\u2060";
     }
+
+    private string GetMessage(string link)
+    {
+        string template = Bot.Config.Template.GetValue(nameof(Bot.Config.Template));
+        return string.Format(template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
+    }
+
+    private const string WordJoiner = "\u2060";
 }

@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /Carespace.Bot.Web/appsettings.Development.json
 /Carespace.Bot.Web/save.json
 /Carespace.Bot.Web/timers.txt
+/NuGet.Config

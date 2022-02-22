@@ -1,49 +1,45 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using Carespace.Bot.Web.Models;
+﻿using Carespace.Bot.Web.Models;
+using GryphonUtilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace Carespace.Bot.Web
+namespace Carespace.Bot.Web;
+
+internal sealed class Startup
 {
-    internal sealed class Startup
+    public Startup(IConfiguration config) => _config = config;
+
+    public void ConfigureServices(IServiceCollection services)
     {
-        public Startup(IConfiguration config) => _config = config;
+        services.AddSingleton<BotSingleton>();
+        services.AddHostedService<BotService>();
+        services.Configure<ConfigJson>(_config);
 
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton<BotSingleton>();
-            services.AddHostedService<BotService>();
-            services.Configure<Models.Config>(_config);
-
-            services.AddMvc();
-        }
-
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(_config["CultureInfoName"]);
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
-            app.UseMvc(routes => routes.MapRoute("update", $"{_config["Token"]}/{{controller=Update}}/{{action=post}}"));
-        }
-
-        private readonly IConfiguration _config;
+        services.AddControllersWithViews().AddNewtonsoftJson();
     }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseRouting();
+        app.UseCors();
+
+        ConfigJson botConfig = _config.Get<ConfigJson>();
+        string token = botConfig.Token.GetValue(nameof(botConfig.Token));
+        object defaults = new
+        {
+            controller = "Update",
+            action = "Post"
+        };
+        app.UseEndpoints(endpoints => endpoints.MapControllerRoute("update", token, defaults));
+    }
+
+    private readonly IConfiguration _config;
 }

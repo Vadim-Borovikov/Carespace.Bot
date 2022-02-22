@@ -1,91 +1,99 @@
 ﻿using System;
 using System.Collections.Generic;
-using Carespace.FinanceHelper.Dto.PayMaster;
+using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
+using GryphonUtilities;
 
-namespace Carespace.FinanceHelper
+namespace Carespace.FinanceHelper;
+
+public sealed class Donation : ISavable
 {
-    public sealed class Donation : ILoadable, ISavable
+    IList<string> ISavable.Titles => Titles;
+
+    public readonly DateTime Date;
+    internal readonly decimal Amount;
+    internal readonly int? PaymentId;
+    internal readonly Transaction.PayMethod? PayMethodInfo;
+
+    public ushort Week { get; internal set; }
+    public decimal Total { get; internal set; }
+
+
+    internal Donation(ListPaymentsFilterResult.ResponseInfo.Payment payment)
     {
-        IList<string> ISavable.Titles => Titles;
+        Date = payment.LastUpdateTime.GetValue(nameof(payment.LastUpdateTime));
+        Amount = payment.PaymentAmount.GetValue(nameof(payment.PaymentAmount));
 
-        public DateTime Date { get; private set; }
-        public ushort Week { get; internal set; }
-        public decimal Total { get; internal set; }
+        PaymentId = payment.PaymentId;
 
-        internal decimal Amount { get; private set; }
-        internal int? PaymentId { get; private set; }
-        internal Transaction.PayMethod? PayMethodInfo { get; private set; }
-
-        private string _name;
-
-        public Donation() { }
-
-        internal Donation(ListPaymentsFilterResult.Response.Payment payment)
+        PayMethodInfo = payment.PaymentSystemId switch
         {
-            _name = payment.SiteInvoiceId;
-            Date = payment.LastUpdateTime;
-            Amount = payment.PaymentAmount;
-
-            switch (payment.PaymentSystemId)
-            {
-                case 161:
-                    PayMethodInfo = Transaction.PayMethod.Sbp;
-                    break;
-                case 162:
-                    PayMethodInfo = Transaction.PayMethod.BankCard;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            PaymentId = payment.PaymentId;
-        }
-
-        public void Load(IDictionary<string, object> valueSet)
-        {
-            PaymentId = valueSet.ContainsKey(PaymentIdTitle) ? valueSet[PaymentIdTitle]?.ToInt() : null;
-
-            _name = valueSet[NameTitle]?.ToString();
-
-            Date = valueSet[DateTitle]?.ToDateTime() ?? throw new ArgumentNullException("Empty date");
-
-            Amount = valueSet[AmountTitle]?.ToDecimal() ?? throw new ArgumentNullException("Empty amount");
-
-            PayMethodInfo = valueSet.ContainsKey(PayMethodInfoTitle) ? valueSet[PayMethodInfoTitle]?.ToPayMathod() : null;
-        }
-
-        public IDictionary<string, object> Save()
-        {
-            return new Dictionary<string, object>
-            {
-                { NameTitle, _name ?? "" },
-                { DateTitle, $"{Date:d MMMM yyyy}" },
-                { AmountTitle, Amount },
-                { PayMethodInfoTitle, PayMethodInfo?.ToString() ?? "" },
-                { PaymentIdTitle, Utils.GetPayMasterHyperlink(PaymentId) ?? "" },
-                { TotalTitle, Total },
-                { WeekTitle, Week }
-            };
-        }
-
-        private static readonly List<string> Titles = new List<string>
-        {
-            NameTitle,
-            DateTitle,
-            AmountTitle,
-            PayMethodInfoTitle,
-            PaymentIdTitle,
-            TotalTitle,
-            WeekTitle
+            161 => Transaction.PayMethod.Sbp,
+            162 => Transaction.PayMethod.BankCard,
+            _   => throw new ArgumentOutOfRangeException(nameof(payment.PaymentSystemId), payment.PaymentSystemId,
+                null)
         };
 
-        private const string NameTitle = "От кого";
-        private const string DateTitle = "Дата";
-        private const string AmountTitle = "Сумма";
-        private const string PayMethodInfoTitle = "Способ";
-        private const string PaymentIdTitle = "Поступление";
-        private const string TotalTitle = "Итого";
-        private const string WeekTitle = "Неделя";
+        _name = payment.SiteInvoiceId.GetValue(nameof(payment.SiteInvoiceId));
     }
+
+    private Donation(DateTime date, decimal amount, int? paymentId, Transaction.PayMethod? payMethodInfo, string? name)
+    {
+        Date = date;
+        Amount = amount;
+        PaymentId = paymentId;
+        PayMethodInfo = payMethodInfo;
+        _name = name;
+    }
+
+    public static Donation Load(IDictionary<string, object?> valueSet)
+    {
+        DateTime date = valueSet[DateTitle].ToDateTime().GetValue("Empty date");
+
+        decimal amount = valueSet[AmountTitle].ToDecimal().GetValue("Empty amount");
+
+        int? paymentId = valueSet.ContainsKey(PaymentIdTitle) ? valueSet[PaymentIdTitle]?.ToInt() : null;
+
+        Transaction.PayMethod? payMethodInfo =
+            valueSet.ContainsKey(PayMethodInfoTitle) ? valueSet[PayMethodInfoTitle]?.ToPayMathod() : null;
+
+        string? name = valueSet[NameTitle]?.ToString();
+
+        return new Donation(date, amount, paymentId, payMethodInfo, name);
+    }
+
+    public IDictionary<string, object?> Convert()
+    {
+        return new Dictionary<string, object?>
+        {
+            { NameTitle, _name ?? "" },
+            { DateTitle, $"{Date:d MMMM yyyy}" },
+            { AmountTitle, Amount },
+            { PayMethodInfoTitle, PayMethodInfo?.ToString() ?? "" },
+            { PaymentIdTitle, Utils.GetPayMasterHyperlink(PaymentId) },
+            { TotalTitle, Total },
+            { WeekTitle, Week }
+        };
+    }
+
+    private static readonly List<string> Titles = new()
+    {
+        NameTitle,
+        DateTitle,
+        AmountTitle,
+        PayMethodInfoTitle,
+        PaymentIdTitle,
+        TotalTitle,
+        WeekTitle
+    };
+
+    private const string NameTitle = "От кого";
+    private const string DateTitle = "Дата";
+    private const string AmountTitle = "Сумма";
+    private const string PayMethodInfoTitle = "Способ";
+    private const string PaymentIdTitle = "Поступление";
+    private const string TotalTitle = "Итого";
+    private const string WeekTitle = "Неделя";
+
+    private readonly string? _name;
 }

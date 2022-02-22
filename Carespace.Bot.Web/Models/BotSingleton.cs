@@ -1,39 +1,22 @@
 using System;
-using System.Collections.Generic;
-using Carespace.FinanceHelper;
+using GryphonUtilities;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
-namespace Carespace.Bot.Web.Models
+namespace Carespace.Bot.Web.Models;
+
+public sealed class BotSingleton : IDisposable
 {
-    public sealed class BotSingleton : IDisposable
+    internal readonly Bot Bot;
+    internal readonly Uri ErrorPageUri;
+
+    public BotSingleton(IOptions<ConfigJson> options)
     {
-        internal readonly Bot Bot;
+        ConfigJson configJson = options.Value;
+        Config.Config config = configJson.Convert();
+        Bot = new Bot(config);
 
-        public BotSingleton(IOptions<Config> options)
-        {
-            Config config = options.Value;
-
-            if ((config.GoogleCredential == null) || (config.GoogleCredential.Count == 0))
-            {
-                config.GoogleCredential =
-                    JsonConvert.DeserializeObject<Dictionary<string, string>>(config.GoogleCredentialJson);
-            }
-            if (string.IsNullOrWhiteSpace(config.GoogleCredentialJson))
-            {
-                config.GoogleCredentialJson = JsonConvert.SerializeObject(config.GoogleCredential);
-            }
-            if ((config.AdminIds == null) || (config.AdminIds.Count == 0))
-            {
-                config.AdminIds = JsonConvert.DeserializeObject<List<long>>(config.AdminIdsJson);
-            }
-            if ((config.Shares == null) || (config.Shares.Count == 0))
-            {
-                config.Shares = JsonConvert.DeserializeObject<Dictionary<string, List<Share>>>(config.SharesJson);
-            }
-            Bot = new Bot(config);
-        }
-
-        public void Dispose() => Bot.Dispose();
+        ErrorPageUri = configJson.ErrorPageUri.GetValue(nameof(configJson.ErrorPageUri));
     }
+
+    public void Dispose() => Bot.Dispose();
 }

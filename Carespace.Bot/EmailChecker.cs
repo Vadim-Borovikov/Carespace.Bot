@@ -4,41 +4,46 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot
+namespace Carespace.Bot;
+
+internal sealed class EmailChecker
 {
-    internal sealed class EmailChecker
+    public EmailChecker(Bot bot) => _bot = bot;
+
+    public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
     {
-        public EmailChecker(Bot bot) => _bot = bot;
-
-        public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
+        Message statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
+        bool found = await CheckEmailAsync(email);
+        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (found)
         {
-            Message statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
-            bool found = await CheckEmailAsync(email);
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
-            if (found)
-            {
-                await _bot.Client.SendTextMessageAsync(chatId, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
-                    ParseMode.MarkdownV2);
-            }
-            else
-            {
-                await _bot.Client.SendTextMessageAsync(chatId, "Email не найден! Напиши @Netris");
-            }
+            await _bot.Client.SendTextMessageAsync(chatId, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
+                ParseMode.MarkdownV2);
         }
-
-        private async Task<bool> CheckEmailAsync(MailAddress email)
+        else
         {
-            var productIds = new List<int>(_bot.Config.ProductId);
-            DateTime finish = DateTime.Today.AddDays(1);
-            IEnumerable<string> eMails = await FinanceHelper.Utils.GetDigisellerSellsEmailsAsync(_bot.Config.DigisellerId,
-                productIds, _bot.Config.SellsStart, finish, _bot.Config.DigisellerApiGuid);
-            return eMails.Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
+            await _bot.Client.SendTextMessageAsync(chatId, "Email не найден! Напиши @Netris");
         }
-
-        private readonly Bot _bot;
     }
+
+    private async Task<bool> CheckEmailAsync(MailAddress email)
+    {
+        int productId = _bot.Config.ProductId.GetValue(nameof(_bot.Config.ProductId));
+        int digisellerId = _bot.Config.DigisellerId.GetValue(nameof(_bot.Config.DigisellerId));
+        DateTime sellsStart = _bot.Config.SellsStart.GetValue(nameof(_bot.Config.SellsStart));
+
+        List<int> productIds = new() { productId };
+        DateTime finish = DateTime.Today.AddDays(1);
+        string guid = _bot.Config.DigisellerApiGuid.GetValue(_bot.Config.DigisellerApiGuid);
+        IEnumerable<string> eMails = await FinanceHelper.Utils.GetDigisellerSellsEmailsAsync(digisellerId, productIds,
+            sellsStart, finish, guid);
+        return eMails.Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
+    }
+
+    private readonly Bot _bot;
 }

@@ -1,20 +1,21 @@
 ﻿using System.Threading.Tasks;
 using AbstractBot;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Commands
+namespace Carespace.Bot.Commands;
+
+internal abstract class TextCommand : CommandBase<Bot, Config.Config>
 {
-    internal abstract class TextCommand : CommandBase<Bot, Config.Config>
+    protected TextCommand(Bot bot, string? text) : base(bot) => _text = text.GetValue(nameof(text));
+
+    public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        protected TextCommand(Bot bot, string text) : base(bot) => _text = text;
-
-        public override Task ExecuteAsync(Message message, bool fromChat, string payload)
-        {
-            return Bot.Client.SendTextMessageAsync(message.From.Id, _text, ParseMode.MarkdownV2);
-        }
-
-        private readonly string _text;
+        User user = message.From.GetValue(nameof(message.From));
+        return Bot.Client.SendTextMessageAsync(user.Id, _text, ParseMode.MarkdownV2);
     }
+
+    private readonly string _text;
 }

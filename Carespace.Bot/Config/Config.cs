@@ -2,163 +2,126 @@ using System;
 using System.Collections.Generic;
 using AbstractBot;
 using Carespace.FinanceHelper;
-using Newtonsoft.Json;
 
-namespace Carespace.Bot.Config
+namespace Carespace.Bot.Config;
+
+public sealed class Config : ConfigGoogleSheets
 {
-    public class Config : ConfigGoogleSheets
+    public readonly string Template;
+    public readonly Link FeedbackLink;
+    public readonly string GoogleRange;
+    public readonly Uri EventsFormUri;
+    public readonly DateTime EventsUpdateAt;
+    public readonly string SavePath;
+    public readonly int ProductId;
+    public readonly DateTime SellsStart;
+    public readonly string GoogleSheetIdTransactions;
+    public readonly string GoogleSheetIdDonations;
+    public readonly string GoogleTransactionsCustomRange;
+    public readonly string GoogleTransactionsCustomRangeToClear;
+    public readonly string GoogleTransactionsFinalRange;
+    public readonly string GoogleDonationsRange;
+    public readonly string GoogleDonationsCustomRange;
+    public readonly string GoogleDonationsCustomRangeToClear;
+    public readonly string GoogleDonationSumsRange;
+    public readonly string DigisellerProductUrlFormat;
+    public readonly string DigisellerSellUrlFormat;
+    public readonly int DigisellerId;
+    public readonly string DigisellerApiGuid;
+    public readonly string DigisellerLogin;
+    public readonly string DigisellerPassword;
+    public readonly decimal DigisellerFeePercent;
+    public readonly string TaxUserAgent;
+    public readonly string TaxSourceDeviceId;
+    public readonly string TaxSourceType;
+    public readonly string TaxAppVersion;
+    public readonly string TaxRefreshToken;
+    public readonly string TaxProductNameFormat;
+    public readonly long TaxPayerId;
+    public readonly decimal TaxFeePercent;
+    public readonly string PayMasterPaymentUrlFormat;
+    public readonly string PayMasterLogin;
+    public readonly string PayMasterPassword;
+    public readonly string PayMasterSiteAliasDigiseller;
+    public readonly string PayMasterSiteAliasDonations;
+    public readonly List<string> PayMasterPurposesFormats;
+
+    internal readonly List<Link> Links;
+    internal readonly List<string> ExercisesLinks;
+    internal readonly string EventsChannelLogin;
+    internal readonly string DiscussGroupLogin;
+    internal readonly string BookPromo;
+    internal readonly Dictionary<Transaction.PayMethod, decimal> PayMasterFeePercents;
+    internal readonly Dictionary<string, List<Share>> Shares;
+
+    public string? Introduction { internal get; init; }
+    public string? Schedule { internal get; init; }
+
+    internal long? LogsChatId => SuperAdminId;
+
+    public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
+        string forbiddenStickerFileId, string googleCredentialJson, string applicationName, string googleSheetId,
+        string template, Link feedbackLink, string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt,
+        string savePath, int productId, DateTime sellsStart, string googleSheetIdTransactions,
+        string googleSheetIdDonations, string googleTransactionsCustomRange,
+        string googleTransactionsCustomRangeToClear, string googleTransactionsFinalRange, string googleDonationsRange,
+        string googleDonationsCustomRange, string googleDonationsCustomRangeToClear, string googleDonationSumsRange,
+        string digisellerProductUrlFormat, string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid,
+        string digisellerLogin, string digisellerPassword, decimal digisellerFeePercent, string taxUserAgent,
+        string taxSourceDeviceId, string taxSourceType, string taxAppVersion, string taxRefreshToken,
+        string taxProductNameFormat, long taxPayerId, decimal taxFeePercent, string payMasterPaymentUrlFormat,
+        string payMasterLogin, string payMasterPassword, string payMasterSiteAliasDigiseller,
+        string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats, List<Link> links,
+        List<string> exercisesLinks, string eventsChannelLogin, string discussGroupLogin, string bookPromo,
+        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, Dictionary<string, List<Share>> shares)
+        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
+            applicationName, googleSheetId)
     {
-        [JsonProperty]
-        public string GoogleCredentialJson { get; set; }
+        Template = template;
+        FeedbackLink = feedbackLink;
+        GoogleRange = googleRange;
+        EventsFormUri = eventsFormUri;
+        EventsUpdateAt = eventsUpdateAt;
+        SavePath = savePath;
+        ProductId = productId;
+        SellsStart = sellsStart;
+        GoogleSheetIdTransactions = googleSheetIdTransactions;
+        GoogleSheetIdDonations = googleSheetIdDonations;
+        GoogleTransactionsCustomRange = googleTransactionsCustomRange;
+        GoogleTransactionsCustomRangeToClear = googleTransactionsCustomRangeToClear;
+        GoogleTransactionsFinalRange = googleTransactionsFinalRange;
+        GoogleDonationsRange = googleDonationsRange;
+        GoogleDonationsCustomRange = googleDonationsCustomRange;
+        GoogleDonationsCustomRangeToClear = googleDonationsCustomRangeToClear;
+        GoogleDonationSumsRange = googleDonationSumsRange;
+        DigisellerProductUrlFormat = digisellerProductUrlFormat;
+        DigisellerSellUrlFormat = digisellerSellUrlFormat;
+        DigisellerId = digisellerId;
+        DigisellerApiGuid = digisellerApiGuid;
+        DigisellerLogin = digisellerLogin;
+        DigisellerPassword = digisellerPassword;
+        DigisellerFeePercent = digisellerFeePercent;
+        TaxUserAgent = taxUserAgent;
+        TaxSourceDeviceId = taxSourceDeviceId;
+        TaxSourceType = taxSourceType;
+        TaxAppVersion = taxAppVersion;
+        TaxRefreshToken = taxRefreshToken;
+        TaxProductNameFormat = taxProductNameFormat;
+        TaxPayerId = taxPayerId;
+        TaxFeePercent = taxFeePercent;
+        PayMasterPaymentUrlFormat = payMasterPaymentUrlFormat;
+        PayMasterLogin = payMasterLogin;
+        PayMasterPassword = payMasterPassword;
+        PayMasterSiteAliasDigiseller = payMasterSiteAliasDigiseller;
+        PayMasterSiteAliasDonations = payMasterSiteAliasDonations;
+        PayMasterPurposesFormats = payMasterPurposesFormats;
 
-        [JsonProperty]
-        public List<string> IntroductionLines { get; set; }
-
-        [JsonProperty]
-        public List<string> ScheduleLines { get; set; }
-
-        [JsonProperty]
-        public List<Link> Links { get; set; }
-
-        [JsonProperty]
-        public string Template { get; set; }
-
-        [JsonProperty]
-        public List<string> ExersisesLinks { get; set; }
-
-        [JsonProperty]
-        public Link FeedbackLink { get; set; }
-
-        [JsonProperty]
-        public string GoogleRange { get; set; }
-
-        [JsonProperty]
-        public string EventsChannelLogin { get; set; }
-
-        [JsonProperty]
-        public Uri EventsFormUri { get; set; }
-
-        [JsonProperty]
-        public DateTime EventsUpdateAt { get; set; }
-
-        [JsonProperty]
-        public string SavePath { get; set; }
-
-        [JsonProperty]
-        public string DiscussGroupLogin { get; set; }
-
-        [JsonProperty]
-        public int ProductId { get; set; }
-
-        [JsonProperty]
-        public DateTime SellsStart { get; set; }
-
-        [JsonProperty]
-        public string BookPromo { get; set; }
-
-        [JsonProperty]
-        public string ErrorPageUrl { get; set; }
-
-        // NEW
-
-        [JsonProperty]
-        public string GoogleSheetIdTransactions { get; set; }
-
-        [JsonProperty]
-        public string GoogleSheetIdDonations { get; set; }
-
-        [JsonProperty]
-        public string GoogleTransactionsCustomRange { get; set; }
-
-        [JsonProperty]
-        public string GoogleTransactionsCustomRangeToClear { get; set; }
-
-        [JsonProperty]
-        public string GoogleTransactionsFinalRange { get; set; }
-
-        [JsonProperty]
-        public string GoogleDonationsRange { get; set; }
-
-        [JsonProperty]
-        public string GoogleDonationsCustomRange { get; set; }
-
-        [JsonProperty]
-        public string GoogleDonationsCustomRangeToClear { get; set; }
-
-        [JsonProperty]
-        public string GoogleDonationSumsRange { get; set; }
-
-        [JsonProperty]
-        public string DigisellerProductUrlFormat { get; set; }
-
-        [JsonProperty]
-        public string DigisellerSellUrlFormat { get; set; }
-
-        [JsonProperty]
-        public int DigisellerId { get; set; }
-
-        [JsonProperty]
-        public string DigisellerApiGuid { get; set; }
-
-        [JsonProperty]
-        public string DigisellerLogin { get; set; }
-
-        [JsonProperty]
-        public string DigisellerPassword { get; set; }
-
-        [JsonProperty]
-        public decimal DigisellerFeePercent { get; set; }
-
-        [JsonProperty]
-        public string TaxUserAgent { get; set; }
-
-        [JsonProperty]
-        public string TaxSourceDeviceId { get; set; }
-
-        [JsonProperty]
-        public string TaxSourceType { get; set; }
-
-        [JsonProperty]
-        public string TaxAppVersion { get; set; }
-
-        [JsonProperty]
-        public string TaxRefreshToken { get; set; }
-
-        [JsonProperty]
-        public string TaxProductNameFormat { get; set; }
-
-        [JsonProperty]
-        public long TaxPayerId { get; set; }
-
-        [JsonProperty]
-        public decimal TaxFeePercent { get; set; }
-
-        [JsonProperty]
-        public string PayMasterPaymentUrlFormat { get; set; }
-
-        [JsonProperty]
-        public string PayMasterLogin { get; set; }
-
-        [JsonProperty]
-        public string PayMasterPassword { get; set; }
-
-        [JsonProperty]
-        public string PayMasterSiteAliasDigiseller { get; set; }
-
-        [JsonProperty]
-        public string PayMasterSiteAliasDonations { get; set; }
-
-        [JsonProperty]
-        public List<string> PayMasterPurposesFormats { get; set; }
-
-        [JsonProperty]
-        public Dictionary<Transaction.PayMethod, decimal> PayMasterFeePercents { get; set; }
-
-        [JsonProperty]
-        public Dictionary<string, List<Share>> Shares { get; set; }
-
-        internal long? LogsChatId => SuperAdminId;
-        internal string Introduction => string.Join('\n', IntroductionLines);
-        internal string Schedule => string.Join('\n', ScheduleLines);
+        Links = links;
+        ExercisesLinks = exercisesLinks;
+        EventsChannelLogin = eventsChannelLogin;
+        DiscussGroupLogin = discussGroupLogin;
+        BookPromo = bookPromo;
+        PayMasterFeePercents = payMasterFeePercents;
+        Shares = shares;
     }
 }

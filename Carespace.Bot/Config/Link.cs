@@ -1,14 +1,17 @@
-﻿using Newtonsoft.Json;
+﻿using System;
 
-namespace Carespace.Bot.Config
+namespace Carespace.Bot.Config;
+
+public sealed class Link
 {
-    public sealed class Link
+    public readonly string Name;
+    internal readonly Uri Uri;
+    internal readonly string? PhotoPath;
+
+    public Link(string name, Uri uri, string? photoPath)
     {
-        [JsonProperty]
-        public string Name { get; set; }
-        [JsonProperty]
-        public string Url { get; set; }
-        [JsonProperty]
-        public string PhotoPath { get; set; }
+        Name = name;
+        Uri = uri;
+        PhotoPath = photoPath;
     }
 }
