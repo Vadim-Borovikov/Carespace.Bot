@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using GoogleSheetsManager;
 using GryphonUtilities;
 
@@ -20,6 +21,7 @@ public sealed class Transaction : ISavable
     // Common URL formats
     public static string DigisellerSellUrlFormat = "";
     public static string DigisellerProductUrlFormat = "";
+    private const string EmailFormat = "mailto:{0}";
 
     public static long TaxPayerId;
 
@@ -38,20 +40,21 @@ public sealed class Transaction : ISavable
     internal readonly decimal? Price;
     internal readonly string? PromoCode;
     internal readonly int? DigisellerSellId;
-    internal readonly int? DigisellerProductId;
+    public readonly int? DigisellerProductId;
+    public readonly MailAddress? Email;
     internal readonly PayMethod? PayMethodInfo;
 
     public bool NeedPaynemt => DigisellerSellId.HasValue && PayMasterPaymentId is null;
 
     internal Transaction(DateTime date, string? name, decimal price, string? promoCode, int? digisellerSellId,
-        int? digisellerProductId, PayMethod? payMethod)
-        : this(date, name, price, price, promoCode, digisellerSellId, digisellerProductId, payMethod)
+        int? digisellerProductId, MailAddress? email, PayMethod? payMethod)
+        : this(date, name, price, price, promoCode, digisellerSellId, digisellerProductId, payMethod, email)
     {
     }
 
-    private Transaction(DateTime date, string? name, decimal amount, decimal? price,
-        string? promoCode, int? digisellerSellId, int? digisellerProductId,
-        PayMethod? payMethod, string? taxReceiptId = null, int? payMasterPaymentId = null)
+    private Transaction(DateTime date, string? name, decimal amount, decimal? price, string? promoCode,
+        int? digisellerSellId, int? digisellerProductId, PayMethod? payMethod, MailAddress? email = null,
+        string? taxReceiptId = null, int? payMasterPaymentId = null)
     {
         Date = date;
         Name = name;
@@ -61,6 +64,7 @@ public sealed class Transaction : ISavable
         DigisellerSellId = digisellerSellId;
         DigisellerProductId = digisellerProductId;
         PayMethodInfo = payMethod;
+        Email = email;
         TaxReceiptId = taxReceiptId;
         PayMasterPaymentId = payMasterPaymentId;
     }
@@ -85,6 +89,8 @@ public sealed class Transaction : ISavable
         PayMethod? payMethod =
             valueSet.ContainsKey(PayMethodInfoTitle) ? valueSet[PayMethodInfoTitle].ToPayMathod() : null;
 
+        MailAddress? email = valueSet.ContainsKey(EmailTitle) ? valueSet[EmailTitle].ToEmail() : null;
+
         string? taxReceiptId =
             valueSet.ContainsKey(TaxReceiptIdTitle) ? valueSet[TaxReceiptIdTitle]?.ToString() : null;
 
@@ -92,7 +98,7 @@ public sealed class Transaction : ISavable
             valueSet.ContainsKey(PayMasterPaymentIdTitle) ? valueSet[PayMasterPaymentIdTitle].ToInt() : null;
 
         return new Transaction(date, name, amount, price, promoCode, digisellerSellId, digisellerProductId, payMethod,
-            taxReceiptId, payMasterPaymentId);
+            email, taxReceiptId, payMasterPaymentId);
     }
 
     public IDictionary<string, object?> Convert()
@@ -109,6 +115,7 @@ public sealed class Transaction : ISavable
             { PriceTitle, Price },
             { PromoCodeTitle, PromoCode },
             { DigisellerProductIdTitle, Utils.GetHyperlink(DigisellerProductUrlFormat, DigisellerProductId) },
+            { EmailTitle, Utils.GetHyperlink(EmailFormat, Email?.Address) },
             { PayMethodInfoTitle, PayMethodInfo.ToString() },
             { DigisellerSellIdTitle, Utils.GetHyperlink(DigisellerSellUrlFormat, DigisellerSellId) },
             { PayMasterPaymentIdTitle, Utils.GetPayMasterHyperlink(PayMasterPaymentId) },
@@ -133,6 +140,7 @@ public sealed class Transaction : ISavable
         PriceTitle,
         PromoCodeTitle,
         DigisellerProductIdTitle,
+        EmailTitle,
         PayMethodInfoTitle,
         DigisellerSellIdTitle,
         PayMasterPaymentIdTitle,
@@ -148,6 +156,7 @@ public sealed class Transaction : ISavable
     private const string PriceTitle = "Цена";
     private const string PromoCodeTitle = "Промокод";
     private const string DigisellerProductIdTitle = "Товар";
+    private const string EmailTitle = "Email";
     private const string PayMethodInfoTitle = "Способ";
     private const string DigisellerSellIdTitle = "Покупка";
     private const string PayMasterPaymentIdTitle = "Поступление";

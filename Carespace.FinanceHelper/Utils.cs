@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.Digiseller;
 using Carespace.FinanceHelper.Data.PayMaster;
@@ -16,7 +17,29 @@ public static class Utils
 
     internal static Transaction.PayMethod? ToPayMathod(this object? o)
     {
-        return Enum.TryParse(o?.ToString(), out Transaction.PayMethod p) ? p : null;
+        if (o is Transaction.PayMethod p)
+        {
+            return p;
+        }
+        return Enum.TryParse(o?.ToString(), out p) ? p : null;
+    }
+
+    public static MailAddress? ToEmail(this object? o)
+    {
+        if (o is MailAddress e)
+        {
+            return e;
+        }
+
+        try
+        {
+            string? s = o?.ToString();
+            return s is null ? null : new MailAddress(s);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     #endregion // Google
@@ -70,14 +93,6 @@ public static class Utils
         return transactions;
     }
 
-    public static async Task<IEnumerable<string>> GetDigisellerSellsEmailsAsync(int sellerId, List<int> productIds,
-        DateTime dateStart, DateTime dateFinish, string sellerSecret)
-    {
-        List<SellsResponse.Sell> sells =
-            await GetDigisellerSellsAsync(sellerId, productIds, dateStart, dateFinish, sellerSecret);
-        return sells.Select(s => s.Email).RemoveNulls();
-    }
-
     private static async Task<List<SellsResponse.Sell>> GetDigisellerSellsAsync(int sellerId, List<int> productIds,
         DateTime dateStart, DateTime dateFinish, string sellerSecret)
     {
@@ -123,6 +138,8 @@ public static class Utils
             promoCode = await GetPromoCodeAsync(sell.InvoiceId.Value, token);
         }
 
+        MailAddress email = sell.Email.ToEmail().GetValue(nameof(sell.Email));
+
         Transaction.PayMethod payMethod = sell.PayMethodInfo switch
         {
             SellsResponse.Sell.PayMethod.BankCard => Transaction.PayMethod.BankCard,
@@ -131,7 +148,7 @@ public static class Utils
                                                                                          sell.PayMethodInfo, null)
         };
 
-        return new Transaction(datePay, sell.ProductName, amountIn, promoCode, sell.InvoiceId, sell.ProductId,
+        return new Transaction(datePay, sell.ProductName, amountIn, promoCode, sell.InvoiceId, sell.ProductId, email,
             payMethod);
     }
 

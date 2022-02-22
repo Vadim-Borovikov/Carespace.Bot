@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Config;
@@ -15,18 +14,6 @@ namespace Carespace.Bot;
 
 internal static class Utils
 {
-    public static MailAddress? AsEmail(this string email)
-    {
-        try
-        {
-            return new MailAddress(email);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     public static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)
     {
         if (string.IsNullOrWhiteSpace(link.PhotoPath))

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.FinanceHelper;
@@ -55,12 +56,22 @@ internal sealed class FinanceManager
         await _bot.Client.SendTextMessageAsync(chatId, "…донатики обновлены.");
     }
 
+    public async Task<IEnumerable<MailAddress>> LoadTransactionEmailsAsync(int productId)
+    {
+        string sheetId = _bot.Config.GoogleSheetIdTransactions.GetValue(nameof(_bot.Config.GoogleSheetIdTransactions));
+        using (SheetsProvider provider = new(_bot.Config.GoogleCredentialJson, ApplicationName, sheetId))
+        {
+            IEnumerable<MailAddress> emails = await LoadGoogleTransactionsAsync(provider, null, productId);
+            return emails;
+        }
+    }
+
     private async Task UpdatePurchasesAsync(ChatId chatId)
     {
         string sheetId = _bot.Config.GoogleSheetIdTransactions.GetValue(nameof(_bot.Config.GoogleSheetIdTransactions));
         using (SheetsProvider provider = new(_bot.Config.GoogleCredentialJson, ApplicationName, sheetId))
         {
-            await LoadGoogleTransactionsAsync(chatId, provider);
+            await LoadGoogleTransactionsAsync(provider, chatId);
         }
     }
 
@@ -73,12 +84,14 @@ internal sealed class FinanceManager
         }
     }
 
-    private async Task LoadGoogleTransactionsAsync(ChatId chatId, SheetsProvider provider)
+    private async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(SheetsProvider provider, ChatId? chatId,
+        int? productIdForMails = null)
     {
         List<Transaction> transactions = new();
 
-        Message statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
+        Message? statusMessage = chatId is null
+            ? null
+            : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
 
         string finalRange =
             _bot.Config.GoogleTransactionsFinalRange.GetValue(nameof(_bot.Config.GoogleTransactionsFinalRange));
@@ -91,10 +104,14 @@ internal sealed class FinanceManager
             await DataManager.GetValuesAsync(provider, Transaction.Load, customRange);
         transactions.AddRange(newCustomTransactions);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (statusMessage is not null)
+        {
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        }
 
-        statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
+        statusMessage = chatId is null
+            ? null
+            : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
 
         DateTime dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
@@ -112,9 +129,14 @@ internal sealed class FinanceManager
 
         transactions.AddRange(newSells);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (statusMessage is not null)
+        {
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        }
 
-        statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Считаю доли…_", ParseMode.MarkdownV2);
+        statusMessage = chatId is null
+            ? null
+            : await _bot.Client.SendTextMessageAsync(chatId, "_Считаю доли…_", ParseMode.MarkdownV2);
 
         decimal taxFeePercent = _bot.Config.TaxFeePercent.GetValue(nameof(_bot.Config.TaxFeePercent));
         decimal digisellerFeePercent =
@@ -123,13 +145,17 @@ internal sealed class FinanceManager
         FinanceHelper.Utils.CalculateShares(transactions, taxFeePercent, digisellerFeePercent,
             _bot.Config.PayMasterFeePercents, _bot.Config.Shares);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (statusMessage is not null)
+        {
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        }
 
         List<Transaction> needPayment = transactions.Where(t => t.NeedPaynemt).ToList();
         if (needPayment.Any())
         {
-            statusMessage =
-                await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
+            statusMessage = chatId is null
+                ? null
+                : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
             string alias =
                 _bot.Config.PayMasterSiteAliasDigiseller.GetValue(nameof(_bot.Config.PayMasterSiteAliasDigiseller));
@@ -148,10 +174,15 @@ internal sealed class FinanceManager
                 FinanceHelper.Utils.FindPayment(transaction, payments, formats);
             }
 
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            if (statusMessage is not null)
+            {
+                await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            }
         }
 
-        statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Регистрирую доходы…_", ParseMode.MarkdownV2);
+        statusMessage = chatId is null
+            ? null
+            : await _bot.Client.SendTextMessageAsync(chatId, "_Регистрирую доходы…_", ParseMode.MarkdownV2);
 
         string taxUserAgent = _bot.Config.TaxUserAgent.GetValue(nameof(_bot.Config.TaxUserAgent));
         string taxSourceDeviceId = _bot.Config.TaxSourceDeviceId.GetValue(nameof(_bot.Config.TaxSourceDeviceId));
@@ -163,10 +194,15 @@ internal sealed class FinanceManager
         await FinanceHelper.Utils.RegisterTaxesAsync(transactions, taxUserAgent, taxSourceDeviceId, taxSourceType,
             taxAppVersion, taxRefreshToken, taxProductNameFormat);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (statusMessage is not null)
+        {
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        }
 
-        statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
+        statusMessage = chatId is null
+            ? null
+            : await _bot.Client.SendTextMessageAsync(chatId, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
+
 
         await DataManager.UpdateValuesAsync(provider, finalRange, transactions.OrderBy(t => t.Date).ToList());
 
@@ -174,7 +210,14 @@ internal sealed class FinanceManager
             _bot.Config.GoogleTransactionsCustomRangeToClear.GetValue(nameof(_bot.Config.GoogleTransactionsCustomRangeToClear));
         await provider.ClearValuesAsync(rangeToClear);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        if (statusMessage is not null)
+        {
+            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        }
+
+        return productIdForMails is null
+            ? Enumerable.Empty<MailAddress>()
+            : transactions.Where(t => t.DigisellerProductId == productIdForMails).Select(t => t.Email).RemoveNulls();
     }
 
     private async Task UpdateDonationsAsync(ChatId chatId, SheetsProvider provider)

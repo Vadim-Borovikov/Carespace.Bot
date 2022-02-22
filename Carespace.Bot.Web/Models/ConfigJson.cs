@@ -53,8 +53,6 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public int? ProductId { get; set; }
     [JsonProperty]
-    public DateTime? SellsStart { get; set; }
-    [JsonProperty]
     public string? GoogleSheetIdTransactions { get; set; }
     [JsonProperty]
     public string? GoogleSheetIdDonations { get; set; }
@@ -164,7 +162,6 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         DateTime eventsUpdateAt = EventsUpdateAt.GetValue(nameof(EventsUpdateAt));
         string savePath = SavePath.GetValue(nameof(SavePath));
         int productId = ProductId.GetValue(nameof(ProductId));
-        DateTime sellsStart = SellsStart.GetValue(nameof(SellsStart));
         string googleSheetIdTransactions = GoogleSheetIdTransactions.GetValue(nameof(GoogleSheetIdTransactions));
         string googleSheetIdDonations = GoogleSheetIdDonations.GetValue(nameof(GoogleSheetIdDonations));
         string googleTransactionsCustomRange =
@@ -230,7 +227,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
 
         return new Config.Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
             googleCredentialJson, applicationName, googleSheetId, template, feedbackLink, googleRange, eventsFormUri,
-            eventsUpdateAt, savePath, productId, sellsStart, googleSheetIdTransactions, googleSheetIdDonations,
+            eventsUpdateAt, savePath, productId, googleSheetIdTransactions, googleSheetIdDonations,
             googleTransactionsCustomRange, googleTransactionsCustomRangeToClear, googleTransactionsFinalRange,
             googleDonationsRange, googleDonationsCustomRange, googleDonationsCustomRangeToClear,
             googleDonationSumsRange, digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId,

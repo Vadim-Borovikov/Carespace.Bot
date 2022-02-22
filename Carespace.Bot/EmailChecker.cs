@@ -13,7 +13,11 @@ namespace Carespace.Bot;
 
 internal sealed class EmailChecker
 {
-    public EmailChecker(Bot bot) => _bot = bot;
+    public EmailChecker(Bot bot, FinanceManager financeManager)
+    {
+        _bot = bot;
+        _financeManager = financeManager;
+    }
 
     public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
     {
@@ -34,16 +38,11 @@ internal sealed class EmailChecker
     private async Task<bool> CheckEmailAsync(MailAddress email)
     {
         int productId = _bot.Config.ProductId.GetValue(nameof(_bot.Config.ProductId));
-        int digisellerId = _bot.Config.DigisellerId.GetValue(nameof(_bot.Config.DigisellerId));
-        DateTime sellsStart = _bot.Config.SellsStart.GetValue(nameof(_bot.Config.SellsStart));
-
-        List<int> productIds = new() { productId };
-        DateTime finish = DateTime.Today.AddDays(1);
-        string guid = _bot.Config.DigisellerApiGuid.GetValue(_bot.Config.DigisellerApiGuid);
-        IEnumerable<string> eMails = await FinanceHelper.Utils.GetDigisellerSellsEmailsAsync(digisellerId, productIds,
-            sellsStart, finish, guid);
-        return eMails.Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
+        IEnumerable<MailAddress> mailAddresses = await _financeManager.LoadTransactionEmailsAsync(productId);
+        return mailAddresses.Select(m => m.Address)
+                            .Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
     }
 
     private readonly Bot _bot;
+    private readonly FinanceManager _financeManager;
 }

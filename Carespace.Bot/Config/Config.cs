@@ -14,7 +14,6 @@ public sealed class Config : ConfigGoogleSheets
     public readonly DateTime EventsUpdateAt;
     public readonly string SavePath;
     public readonly int ProductId;
-    public readonly DateTime SellsStart;
     public readonly string GoogleSheetIdTransactions;
     public readonly string GoogleSheetIdDonations;
     public readonly string GoogleTransactionsCustomRange;
@@ -62,17 +61,17 @@ public sealed class Config : ConfigGoogleSheets
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
         string forbiddenStickerFileId, string googleCredentialJson, string applicationName, string googleSheetId,
         string template, Link feedbackLink, string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt,
-        string savePath, int productId, DateTime sellsStart, string googleSheetIdTransactions,
-        string googleSheetIdDonations, string googleTransactionsCustomRange,
-        string googleTransactionsCustomRangeToClear, string googleTransactionsFinalRange, string googleDonationsRange,
-        string googleDonationsCustomRange, string googleDonationsCustomRangeToClear, string googleDonationSumsRange,
-        string digisellerProductUrlFormat, string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid,
-        string digisellerLogin, string digisellerPassword, decimal digisellerFeePercent, string taxUserAgent,
-        string taxSourceDeviceId, string taxSourceType, string taxAppVersion, string taxRefreshToken,
-        string taxProductNameFormat, long taxPayerId, decimal taxFeePercent, string payMasterPaymentUrlFormat,
-        string payMasterLogin, string payMasterPassword, string payMasterSiteAliasDigiseller,
-        string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats, List<Link> links,
-        List<string> exercisesLinks, string eventsChannelLogin, string discussGroupLogin, string bookPromo,
+        string savePath, int productId, string googleSheetIdTransactions, string googleSheetIdDonations,
+        string googleTransactionsCustomRange, string googleTransactionsCustomRangeToClear,
+        string googleTransactionsFinalRange, string googleDonationsRange, string googleDonationsCustomRange,
+        string googleDonationsCustomRangeToClear, string googleDonationSumsRange, string digisellerProductUrlFormat,
+        string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid, string digisellerLogin,
+        string digisellerPassword, decimal digisellerFeePercent, string taxUserAgent, string taxSourceDeviceId,
+        string taxSourceType, string taxAppVersion, string taxRefreshToken, string taxProductNameFormat,
+        long taxPayerId, decimal taxFeePercent, string payMasterPaymentUrlFormat, string payMasterLogin,
+        string payMasterPassword, string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations,
+        List<string> payMasterPurposesFormats, List<Link> links, List<string> exercisesLinks,
+        string eventsChannelLogin, string discussGroupLogin, string bookPromo,
         Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, Dictionary<string, List<Share>> shares)
         : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
             applicationName, googleSheetId)
@@ -84,7 +83,6 @@ public sealed class Config : ConfigGoogleSheets
         EventsUpdateAt = eventsUpdateAt;
         SavePath = savePath;
         ProductId = productId;
-        SellsStart = sellsStart;
         GoogleSheetIdTransactions = googleSheetIdTransactions;
         GoogleSheetIdDonations = googleSheetIdDonations;
         GoogleTransactionsCustomRange = googleTransactionsCustomRange;

@@ -7,6 +7,7 @@ using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
+using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -30,15 +31,13 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        FinanceManager financeManager = new(this);
-
         Commands.Add(new StartCommand(this));
         Commands.Add(new IntroCommand(this));
         Commands.Add(new ScheduleCommand(this));
         Commands.Add(new ExercisesCommand(this));
         Commands.Add(new LinksCommand(this));
         Commands.Add(new FeedbackCommand(this));
-        Commands.Add(new FinanceCommand(this, financeManager));
+        Commands.Add(new FinanceCommand(this, FinanceManager));
         Commands.Add(new WeekCommand(this));
         Commands.Add(new ConfirmCommand(this));
 
@@ -73,7 +72,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
                 return;
             }
 
-            MailAddress? email = textMessage.Text?.AsEmail();
+            MailAddress? email = textMessage.Text.ToEmail();
             if (email is null)
             {
                 await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
@@ -148,10 +147,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
     internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
 
-    private EmailChecker EmailChecker => _emailChecker ??= new EmailChecker(this);
+    private FinanceManager FinanceManager => _financeManager ??= new FinanceManager(this);
+    private EmailChecker EmailChecker => _emailChecker ??= new EmailChecker(this, FinanceManager);
 
     private Manager? _eventManager;
     private EmailChecker? _emailChecker;
+    private FinanceManager? _financeManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
     private readonly SaveManager<Data, JsonData> _saveManager;
