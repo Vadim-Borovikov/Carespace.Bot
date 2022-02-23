@@ -10,6 +10,7 @@ internal static class Program
 {
     public static async Task Main(string[] args)
     {
+        AbstractBot.Utils.DeleteExceptionLog();
         try
         {
             await CreateWebHostBuilder(args).Build().RunAsync();
