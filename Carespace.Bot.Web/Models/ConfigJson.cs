@@ -223,7 +223,6 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             string json = AdminIdsJson.GetValue(nameof(AdminIdsJson));
             AdminIds = JsonConvert.DeserializeObject<List<long?>>(json);
         }
-        List<long>? adminIds = AdminIds?.Select(id => id.GetValue("Admin id")).ToList();
 
         return new Config.Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
             googleCredentialJson, applicationName, googleSheetId, template, feedbackLink, googleRange, eventsFormUri,
@@ -240,7 +239,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
             ExtraCommands = ExtraCommands is null ? null : string.Join(Environment.NewLine, ExtraCommands),
-            AdminIds = adminIds,
+            AdminIds = AdminIds?.Select(id => id.GetValue("Admin id")).ToList(),
             SuperAdminId = SuperAdminId,
             Introduction = Introduction is null ? null : string.Join(Environment.NewLine, Introduction),
             Schedule = Schedule is null ? null : string.Join(Environment.NewLine, Schedule)
