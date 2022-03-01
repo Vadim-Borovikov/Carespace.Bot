@@ -4,12 +4,12 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class ConfirmCommand : CommandBase<Bot, Config.Config>
+internal sealed class ConfirmCommand : CommandBase<Bot, Config>
 {
     protected override string Name => "confirm";
     protected override string Description => "Подтвердить отправку событий";
 
-    public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.Admins;
+    public override BotBase<Bot, Config>.AccessType Access => BotBase<Bot, Config>.AccessType.Admins;
 
     public ConfirmCommand(Bot bot) : base(bot) { }
 

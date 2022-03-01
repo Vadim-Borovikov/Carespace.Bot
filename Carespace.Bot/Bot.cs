@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
-using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -17,9 +15,9 @@ using Calendar = Carespace.Bot.Events.Calendar;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
+public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 {
-    public Bot(Config.Config config) : base(config)
+    public Bot(Config config) : base(config)
     {
         string savePath = Config.SavePath.GetValue(nameof(Config.SavePath));
         _saveManager = new SaveManager<Data, JsonData>(savePath);
@@ -32,12 +30,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
         Commands.Add(new StartCommand(this));
-        Commands.Add(new IntroCommand(this));
-        Commands.Add(new ScheduleCommand(this));
-        Commands.Add(new ExercisesCommand(this));
-        Commands.Add(new LinksCommand(this));
-        Commands.Add(new FeedbackCommand(this));
-        Commands.Add(new FinanceCommand(this, FinanceManager));
         Commands.Add(new WeekCommand(this));
         Commands.Add(new ConfirmCommand(this));
 
@@ -63,7 +55,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     }
 
     protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
-        CommandBase<Bot, Config.Config>? command = null, string? payload = null)
+        CommandBase<Bot, Config>? command = null, string? payload = null)
     {
         if (command is null)
         {
@@ -72,15 +64,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
                 return;
             }
 
-            MailAddress? email = textMessage.Text.ToEmail();
-            if (email is null)
-            {
-                await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
-            }
-            else
-            {
-                await EmailChecker.CheckEmailAsync(textMessage.Chat.Id, email);
-            }
+            await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+
             return;
         }
 
@@ -120,7 +105,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     }
 
     protected override Task UpdateAsync(Message message, bool fromChat,
-        CommandBase<Bot, Config.Config>? command = null, string? payload = null)
+        CommandBase<Bot, Config>? command = null, string? payload = null)
     {
         if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
         {
@@ -147,12 +132,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
     internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
 
-    private FinanceManager FinanceManager => _financeManager ??= new FinanceManager(this);
-    private EmailChecker EmailChecker => _emailChecker ??= new EmailChecker(this, FinanceManager);
-
     private Manager? _eventManager;
-    private EmailChecker? _emailChecker;
-    private FinanceManager? _financeManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
     private readonly SaveManager<Data, JsonData> _saveManager;
