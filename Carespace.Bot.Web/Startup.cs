@@ -15,6 +15,10 @@ internal sealed class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
+        ConfigJson botConfig = _config.Get<ConfigJson>();
+        string cultureInfoName = botConfig.CultureInfoName.GetValue(nameof(botConfig.CultureInfoName));
+        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(cultureInfoName);
+
         services.AddSingleton<BotSingleton>();
         services.AddHostedService<BotService>();
         services.Configure<ConfigJson>(_config);
@@ -33,11 +37,8 @@ internal sealed class Startup
         app.UseCors();
 
         ConfigJson botConfig = _config.Get<ConfigJson>();
-
-        string cultureInfoName = botConfig.CultureInfoName.GetValue(nameof(botConfig.CultureInfoName));
-        CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(cultureInfoName);
-
         string token = botConfig.Token.GetValue(nameof(botConfig.Token));
+
         object defaults = new
         {
             controller = "Update",
