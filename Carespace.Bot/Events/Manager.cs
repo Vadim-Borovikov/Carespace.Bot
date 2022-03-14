@@ -57,22 +57,40 @@ internal sealed class Manager : IDisposable
         }
         else
         {
-            await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            await PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
         }
     }
 
-    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
         if (!_confirmationPending)
         {
-            await _bot.Client.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
-            return;
+            return _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
         }
 
         _confirmationPending = false;
 
+        // ReSharper disable once UnusedVariable
+        //   I need this task to start, but not to be awaited
+        Task task = PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => DisposeEvents();
+
+    private void DisposeEvents()
+    {
+        foreach (Event e in _events.Values)
+        {
+            e.Dispose();
+        }
+        _events.Clear();
+    }
+
+    private async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    {
         Message statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
+            await _bot.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
 
         await PostOrUpdateEventsAsync();
         await PostOrUpdateScheduleAsync();
@@ -89,17 +107,6 @@ internal sealed class Manager : IDisposable
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
     }
 
-    public void Dispose() => DisposeEvents();
-
-    private void DisposeEvents()
-    {
-        foreach (Event e in _events.Values)
-        {
-            e.Dispose();
-        }
-        _events.Clear();
-    }
-
     private Task AskForConfirmationAsync(ChatId chatId)
     {
         StringBuilder sb = new();
@@ -113,7 +120,7 @@ internal sealed class Manager : IDisposable
 
         _confirmationPending = true;
 
-        return _bot.Client.SendTextMessageAsync(chatId, sb.ToString());
+        return _bot.SendTextMessageAsync(chatId, sb.ToString());
     }
 
     private async Task PostOrUpdateEventsAsync()
@@ -282,9 +289,8 @@ internal sealed class Manager : IDisposable
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.SendTextMessageAsync(_bot.Config.EventsChannelId, text,
-            ParseMode.MarkdownV2, null, disableWebPagePreview, disableNotification, replyToMessageId, false,
-            keyboardMarkup);
+        Message message = await _bot.SendTextMessageAsync(_bot.Config.EventsChannelId, text, ParseMode.MarkdownV2,
+            null, disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
     }

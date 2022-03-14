@@ -17,6 +17,8 @@ public sealed class ConfigJson : IConvertibleTo<Config>
     public string? DontUnderstandStickerFileId { get; set; }
     [JsonProperty]
     public string? ForbiddenStickerFileId { get; set; }
+    [JsonProperty]
+    public double? UpdatesPerMinuteLimit { get; set; }
 
     [JsonProperty]
     public string? Host { get; set; }
@@ -61,6 +63,9 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         string dontUnderstandStickerFileId = DontUnderstandStickerFileId.GetValue(nameof(DontUnderstandStickerFileId));
         string forbiddenStickerFileId = ForbiddenStickerFileId.GetValue(nameof(ForbiddenStickerFileId));
 
+        double updatesPerMinuteLimit = UpdatesPerMinuteLimit.GetValue(nameof(UpdatesPerMinuteLimit));
+        TimeSpan sendMessageDelay = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimit);
+
         string googleCredentialJson = string.IsNullOrWhiteSpace(GoogleCredentialJson)
             ? JsonConvert.SerializeObject(GoogleCredential)
             : GoogleCredentialJson;
@@ -81,7 +86,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         }
 
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
-            googleCredentialJson, applicationName, googleSheetId, googleRange, eventsFormUri,
+            sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, googleRange, eventsFormUri,
             eventsUpdateAt, savePath, eventsChannelId)
         {
             Host = Host,

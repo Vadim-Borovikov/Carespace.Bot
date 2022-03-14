@@ -14,10 +14,11 @@ public sealed class Config : ConfigGoogleSheets
     internal long? LogsChatId => SuperAdminId;
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, string googleCredentialJson, string applicationName, string googleSheetId,
-        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, long eventsChannelId)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
-            applicationName, googleSheetId)
+        string forbiddenStickerFileId, TimeSpan sendMessageDelay, string googleCredentialJson, string applicationName,
+        string googleSheetId, string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath,
+        long eventsChannelId)
+        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelay,
+            googleCredentialJson, applicationName, googleSheetId)
     {
         GoogleRange = googleRange;
         EventsFormUri = eventsFormUri;
