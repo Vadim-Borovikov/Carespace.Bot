@@ -85,18 +85,6 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public decimal? DigisellerFeePercent { get; set; }
     [JsonProperty]
-    public string? TaxUserAgent { get; set; }
-    [JsonProperty]
-    public string? TaxSourceDeviceId { get; set; }
-    [JsonProperty]
-    public string? TaxSourceType { get; set; }
-    [JsonProperty]
-    public string? TaxAppVersion { get; set; }
-    [JsonProperty]
-    public string? TaxRefreshToken { get; set; }
-    [JsonProperty]
-    public string? TaxProductNameFormat { get; set; }
-    [JsonProperty]
     public long? TaxPayerId { get; set; }
     [JsonProperty]
     public decimal? TaxFeePercent { get; set; }
@@ -180,12 +168,6 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         string digisellerLogin = DigisellerLogin.GetValue(nameof(DigisellerLogin));
         string digisellerPassword = DigisellerPassword.GetValue(nameof(DigisellerPassword));
         decimal digisellerFeePercent = DigisellerFeePercent.GetValue(nameof(DigisellerFeePercent));
-        string taxUserAgent = TaxUserAgent.GetValue(nameof(TaxUserAgent));
-        string taxSourceDeviceId = TaxSourceDeviceId.GetValue(nameof(TaxSourceDeviceId));
-        string taxSourceType = TaxSourceType.GetValue(nameof(TaxSourceType));
-        string taxAppVersion = TaxAppVersion.GetValue(nameof(TaxAppVersion));
-        string taxRefreshToken = TaxRefreshToken.GetValue(nameof(TaxRefreshToken));
-        string taxProductNameFormat = TaxProductNameFormat.GetValue(nameof(TaxProductNameFormat));
         long taxPayerId = TaxPayerId.GetValue(nameof(TaxPayerId));
         decimal taxFeePercent = TaxFeePercent.GetValue(nameof(TaxFeePercent));
         string payMasterPaymentUrlFormat = PayMasterPaymentUrlFormat.GetValue(nameof(PayMasterPaymentUrlFormat));
@@ -227,9 +209,8 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             googleTransactionsCustomRange, googleTransactionsCustomRangeToClear, googleTransactionsFinalRange,
             googleDonationsRange, googleDonationsCustomRange, googleDonationsCustomRangeToClear,
             googleDonationSumsRange, digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId,
-            digisellerApiGuid, digisellerLogin, digisellerPassword, digisellerFeePercent, taxUserAgent,
-            taxSourceDeviceId, taxSourceType, taxAppVersion, taxRefreshToken, taxProductNameFormat, taxPayerId,
-            taxFeePercent, payMasterPaymentUrlFormat, payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller,
+            digisellerApiGuid, digisellerLogin, digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent,
+            payMasterPaymentUrlFormat, payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller,
             payMasterSiteAliasDonations, payMasterPurposesFormats, links, exercisesLinks, eventsChannelLogin,
             bookPromo, payMasterFeePercents, shares)
         {

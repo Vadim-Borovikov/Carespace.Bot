@@ -7,7 +7,6 @@ using Carespace.FinanceHelper.Data.Digiseller;
 using Carespace.FinanceHelper.Data.PayMaster;
 using Carespace.FinanceHelper.Providers;
 using GryphonUtilities;
-using SelfWork;
 
 namespace Carespace.FinanceHelper;
 
@@ -43,30 +42,6 @@ public static class Utils
     }
 
     #endregion // Google
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #region SelfWork
-
-    public static async Task RegisterTaxesAsync(IEnumerable<Transaction> transactions, string userAgent,
-        string sourceDeviceId, string sourceType, string appVersion, string refreshToken, string nameFormat)
-    {
-        string? token = null;
-        foreach (Transaction t in transactions.Where(t => t.Price.HasValue
-                                                          && string.IsNullOrWhiteSpace(t.TaxReceiptId)))
-        {
-            token ??= await DataManager.GetTokenAsync(userAgent, sourceDeviceId, sourceType, appVersion, refreshToken);
-
-            string name = await GetTaxNameAsync(t, nameFormat);
-            decimal amount = t.Price.GetValue();
-
-            t.TaxReceiptId = await DataManager.PostIncomeFromIndividualAsync(name, amount, token, t.Date);
-        }
-    }
-
-    #endregion // SelfWork
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     #region Digiseller
 
@@ -112,18 +87,6 @@ public static class Utils
             totalPages = dto.Pages.GetValue(nameof(dto.Pages));
         } while (page <= totalPages);
         return sells;
-    }
-
-    private static async Task<string> GetTaxNameAsync(Transaction transaction, string taxNameFormat)
-    {
-        if (transaction.DigisellerProductId is null)
-        {
-            return transaction.Name ?? "";
-        }
-
-        ProductResponse info = await Digiseller.GetProductsInfoAsync(transaction.DigisellerProductId.Value);
-        string? productName = info.Product?.Name;
-        return string.Format(taxNameFormat, productName);
     }
 
     private static async Task<Transaction> CreateTransactionAsync(SellsResponse.Sell sell, string token)

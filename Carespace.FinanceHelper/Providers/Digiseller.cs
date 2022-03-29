@@ -13,19 +13,6 @@ namespace Carespace.FinanceHelper.Providers;
 
 internal static class Digiseller
 {
-    public static Task<ProductResponse> GetProductsInfoAsync(int productId)
-    {
-        Dictionary<string, string?> queryParameters = new()
-        {
-            ["format"] = "json",
-            ["transp"] = "cors",
-            ["product_id"] = productId.ToString()
-        };
-
-        return RestHelper.CallGetMethodAsync<ProductResponse>(ApiProvider, ProductsInfoMethod,
-            queryParameters: queryParameters);
-    }
-
     public static Task<SellsResponse> GetSellsAsync(int sellerId, List<int> productIds, string start, string end,
         int page, string sellerSecret)
     {
@@ -94,7 +81,6 @@ internal static class Digiseller
     };
 
     private const string ApiProvider = "https://api.digiseller.ru/";
-    private const string ProductsInfoMethod = "api/products/info";
     private const string GetSellsMethod = "api/seller-sells";
     private const string GetTokenMethod = "api/apilogin";
     private const string GetPurchaseMethod = "api/purchase/info/";

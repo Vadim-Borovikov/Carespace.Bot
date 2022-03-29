@@ -30,12 +30,6 @@ public sealed class Config : ConfigGoogleSheets
     public readonly string DigisellerLogin;
     public readonly string DigisellerPassword;
     public readonly decimal DigisellerFeePercent;
-    public readonly string TaxUserAgent;
-    public readonly string TaxSourceDeviceId;
-    public readonly string TaxSourceType;
-    public readonly string TaxAppVersion;
-    public readonly string TaxRefreshToken;
-    public readonly string TaxProductNameFormat;
     public readonly long TaxPayerId;
     public readonly decimal TaxFeePercent;
     public readonly string PayMasterPaymentUrlFormat;
@@ -65,13 +59,11 @@ public sealed class Config : ConfigGoogleSheets
         string googleTransactionsFinalRange, string googleDonationsRange, string googleDonationsCustomRange,
         string googleDonationsCustomRangeToClear, string googleDonationSumsRange, string digisellerProductUrlFormat,
         string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid, string digisellerLogin,
-        string digisellerPassword, decimal digisellerFeePercent, string taxUserAgent, string taxSourceDeviceId,
-        string taxSourceType, string taxAppVersion, string taxRefreshToken, string taxProductNameFormat,
-        long taxPayerId, decimal taxFeePercent, string payMasterPaymentUrlFormat, string payMasterLogin,
-        string payMasterPassword, string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations,
-        List<string> payMasterPurposesFormats, List<Link> links, List<string> exercisesLinks,
-        string eventsChannelLogin, string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
-        Dictionary<string, List<Share>> shares)
+        string digisellerPassword, decimal digisellerFeePercent, long taxPayerId, decimal taxFeePercent,
+        string payMasterPaymentUrlFormat, string payMasterLogin, string payMasterPassword,
+        string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats,
+        List<Link> links, List<string> exercisesLinks, string eventsChannelLogin, string bookPromo,
+        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, Dictionary<string, List<Share>> shares)
         : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
             applicationName, googleSheetId)
     {
@@ -98,12 +90,6 @@ public sealed class Config : ConfigGoogleSheets
         DigisellerLogin = digisellerLogin;
         DigisellerPassword = digisellerPassword;
         DigisellerFeePercent = digisellerFeePercent;
-        TaxUserAgent = taxUserAgent;
-        TaxSourceDeviceId = taxSourceDeviceId;
-        TaxSourceType = taxSourceType;
-        TaxAppVersion = taxAppVersion;
-        TaxRefreshToken = taxRefreshToken;
-        TaxProductNameFormat = taxProductNameFormat;
         TaxPayerId = taxPayerId;
         TaxFeePercent = taxFeePercent;
         PayMasterPaymentUrlFormat = payMasterPaymentUrlFormat;

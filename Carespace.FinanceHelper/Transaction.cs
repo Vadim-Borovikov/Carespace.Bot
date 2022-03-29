@@ -32,10 +32,10 @@ public sealed class Transaction : ISavable
     public decimal? PayMasterFee { get; internal set; }
     public decimal? Tax { get; internal set; }
 
-    internal string? TaxReceiptId;
+    private readonly string? _taxReceiptId;
     internal int? PayMasterPaymentId;
 
-    internal readonly string? Name;
+    private readonly string? _name;
     internal readonly decimal Amount;
     internal readonly decimal? Price;
     internal readonly string? PromoCode;
@@ -57,7 +57,7 @@ public sealed class Transaction : ISavable
         string? taxReceiptId = null, int? payMasterPaymentId = null)
     {
         Date = date;
-        Name = name;
+        _name = name;
         Amount = amount;
         Price = price;
         PromoCode = promoCode;
@@ -65,7 +65,7 @@ public sealed class Transaction : ISavable
         DigisellerProductId = digisellerProductId;
         PayMethodInfo = payMethod;
         Email = email;
-        TaxReceiptId = taxReceiptId;
+        _taxReceiptId = taxReceiptId;
         PayMasterPaymentId = payMasterPaymentId;
     }
 
@@ -103,13 +103,13 @@ public sealed class Transaction : ISavable
 
     public IDictionary<string, object?> Convert()
     {
-        Uri? taxReceiptUri = string.IsNullOrWhiteSpace(TaxReceiptId)
+        Uri? taxReceiptUri = string.IsNullOrWhiteSpace(_taxReceiptId)
             ? null
-            : SelfWork.DataManager.GetReceiptUri(TaxPayerId, TaxReceiptId);
-        string? taxHyperLink = taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, TaxReceiptId);
+            : SelfWork.DataManager.GetReceiptUri(TaxPayerId, _taxReceiptId);
+        string? taxHyperLink = taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, _taxReceiptId);
         Dictionary<string, object?> result = new()
         {
-            { NameTitle, Name },
+            { NameTitle, _name },
             { DateTitle, $"{Date:d MMMM yyyy}" },
             { AmountTitle, Amount },
             { PriceTitle, Price },

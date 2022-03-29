@@ -182,25 +182,6 @@ internal sealed class FinanceManager
 
         statusMessage = chatId is null
             ? null
-            : await _bot.Client.SendTextMessageAsync(chatId, "_Регистрирую доходы…_", ParseMode.MarkdownV2);
-
-        string taxUserAgent = _bot.Config.TaxUserAgent.GetValue(nameof(_bot.Config.TaxUserAgent));
-        string taxSourceDeviceId = _bot.Config.TaxSourceDeviceId.GetValue(nameof(_bot.Config.TaxSourceDeviceId));
-        string taxSourceType = _bot.Config.TaxSourceType.GetValue(nameof(_bot.Config.TaxSourceType));
-        string taxAppVersion = _bot.Config.TaxAppVersion.GetValue(nameof(_bot.Config.TaxAppVersion));
-        string taxRefreshToken = _bot.Config.TaxRefreshToken.GetValue(nameof(_bot.Config.TaxRefreshToken));
-        string taxProductNameFormat =
-            _bot.Config.TaxProductNameFormat.GetValue(nameof(_bot.Config.TaxProductNameFormat));
-        await FinanceHelper.Utils.RegisterTaxesAsync(transactions, taxUserAgent, taxSourceDeviceId, taxSourceType,
-            taxAppVersion, taxRefreshToken, taxProductNameFormat);
-
-        if (statusMessage is not null)
-        {
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
-        }
-
-        statusMessage = chatId is null
-            ? null
             : await _bot.Client.SendTextMessageAsync(chatId, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
 
 
