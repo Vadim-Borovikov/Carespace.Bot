@@ -403,7 +403,7 @@ internal sealed class Manager : IDisposable
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
+        Message message = await _bot.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
             ParseMode.MarkdownV2, null, disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
