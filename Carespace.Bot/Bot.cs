@@ -46,7 +46,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         await base.StartAsync(cancellationToken);
         await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
         Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
-            nameof(EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync));
+            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             MailAddress? email = textMessage.Text.ToEmail();
             if (email is null)
             {
-                await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+                await SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
             }
             else
             {
@@ -91,8 +91,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
                 await Client.DeleteMessageAsync(textMessage.Chat.Id, textMessage.MessageId);
             }
             catch (ApiRequestException e)
-                when ((e.ErrorCode == MessageToDeleteNotFoundCode)
-                      && (e.Message == MessageToDeleteNotFoundText))
+                when ((e.ErrorCode == MessageToDeleteNotFoundCode) && (e.Message == MessageToDeleteNotFoundText))
             {
                 return;
             }
@@ -104,7 +103,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         {
             if (!fromChat)
             {
-                await Client.SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
+                await SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
             }
             return;
         }

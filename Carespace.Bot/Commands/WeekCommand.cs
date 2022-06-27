@@ -13,8 +13,8 @@ internal sealed class WeekCommand : CommandBase<Bot, Config.Config>
 
     public WeekCommand(Bot bot) : base(bot) { }
 
-    public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
+    public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        await Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat.Id, true);
+        return Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat.Id, true);
     }
 }
