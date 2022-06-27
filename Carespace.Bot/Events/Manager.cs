@@ -191,12 +191,12 @@ internal sealed class Manager : IDisposable
             }
         }
 
-        bool shouldUnpin = _saveManager.Data.ScheduleId is not null;
+        int? oldScheduleId = _saveManager.Data.ScheduleId;
         _saveManager.Data.ScheduleId =
             await SendTextMessageAsync(text, MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
-        if (shouldUnpin)
+        if (oldScheduleId.HasValue)
         {
-            await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId);
+            await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId, oldScheduleId.Value);
         }
         await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, _saveManager.Data.ScheduleId.Value, true);
     }
