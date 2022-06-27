@@ -64,7 +64,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
                 return;
             }
 
-            await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+            await SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
 
             return;
         }
@@ -89,7 +89,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         {
             if (!fromChat)
             {
-                await Client.SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
+                await SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
             }
             return;
         }
