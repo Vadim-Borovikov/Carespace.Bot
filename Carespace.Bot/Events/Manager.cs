@@ -28,7 +28,7 @@ internal sealed class Manager : IDisposable
         _saveManager = saveManager;
     }
 
-    public async Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
+    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
     {
         _weekStart = Utils.GetMonday(_bot.TimeManager);
         _weekEnd = _weekStart.AddDays(7);
@@ -53,11 +53,11 @@ internal sealed class Manager : IDisposable
         }
         else
         {
-            await PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
         }
     }
 
-    public Task ConfirmAndPlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public Task ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
         if (!_waitingForConfirmation)
         {
@@ -65,29 +65,10 @@ internal sealed class Manager : IDisposable
         }
 
         _waitingForConfirmation = false;
-        return PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
+        return PostOrUpdateWeekEventsAndScheduleAsync(chatId);
     }
 
-    private Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
-    {
-        // ReSharper disable once UnusedVariable
-        //   I need this task to start, but not to be awaited
-        Task task = PostOrUpdateWeekEventsAndScheduleAsync(chatId);
-        return Task.CompletedTask;
-    }
-
-    public void Dispose() => DisposeEvents();
-
-    private void DisposeEvents()
-    {
-        foreach (Event e in _events.Values)
-        {
-            e.Dispose();
-        }
-        _events.Clear();
-    }
-
-    private async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
         Message statusMessage =
             await _bot.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
@@ -105,6 +86,17 @@ internal sealed class Manager : IDisposable
         _saveManager.Save();
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
+    }
+
+    public void Dispose() => DisposeEvents();
+
+    private void DisposeEvents()
+    {
+        foreach (Event e in _events.Values)
+        {
+            e.Dispose();
+        }
+        _events.Clear();
     }
 
     private Task AskForConfirmationAsync(ChatId chatId)

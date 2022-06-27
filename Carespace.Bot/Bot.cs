@@ -36,9 +36,9 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
 
         await base.StartAsync(cancellationToken);
-        await EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
-        Schedule(() => EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
-            nameof(EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync));
+        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
+        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
+            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -64,7 +64,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
                 return;
             }
 
-            await Client.SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+            await SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
 
             return;
         }
@@ -88,7 +88,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         {
             if (!fromChat)
             {
-                await Client.SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
+                await SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
             }
             return;
         }
