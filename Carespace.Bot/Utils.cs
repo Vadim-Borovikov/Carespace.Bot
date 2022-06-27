@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Config;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -14,17 +13,17 @@ namespace Carespace.Bot;
 
 internal static class Utils
 {
-    public static Task SendMessageAsync(this ITelegramBotClient client, Link link, ChatId chatId)
+    public static Task SendMessageAsync(this Bot bot, Link link, ChatId chatId)
     {
         if (string.IsNullOrWhiteSpace(link.PhotoPath))
         {
             string name = link.Name.GetValue(nameof(link.Name));
             string text = $"[{AbstractBot.Utils.EscapeCharacters(name)}]({link.Uri.AbsoluteUri})";
-            return client.SendTextMessageAsync(chatId, text, ParseMode.MarkdownV2);
+            return bot.SendTextMessageAsync(chatId, text, ParseMode.MarkdownV2);
         }
 
         InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
-        return PhotoRepository.SendPhotoAsync(client, chatId, link.PhotoPath, replyMarkup: keyboard);
+        return PhotoRepository.SendPhotoAsync(bot, chatId, link.PhotoPath, replyMarkup: keyboard);
     }
 
     public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");

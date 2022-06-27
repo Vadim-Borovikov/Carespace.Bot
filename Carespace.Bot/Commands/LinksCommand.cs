@@ -18,7 +18,7 @@ internal sealed class LinksCommand : CommandBase<Bot, Config.Config>
         User user = message.From.GetValue(nameof(message.From));
         foreach (Link link in Bot.Config.Links)
         {
-            await Bot.Client.SendMessageAsync(link, user.Id);
+            await Bot.SendMessageAsync(link, user.Id);
         }
     }
 }

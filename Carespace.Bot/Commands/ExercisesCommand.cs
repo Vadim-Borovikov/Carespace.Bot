@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using AbstractBot;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -20,7 +19,7 @@ internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
         User user = message.From.GetValue(nameof(message.From));
         foreach (string text in Bot.Config.ExercisesLinks.Select(GetMessage))
         {
-            await Bot.Client.SendTextMessageAsync(user.Id, text, ParseMode.MarkdownV2);
+            await Bot.SendTextMessageAsync(user.Id, text, ParseMode.MarkdownV2);
         }
     }
 

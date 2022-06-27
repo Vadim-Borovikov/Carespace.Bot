@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AbstractBot;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -14,7 +13,7 @@ internal abstract class TextCommand : CommandBase<Bot, Config.Config>
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.Client.SendTextMessageAsync(user.Id, _text, ParseMode.MarkdownV2);
+        return Bot.SendTextMessageAsync(user.Id, _text, ParseMode.MarkdownV2);
     }
 
     private readonly string _text;

@@ -9,7 +9,6 @@ using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
 using GoogleSheetsManager.Providers;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -43,17 +42,17 @@ internal sealed class FinanceManager
 
     public async Task UpdateFinances(ChatId chatId)
     {
-        await _bot.Client.SendTextMessageAsync(chatId, "Обновляю покупки…");
+        await _bot.SendTextMessageAsync(chatId, "Обновляю покупки…");
 
         await UpdatePurchasesAsync(chatId);
 
-        await _bot.Client.SendTextMessageAsync(chatId, "…покупки обновлены.");
+        await _bot.SendTextMessageAsync(chatId, "…покупки обновлены.");
 
-        await _bot.Client.SendTextMessageAsync(chatId, "Обновляю донатики…");
+        await _bot.SendTextMessageAsync(chatId, "Обновляю донатики…");
 
         await UpdateDonationsAsync(chatId);
 
-        await _bot.Client.SendTextMessageAsync(chatId, "…донатики обновлены.");
+        await _bot.SendTextMessageAsync(chatId, "…донатики обновлены.");
     }
 
     public async Task<IEnumerable<MailAddress>> LoadTransactionEmailsAsync(int productId)
@@ -91,7 +90,7 @@ internal sealed class FinanceManager
 
         Message? statusMessage = chatId is null
             ? null
-            : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
+            : await _bot.SendTextMessageAsync(chatId, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
 
         string finalRange =
             _bot.Config.GoogleTransactionsFinalRange.GetValue(nameof(_bot.Config.GoogleTransactionsFinalRange));
@@ -111,7 +110,7 @@ internal sealed class FinanceManager
 
         statusMessage = chatId is null
             ? null
-            : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
+            : await _bot.SendTextMessageAsync(chatId, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
 
         DateTime dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
@@ -136,7 +135,7 @@ internal sealed class FinanceManager
 
         statusMessage = chatId is null
             ? null
-            : await _bot.Client.SendTextMessageAsync(chatId, "_Считаю доли…_", ParseMode.MarkdownV2);
+            : await _bot.SendTextMessageAsync(chatId, "_Считаю доли…_", ParseMode.MarkdownV2);
 
         decimal taxFeePercent = _bot.Config.TaxFeePercent.GetValue(nameof(_bot.Config.TaxFeePercent));
         decimal digisellerFeePercent =
@@ -155,7 +154,7 @@ internal sealed class FinanceManager
         {
             statusMessage = chatId is null
                 ? null
-                : await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
+                : await _bot.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
             string alias =
                 _bot.Config.PayMasterSiteAliasDigiseller.GetValue(nameof(_bot.Config.PayMasterSiteAliasDigiseller));
@@ -182,7 +181,7 @@ internal sealed class FinanceManager
 
         statusMessage = chatId is null
             ? null
-            : await _bot.Client.SendTextMessageAsync(chatId, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
+            : await _bot.SendTextMessageAsync(chatId, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
 
 
         await DataManager.UpdateValuesAsync(provider, finalRange, transactions.OrderBy(t => t.Date).ToList());
@@ -206,7 +205,7 @@ internal sealed class FinanceManager
         List<Donation> donations = new();
 
         Message statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю донаты из таблицы…_", ParseMode.MarkdownV2);
+            await _bot.SendTextMessageAsync(chatId, "_Загружаю донаты из таблицы…_", ParseMode.MarkdownV2);
 
         string range = _bot.Config.GoogleDonationsRange.GetValue(nameof(_bot.Config.GoogleDonationsRange));
         IList<Donation> oldDonations = await DataManager.GetValuesAsync(provider, Donation.Load, range);
@@ -219,7 +218,7 @@ internal sealed class FinanceManager
 
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
 
-        statusMessage = await _bot.Client.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
+        statusMessage = await _bot.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
         DateTime dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
@@ -239,8 +238,7 @@ internal sealed class FinanceManager
 
         FinanceHelper.Utils.CalculateTotalsAndWeeks(donations, _bot.Config.PayMasterFeePercents, firstThursday);
 
-        statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Заношу донаты в таблицу…_", ParseMode.MarkdownV2);
+        statusMessage = await _bot.SendTextMessageAsync(chatId, "_Заношу донаты в таблицу…_", ParseMode.MarkdownV2);
 
         string donationsRange = _bot.Config.GoogleDonationsRange.GetValue(nameof(_bot.Config.GoogleDonationsRange));
         string clearRange =
@@ -252,7 +250,7 @@ internal sealed class FinanceManager
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
 
         statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Считаю и заношу недельные суммы…_", ParseMode.MarkdownV2);
+            await _bot.SendTextMessageAsync(chatId, "_Считаю и заношу недельные суммы…_", ParseMode.MarkdownV2);
 
         List<DonationsSum> sums = donations.GroupBy(d => d.Week)
                                            .Select(g => new DonationsSum(firstThursday, g.Key, g.Sum(d => d.Total)))

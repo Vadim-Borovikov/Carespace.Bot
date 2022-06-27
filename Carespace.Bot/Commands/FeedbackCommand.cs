@@ -17,6 +17,6 @@ internal sealed class FeedbackCommand : CommandBase<Bot, Config.Config>
     {
         Link link = Bot.Config.FeedbackLink.GetValue(nameof(Bot.Config.FeedbackLink));
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.Client.SendMessageAsync(link, user.Id);
+        return Bot.SendMessageAsync(link, user.Id);
     }
 }
