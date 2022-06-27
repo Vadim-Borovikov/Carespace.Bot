@@ -18,7 +18,6 @@ internal sealed class Manager : IDisposable
 {
     private readonly Bot _bot;
     private readonly SaveManager<Data, JsonData> _saveManager;
-    private readonly ChatId _eventsChatId;
     private readonly ChatId _discussChatId;
     private readonly InlineKeyboardButton _discussButton;
     private readonly InlineKeyboardMarkup _discussKeyboard;
@@ -29,7 +28,6 @@ internal sealed class Manager : IDisposable
     {
         _bot = bot;
 
-        _eventsChatId = new ChatId($"@{_bot.Config.EventsChannelLogin}");
         _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
 
         _saveManager = saveManager;
@@ -183,8 +181,8 @@ internal sealed class Manager : IDisposable
         {
             _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
                 MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
-            await _bot.Client.UnpinChatMessageAsync(_eventsChatId);
-            await _bot.Client.PinChatMessageAsync(_eventsChatId, scheduleId, true);
+            await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId);
+            await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, scheduleId, true);
         }
     }
 
@@ -290,7 +288,7 @@ internal sealed class Manager : IDisposable
         MessageData.KeyboardType keyboard, InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
     {
         int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
-        await _bot.Client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
+        await _bot.Client.ForwardMessageAsync(_discussChatId, _bot.Config.EventsChannelId, messageId);
         await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
         return messageId;
     }
@@ -300,8 +298,9 @@ internal sealed class Manager : IDisposable
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.SendTextMessageAsync(_eventsChatId, text, ParseMode.MarkdownV2, null,
-            disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
+        Message message = await _bot.Client.SendTextMessageAsync(_bot.Config.EventsChannelId, text,
+            ParseMode.MarkdownV2, null, disableWebPagePreview, disableNotification, replyToMessageId, false,
+            keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
     }
@@ -354,7 +353,7 @@ internal sealed class Manager : IDisposable
             }
             string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
             int messageId = e.Data.MessageId.GetValue(nameof(e.Data.MessageId));
-            Uri? messageUri = GetMessageUri(_eventsChatId, messageId);
+            Uri? messageUri = GetMessageUri(_bot.Config.EventsChannelId, messageId);
             Uri uri = messageUri.GetValue(nameof(messageUri));
             string messageUrl = AbstractBot.Utils.EscapeCharacters(uri.AbsoluteUri);
             string weekly = e.Template.IsWeekly ? " 🔄" : "";
@@ -399,8 +398,8 @@ internal sealed class Manager : IDisposable
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.EditMessageTextAsync(_eventsChatId, messageId, text, ParseMode.MarkdownV2,
-            null, disableWebPagePreview, keyboardMarkup);
+        Message message = await _bot.Client.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
+            ParseMode.MarkdownV2, null, disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
             _saveManager.Data.Messages[messageId] = new MessageData(message, text, keyboard);
@@ -437,7 +436,7 @@ internal sealed class Manager : IDisposable
     {
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
-            await _bot.Client.DeleteMessageAsync(_eventsChatId, messageId);
+            await _bot.Client.DeleteMessageAsync(_bot.Config.EventsChannelId, messageId);
         }
         _saveManager.Data.Messages.Remove(messageId);
     }

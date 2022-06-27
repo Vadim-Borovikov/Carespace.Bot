@@ -105,7 +105,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public List<string?>? ExercisesLinks { get; set; }
     [JsonProperty]
-    public string? EventsChannelLogin { get; set; }
+    public long? EventsChannelId { get; set; }
     [JsonProperty]
     public string? DiscussGroupLogin { get; set; }
     [JsonProperty]
@@ -183,7 +183,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
 
         List<Link> links = Links.GetValue(nameof(Links)).RemoveNulls().Select(l => l.Convert()).ToList();
         List<string> exercisesLinks = ExercisesLinks.GetValue(nameof(ExercisesLinks)).RemoveNulls().ToList();
-        string eventsChannelLogin = EventsChannelLogin.GetValue(nameof(EventsChannelLogin));
+        long eventsChannelId = EventsChannelId.GetValue(nameof(EventsChannelId));
         string discussGroupLogin = DiscussGroupLogin.GetValue(nameof(DiscussGroupLogin));
         string bookPromo = BookPromo.GetValue(nameof(BookPromo));
 
@@ -214,7 +214,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             googleDonationSumsRange, digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId,
             digisellerApiGuid, digisellerLogin, digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent,
             payMasterPaymentUrlFormat, payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller,
-            payMasterSiteAliasDonations, payMasterPurposesFormats, links, exercisesLinks, eventsChannelLogin,
+            payMasterSiteAliasDonations, payMasterPurposesFormats, links, exercisesLinks, eventsChannelId,
             discussGroupLogin, bookPromo, payMasterFeePercents, shares)
         {
             Host = Host,
