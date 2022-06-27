@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
+using Carespace.Bot.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
 using GryphonUtilities;
@@ -108,7 +109,7 @@ internal sealed class Manager : IDisposable
             sb.AppendLine($"• {template.Name}");
         }
         sb.AppendLine();
-        sb.AppendLine("ОК?");
+        sb.AppendLine($"ОК? /{ConfirmCommand.CommandName}");
 
         _confirmationPending = true;
 
