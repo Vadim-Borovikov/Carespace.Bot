@@ -53,10 +53,10 @@ public sealed class Config : ConfigGoogleSheets
     internal long? LogsChatId => SuperAdminId;
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, TimeSpan sendMessageDelay, string googleCredentialJson, string applicationName,
-        string googleSheetId, string template, Link feedbackLink, string googleRange, Uri eventsFormUri,
-        DateTime eventsUpdateAt, string savePath, int productId, string googleSheetIdTransactions,
-        string googleSheetIdDonations, string googleTransactionsCustomRange,
+        string forbiddenStickerFileId, TimeSpan sendMessageDelayLocal, TimeSpan sendMessageDelayGlobal,
+        string googleCredentialJson, string applicationName, string googleSheetId, string template, Link feedbackLink,
+        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, int productId,
+        string googleSheetIdTransactions, string googleSheetIdDonations, string googleTransactionsCustomRange,
         string googleTransactionsCustomRangeToClear, string googleTransactionsFinalRange, string googleDonationsRange,
         string googleDonationsCustomRange, string googleDonationsCustomRangeToClear, string googleDonationSumsRange,
         string digisellerProductUrlFormat, string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid,
@@ -66,8 +66,8 @@ public sealed class Config : ConfigGoogleSheets
         List<Link> links, List<string> exercisesLinks, long eventsChannelId, string discussGroupLogin,
         string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
         Dictionary<string, List<Share>> shares)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelay,
-            googleCredentialJson, applicationName, googleSheetId)
+        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelayLocal,
+            sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
     {
         Template = template;
         FeedbackLink = feedbackLink;

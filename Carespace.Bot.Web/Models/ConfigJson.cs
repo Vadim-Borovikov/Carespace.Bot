@@ -20,7 +20,9 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public string? ForbiddenStickerFileId { get; set; }
     [JsonProperty]
-    public double? UpdatesPerMinuteLimit { get; set; }
+    public double? UpdatesPerMinuteLimitLocal { get; set; }
+    [JsonProperty]
+    public double? UpdatesPerMinuteLimitGlobal { get; set; }
 
     [JsonProperty]
     public string? Host { get; set; }
@@ -139,8 +141,11 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         string dontUnderstandStickerFileId = DontUnderstandStickerFileId.GetValue(nameof(DontUnderstandStickerFileId));
         string forbiddenStickerFileId = ForbiddenStickerFileId.GetValue(nameof(ForbiddenStickerFileId));
 
-        double updatesPerMinuteLimit = UpdatesPerMinuteLimit.GetValue(nameof(UpdatesPerMinuteLimit));
-        TimeSpan sendMessageDelay = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimit);
+        double updatesPerMinuteLimitLocal = UpdatesPerMinuteLimitLocal.GetValue(nameof(UpdatesPerMinuteLimitLocal));
+        TimeSpan sendMessagePeriodLocal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitLocal);
+
+        double updatesPerMinuteLimitGlobal = UpdatesPerMinuteLimitGlobal.GetValue(nameof(UpdatesPerMinuteLimitGlobal));
+        TimeSpan sendMessagePeriodGlobal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitGlobal);
 
         string googleCredentialJson = string.IsNullOrWhiteSpace(GoogleCredentialJson)
             ? JsonConvert.SerializeObject(GoogleCredential)
@@ -212,15 +217,16 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         }
 
         return new Config.Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
-            sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, template, feedbackLink,
-            googleRange, eventsFormUri, eventsUpdateAt, savePath, productId, googleSheetIdTransactions,
-            googleSheetIdDonations, googleTransactionsCustomRange, googleTransactionsCustomRangeToClear,
-            googleTransactionsFinalRange, googleDonationsRange, googleDonationsCustomRange,
-            googleDonationsCustomRangeToClear, googleDonationSumsRange, digisellerProductUrlFormat,
-            digisellerSellUrlFormat, digisellerId, digisellerApiGuid, digisellerLogin, digisellerPassword,
-            digisellerFeePercent, taxPayerId, taxFeePercent, payMasterPaymentUrlFormat, payMasterLogin,
-            payMasterPassword, payMasterSiteAliasDigiseller, payMasterSiteAliasDonations, payMasterPurposesFormats,
-            links, exercisesLinks, eventsChannelId, discussGroupLogin, bookPromo, payMasterFeePercents, shares)
+            sendMessagePeriodLocal, sendMessagePeriodGlobal, googleCredentialJson, applicationName, googleSheetId,
+            template, feedbackLink, googleRange, eventsFormUri, eventsUpdateAt, savePath, productId,
+            googleSheetIdTransactions, googleSheetIdDonations, googleTransactionsCustomRange,
+            googleTransactionsCustomRangeToClear, googleTransactionsFinalRange, googleDonationsRange,
+            googleDonationsCustomRange, googleDonationsCustomRangeToClear, googleDonationSumsRange,
+            digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId, digisellerApiGuid, digisellerLogin,
+            digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent, payMasterPaymentUrlFormat,
+            payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller, payMasterSiteAliasDonations,
+            payMasterPurposesFormats, links, exercisesLinks, eventsChannelId, discussGroupLogin, bookPromo,
+            payMasterFeePercents, shares)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
