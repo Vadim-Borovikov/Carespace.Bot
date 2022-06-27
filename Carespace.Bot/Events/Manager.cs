@@ -19,9 +19,6 @@ internal sealed class Manager : IDisposable
     private readonly Bot _bot;
     private readonly SaveManager<Data, JsonData> _saveManager;
     private readonly ChatId _eventsChatId;
-    private readonly ChatId _discussChatId;
-    private readonly InlineKeyboardButton _discussButton;
-    private readonly InlineKeyboardMarkup _discussKeyboard;
 
     private readonly Dictionary<int, Event> _events = new();
 
@@ -30,17 +27,8 @@ internal sealed class Manager : IDisposable
         _bot = bot;
 
         _eventsChatId = new ChatId($"@{_bot.Config.EventsChannelLogin}");
-        _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
 
         _saveManager = saveManager;
-
-        Uri? chatUri = GetUri(_discussChatId);
-        Uri uri = chatUri.GetValue(nameof(chatUri));
-        _discussButton = new InlineKeyboardButton("💬 Обсудить")
-        {
-            Url = uri.AbsoluteUri
-        };
-        _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
     }
 
     public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
@@ -147,7 +135,7 @@ internal sealed class Manager : IDisposable
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                 int messageId = data.MessageId.GetValue(nameof(data.MessageId));
                 await EditMessageTextAsync(messageId, messageText, icsButton: icsButton,
-                    keyboard: MessageData.KeyboardType.Full);
+                    keyboard: MessageData.KeyboardType.Ics);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
                 _events[savedTemplateId] = new Event(template, data, _bot.TimeManager);
@@ -176,13 +164,12 @@ internal sealed class Manager : IDisposable
         int scheduleId = _saveManager.Data.ScheduleId.GetValue(nameof(_saveManager.Data.ScheduleId));
         if (IsScheduleRelevant())
         {
-            await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.Discuss,
+            await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.None,
                 disableWebPagePreview: true);
         }
         else
         {
-            _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
-                MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
+            _saveManager.Data.ScheduleId = await SendTextMessageAsync(text, MessageData.KeyboardType.None, disableWebPagePreview: true);
             await _bot.Client.UnpinChatMessageAsync(_eventsChatId);
             await _bot.Client.PinChatMessageAsync(_eventsChatId, scheduleId, true);
         }
@@ -281,18 +268,8 @@ internal sealed class Manager : IDisposable
     {
         string text = GetMessageText(template);
         InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-        int messageId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Ics,
-            MessageData.KeyboardType.Full, icsButton);
+        int messageId = await SendTextMessageAsync(text, MessageData.KeyboardType.Ics, icsButton);
         return new EventData(messageId);
-    }
-
-    private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
-        MessageData.KeyboardType keyboard, InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
-    {
-        int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
-        await _bot.Client.ForwardMessageAsync(_discussChatId, _eventsChatId, messageId);
-        await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
-        return messageId;
     }
 
     private async Task<int> SendTextMessageAsync(string text,
@@ -412,23 +389,15 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    private InlineKeyboardMarkup? GetKeyboardMarkup(MessageData.KeyboardType keyboardType,
+    private static InlineKeyboardMarkup? GetKeyboardMarkup(MessageData.KeyboardType keyboardType,
         InlineKeyboardButton? icsButton)
     {
         switch (keyboardType)
         {
-            case MessageData.KeyboardType.None:    return null;
-            case MessageData.KeyboardType.Discuss: return _discussKeyboard;
-        }
-
-        InlineKeyboardButton button = icsButton.GetValue(nameof(icsButton));
-
-        switch (keyboardType)
-        {
-            case MessageData.KeyboardType.Ics: return new InlineKeyboardMarkup(button);
-            case MessageData.KeyboardType.Full:
-                InlineKeyboardButton[] row = { button, _discussButton };
-                return new InlineKeyboardMarkup(row);
+            case MessageData.KeyboardType.None: return null;
+            case MessageData.KeyboardType.Ics:
+                InlineKeyboardButton button = icsButton.GetValue(nameof(icsButton));
+                return new InlineKeyboardMarkup(button);
             default: throw new ArgumentOutOfRangeException(nameof(keyboardType), keyboardType, null);
         }
     }
