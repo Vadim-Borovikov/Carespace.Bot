@@ -46,7 +46,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         await base.StartAsync(cancellationToken);
         await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
         Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
-            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
+            nameof(EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync));
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

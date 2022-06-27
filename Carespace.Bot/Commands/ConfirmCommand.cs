@@ -6,7 +6,7 @@ namespace Carespace.Bot.Commands;
 
 internal sealed class ConfirmCommand : CommandBase<Bot, Config.Config>
 {
-    protected override string Name => "confirm";
+    protected override string Name => CommandName;
     protected override string Description => "Подтвердить отправку событий";
 
     public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.Admins;
@@ -15,6 +15,8 @@ internal sealed class ConfirmCommand : CommandBase<Bot, Config.Config>
 
     public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        await Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat.Id);
+        await Bot.EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync(message.Chat.Id);
     }
+
+    public const string CommandName = "confirm";
 }

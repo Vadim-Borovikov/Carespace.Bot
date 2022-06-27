@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
+using Carespace.Bot.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
 using GryphonUtilities;
@@ -70,22 +71,40 @@ internal sealed class Manager : IDisposable
         }
         else
         {
-            await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            await PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
         }
     }
 
-    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
         if (!_confirmationPending)
         {
-            await _bot.Client.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
-            return;
+            return _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
         }
 
         _confirmationPending = false;
 
+        // ReSharper disable once UnusedVariable
+        //   I need this task to start, but not to be awaited
+        Task task = PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => DisposeEvents();
+
+    private void DisposeEvents()
+    {
+        foreach (Event e in _events.Values)
+        {
+            e.Dispose();
+        }
+        _events.Clear();
+    }
+
+    private async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    {
         Message statusMessage =
-            await _bot.Client.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
+            await _bot.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
 
         await PostOrUpdateEventsAsync();
         await PostOrUpdateScheduleAsync();
@@ -102,17 +121,6 @@ internal sealed class Manager : IDisposable
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
     }
 
-    public void Dispose() => DisposeEvents();
-
-    private void DisposeEvents()
-    {
-        foreach (Event e in _events.Values)
-        {
-            e.Dispose();
-        }
-        _events.Clear();
-    }
-
     private Task AskForConfirmationAsync(ChatId chatId)
     {
         StringBuilder sb = new();
@@ -122,11 +130,11 @@ internal sealed class Manager : IDisposable
             sb.AppendLine($"• {template.Name}");
         }
         sb.AppendLine();
-        sb.AppendLine("ОК?");
+        sb.AppendLine($"ОК? /{ConfirmCommand.CommandName}");
 
         _confirmationPending = true;
 
-        return _bot.Client.SendTextMessageAsync(chatId, sb.ToString());
+        return _bot.SendTextMessageAsync(chatId, sb.ToString());
     }
 
     private async Task PostOrUpdateEventsAsync()
@@ -171,19 +179,26 @@ internal sealed class Manager : IDisposable
     {
         string text = PrepareWeekSchedule();
 
-        int scheduleId = _saveManager.Data.ScheduleId.GetValue(nameof(_saveManager.Data.ScheduleId));
-        if (IsScheduleRelevant())
+        if (_saveManager.Data.ScheduleId is not null)
         {
-            await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.Discuss,
-                disableWebPagePreview: true);
+            int scheduleId = _saveManager.Data.ScheduleId.Value;
+            MessageData? data = GetMessageData(scheduleId);
+            if (data?.Date >= _weekStart)
+            {
+                await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.Discuss,
+                    disableWebPagePreview: true);
+                return;
+            }
         }
-        else
+
+        bool shouldUnpin = _saveManager.Data.ScheduleId is not null;
+        _saveManager.Data.ScheduleId =
+            await SendTextMessageAsync(text, MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
+        if (shouldUnpin)
         {
-            _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
-                MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
             await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId);
-            await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, scheduleId, true);
         }
+        await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, _saveManager.Data.ScheduleId.Value, true);
     }
 
     private async Task CreateOrUpdateNotificationsAsync()
@@ -298,9 +313,8 @@ internal sealed class Manager : IDisposable
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.SendTextMessageAsync(_bot.Config.EventsChannelId, text,
-            ParseMode.MarkdownV2, null, disableWebPagePreview, disableNotification, replyToMessageId, false,
-            keyboardMarkup);
+        Message message = await _bot.SendTextMessageAsync(_bot.Config.EventsChannelId, text, ParseMode.MarkdownV2,
+            null, disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
     }
@@ -378,15 +392,30 @@ internal sealed class Manager : IDisposable
     }
     private static Uri? GetUri(ChatId chatId)
     {
-        string? username = GetUsername(chatId);
-        if (username is null)
+        string? chatParam = GetUsername(chatId);
+        if (chatParam is null)
+        {
+            chatParam = GetId(chatId);
+            if (chatParam is null)
+            {
+                return null;
+            }
+        }
+        string uriString = string.Format(ChannelUriFormat, chatParam);
+        return new Uri(uriString);
+    }
+
+    private static string? GetUsername(ChatId chatId) => chatId.Username?.Remove(0, 1);
+
+    private static string? GetId(ChatId chatId)
+    {
+        if (chatId.Identifier is null)
         {
             return null;
         }
-        string uriString = string.Format(ChannelUriFormat, username);
-        return new Uri(uriString);
+        string s = chatId.Identifier.Value.ToString().Remove(0, 4);
+        return $"c/{s}";
     }
-    private static string? GetUsername(ChatId chatId) => chatId.Username?.Remove(0, 1);
 
     private async Task EditMessageTextAsync(int messageId, string text,
         MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
@@ -398,7 +427,7 @@ internal sealed class Manager : IDisposable
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.Client.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
+        Message message = await _bot.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
             ParseMode.MarkdownV2, null, disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
@@ -511,13 +540,6 @@ internal sealed class Manager : IDisposable
         {
             Url = string.Format(Utils.CalendarUriFormat, _bot.Config.Host, template.Id)
         };
-    }
-
-    private bool IsScheduleRelevant()
-    {
-        int scheduleId = _saveManager.Data.ScheduleId.GetValue(nameof(_saveManager.Data.ScheduleId));
-        MessageData? data = GetMessageData(scheduleId);
-        return data?.Date >= _weekStart;
     }
 
     private MessageData? GetMessageData(int id)
