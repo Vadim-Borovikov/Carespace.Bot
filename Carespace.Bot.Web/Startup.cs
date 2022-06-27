@@ -34,7 +34,7 @@ internal sealed class Startup
 
         ConfigJson botConfig = _config.Get<ConfigJson>();
 
-        string cultureInfoName = botConfig.CultureInfoName.GetValue(nameof(botConfig.Token));
+        string cultureInfoName = botConfig.CultureInfoName.GetValue(nameof(botConfig.CultureInfoName));
         CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(cultureInfoName);
 
         string token = botConfig.Token.GetValue(nameof(botConfig.Token));
