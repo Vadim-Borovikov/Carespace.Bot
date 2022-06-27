@@ -18,7 +18,9 @@ public sealed class ConfigJson : IConvertibleTo<Config>
     [JsonProperty]
     public string? ForbiddenStickerFileId { get; set; }
     [JsonProperty]
-    public double? UpdatesPerMinuteLimit { get; set; }
+    public double? UpdatesPerMinuteLimitLocal { get; set; }
+    [JsonProperty]
+    public double? UpdatesPerMinuteLimitGlobal { get; set; }
 
     [JsonProperty]
     public string? Host { get; set; }
@@ -63,8 +65,11 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         string dontUnderstandStickerFileId = DontUnderstandStickerFileId.GetValue(nameof(DontUnderstandStickerFileId));
         string forbiddenStickerFileId = ForbiddenStickerFileId.GetValue(nameof(ForbiddenStickerFileId));
 
-        double updatesPerMinuteLimit = UpdatesPerMinuteLimit.GetValue(nameof(UpdatesPerMinuteLimit));
-        TimeSpan sendMessageDelay = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimit);
+        double updatesPerMinuteLimitLocal = UpdatesPerMinuteLimitLocal.GetValue(nameof(UpdatesPerMinuteLimitLocal));
+        TimeSpan sendMessagePeriodLocal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitLocal);
+
+        double updatesPerMinuteLimitGlobal = UpdatesPerMinuteLimitGlobal.GetValue(nameof(UpdatesPerMinuteLimitGlobal));
+        TimeSpan sendMessagePeriodGlobal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitGlobal);
 
         string googleCredentialJson = string.IsNullOrWhiteSpace(GoogleCredentialJson)
             ? JsonConvert.SerializeObject(GoogleCredential)
@@ -86,8 +91,8 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         }
 
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
-            sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, googleRange, eventsFormUri,
-            eventsUpdateAt, savePath, eventsChannelId)
+            sendMessagePeriodLocal, sendMessagePeriodGlobal, googleCredentialJson, applicationName, googleSheetId,
+            googleRange, eventsFormUri, eventsUpdateAt, savePath, eventsChannelId)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
