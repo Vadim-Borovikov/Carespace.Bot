@@ -9,7 +9,9 @@ internal sealed class MessageData
     public enum KeyboardType
     {
         None,
-        Ics
+        Ics,
+        Discuss,
+        Full
     }
 
     [JsonProperty]

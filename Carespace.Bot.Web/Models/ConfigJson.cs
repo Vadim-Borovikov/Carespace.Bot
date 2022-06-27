@@ -46,6 +46,8 @@ public sealed class ConfigJson : IConvertibleTo<Config>
     public string? SavePath { get; set; }
     [JsonProperty]
     public string? EventsChannelLogin { get; set; }
+    [JsonProperty]
+    public string? DiscussGroupLogin { get; set; }
 
     [JsonProperty]
     public string? AdminIdsJson { get; set; }
@@ -73,6 +75,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         string savePath = SavePath.GetValue(nameof(SavePath));
 
         string eventsChannelLogin = EventsChannelLogin.GetValue(nameof(EventsChannelLogin));
+        string discussGroupLogin = DiscussGroupLogin.GetValue(nameof(DiscussGroupLogin));
 
         if (AdminIds is null || (AdminIds.Count == 0))
         {
@@ -82,7 +85,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
 
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
             googleCredentialJson, applicationName, googleSheetId, googleRange, eventsFormUri,
-            eventsUpdateAt, savePath, eventsChannelLogin)
+            eventsUpdateAt, savePath, eventsChannelLogin, discussGroupLogin)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),

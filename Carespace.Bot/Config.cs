@@ -10,12 +10,14 @@ public sealed class Config : ConfigGoogleSheets
     public readonly DateTime EventsUpdateAt;
     public readonly string SavePath;
     internal readonly string EventsChannelLogin;
+    internal readonly string DiscussGroupLogin;
 
     internal long? LogsChatId => SuperAdminId;
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
         string forbiddenStickerFileId, string googleCredentialJson, string applicationName, string googleSheetId,
-        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, string eventsChannelLogin)
+        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, string eventsChannelLogin,
+        string discussGroupLogin)
         : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
             applicationName, googleSheetId)
     {
@@ -24,5 +26,6 @@ public sealed class Config : ConfigGoogleSheets
         EventsUpdateAt = eventsUpdateAt;
         SavePath = savePath;
         EventsChannelLogin = eventsChannelLogin;
+        DiscussGroupLogin = discussGroupLogin;
     }
 }
