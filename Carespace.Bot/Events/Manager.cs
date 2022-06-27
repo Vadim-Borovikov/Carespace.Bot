@@ -57,38 +57,20 @@ internal sealed class Manager : IDisposable
         }
         else
         {
-            await PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
         }
     }
 
-    public Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
         if (!_confirmationPending)
         {
-            return _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
+            await _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
+            return;
         }
 
         _confirmationPending = false;
 
-        // ReSharper disable once UnusedVariable
-        //   I need this task to start, but not to be awaited
-        Task task = PostOrUpdateWeekEventsAndScheduleAsync(chatId);
-        return Task.CompletedTask;
-    }
-
-    public void Dispose() => DisposeEvents();
-
-    private void DisposeEvents()
-    {
-        foreach (Event e in _events.Values)
-        {
-            e.Dispose();
-        }
-        _events.Clear();
-    }
-
-    private async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
-    {
         Message statusMessage =
             await _bot.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
 
@@ -105,6 +87,17 @@ internal sealed class Manager : IDisposable
         _saveManager.Save();
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
+    }
+
+    public void Dispose() => DisposeEvents();
+
+    private void DisposeEvents()
+    {
+        foreach (Event e in _events.Values)
+        {
+            e.Dispose();
+        }
+        _events.Clear();
     }
 
     private Task AskForConfirmationAsync(ChatId chatId)
@@ -164,7 +157,6 @@ internal sealed class Manager : IDisposable
     private async Task PostOrUpdateScheduleAsync()
     {
         string text = PrepareWeekSchedule();
-
         if (_saveManager.Data.ScheduleId is not null)
         {
             int scheduleId = _saveManager.Data.ScheduleId.Value;
