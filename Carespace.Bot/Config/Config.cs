@@ -42,6 +42,7 @@ public sealed class Config : ConfigGoogleSheets
     internal readonly List<Link> Links;
     internal readonly List<string> ExercisesLinks;
     internal readonly string EventsChannelLogin;
+    internal readonly string DiscussGroupLogin;
     internal readonly string BookPromo;
     internal readonly Dictionary<Transaction.PayMethod, decimal> PayMasterFeePercents;
     internal readonly Dictionary<string, List<Share>> Shares;
@@ -62,8 +63,9 @@ public sealed class Config : ConfigGoogleSheets
         string digisellerPassword, decimal digisellerFeePercent, long taxPayerId, decimal taxFeePercent,
         string payMasterPaymentUrlFormat, string payMasterLogin, string payMasterPassword,
         string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats,
-        List<Link> links, List<string> exercisesLinks, string eventsChannelLogin, string bookPromo,
-        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, Dictionary<string, List<Share>> shares)
+        List<Link> links, List<string> exercisesLinks, string eventsChannelLogin, string discussGroupLogin,
+        string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
+        Dictionary<string, List<Share>> shares)
         : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, googleCredentialJson,
             applicationName, googleSheetId)
     {
@@ -102,6 +104,7 @@ public sealed class Config : ConfigGoogleSheets
         Links = links;
         ExercisesLinks = exercisesLinks;
         EventsChannelLogin = eventsChannelLogin;
+        DiscussGroupLogin = discussGroupLogin;
         BookPromo = bookPromo;
         PayMasterFeePercents = payMasterFeePercents;
         Shares = shares;

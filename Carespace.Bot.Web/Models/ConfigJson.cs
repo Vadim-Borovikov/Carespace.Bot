@@ -107,6 +107,8 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public string? EventsChannelLogin { get; set; }
     [JsonProperty]
+    public string? DiscussGroupLogin { get; set; }
+    [JsonProperty]
     public string? BookPromo { get; set; }
     [JsonProperty]
     public Dictionary<Transaction.PayMethod, decimal?>? PayMasterFeePercents { get; set; }
@@ -182,6 +184,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         List<Link> links = Links.GetValue(nameof(Links)).RemoveNulls().Select(l => l.Convert()).ToList();
         List<string> exercisesLinks = ExercisesLinks.GetValue(nameof(ExercisesLinks)).RemoveNulls().ToList();
         string eventsChannelLogin = EventsChannelLogin.GetValue(nameof(EventsChannelLogin));
+        string discussGroupLogin = DiscussGroupLogin.GetValue(nameof(DiscussGroupLogin));
         string bookPromo = BookPromo.GetValue(nameof(BookPromo));
 
         Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents =
@@ -212,7 +215,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             digisellerApiGuid, digisellerLogin, digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent,
             payMasterPaymentUrlFormat, payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller,
             payMasterSiteAliasDonations, payMasterPurposesFormats, links, exercisesLinks, eventsChannelLogin,
-            bookPromo, payMasterFeePercents, shares)
+            discussGroupLogin, bookPromo, payMasterFeePercents, shares)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
