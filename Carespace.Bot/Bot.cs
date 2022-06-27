@@ -36,8 +36,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
 
         await base.StartAsync(cancellationToken);
-        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
-        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
+        await EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
+        Schedule(() => EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
             nameof(EventManager.PlanToPostOrUpdateWeekEventsAndScheduleAsync));
     }
 
@@ -76,8 +76,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
                 await Client.DeleteMessageAsync(textMessage.Chat.Id, textMessage.MessageId);
             }
             catch (ApiRequestException e)
-                when ((e.ErrorCode == MessageToDeleteNotFoundCode)
-                      && (e.Message == MessageToDeleteNotFoundText))
+                when ((e.ErrorCode == MessageToDeleteNotFoundCode) && (e.Message == MessageToDeleteNotFoundText))
             {
                 return;
             }

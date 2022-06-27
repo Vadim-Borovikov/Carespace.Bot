@@ -28,7 +28,7 @@ internal sealed class Manager : IDisposable
         _saveManager = saveManager;
     }
 
-    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
+    public async Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
     {
         _weekStart = Utils.GetMonday(_bot.TimeManager);
         _weekEnd = _weekStart.AddDays(7);
@@ -47,11 +47,7 @@ internal sealed class Manager : IDisposable
                                    .Where(t => !savedTemplateIds.Contains(t.Id.GetValue()))
                                    .OrderBy(t => t.Start));
 
-        shouldConfirm = shouldConfirm && _toPost.Any();
-
-        _confirmationPending = !shouldConfirm;
-
-        if (shouldConfirm)
+        if (shouldConfirm && _toPost.Any())
         {
             await AskForConfirmationAsync(chatId);
         }
@@ -61,15 +57,19 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    public Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public Task ConfirmAndPlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
     {
-        if (!_confirmationPending)
+        if (!_waitingForConfirmation)
         {
             return _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
         }
 
-        _confirmationPending = false;
+        _waitingForConfirmation = false;
+        return PlanToPostOrUpdateWeekEventsAndScheduleAsync(chatId);
+    }
 
+    private Task PlanToPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    {
         // ReSharper disable once UnusedVariable
         //   I need this task to start, but not to be awaited
         Task task = PostOrUpdateWeekEventsAndScheduleAsync(chatId);
@@ -118,7 +118,7 @@ internal sealed class Manager : IDisposable
         sb.AppendLine();
         sb.AppendLine($"ОК? /{ConfirmCommand.CommandName}");
 
-        _confirmationPending = true;
+        _waitingForConfirmation = true;
 
         return _bot.SendTextMessageAsync(chatId, sb.ToString());
     }
@@ -523,7 +523,7 @@ internal sealed class Manager : IDisposable
 
     private DateTime _weekStart;
     private DateTime _weekEnd;
-    private bool _confirmationPending;
+    private bool _waitingForConfirmation;
 
     private readonly Dictionary<int, Template> _templates = new();
     private readonly List<Template> _toPost = new();
