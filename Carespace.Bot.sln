@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Carespace.Bot.Web", "Caresp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Carespace.Bot", "Carespace.Bot\Carespace.Bot.csproj", "{8AB3ADB5-4ABE-4959-A09E-B577A78EE640}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Carespace.FinanceHelper", "Carespace.FinanceHelper\Carespace.FinanceHelper.csproj", "{24EA9E1B-05FB-45CB-BEBB-F7850894E484}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Carespace.FinanceHelper.Tests", "Carespace.FinanceHelper.Tests\Carespace.FinanceHelper.Tests.csproj", "{944174E6-C3D8-491D-9919-28CF638D6836}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{8AB3ADB5-4ABE-4959-A09E-B577A78EE640}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AB3ADB5-4ABE-4959-A09E-B577A78EE640}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AB3ADB5-4ABE-4959-A09E-B577A78EE640}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24EA9E1B-05FB-45CB-BEBB-F7850894E484}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24EA9E1B-05FB-45CB-BEBB-F7850894E484}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24EA9E1B-05FB-45CB-BEBB-F7850894E484}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24EA9E1B-05FB-45CB-BEBB-F7850894E484}.Release|Any CPU.Build.0 = Release|Any CPU
+		{944174E6-C3D8-491D-9919-28CF638D6836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{944174E6-C3D8-491D-9919-28CF638D6836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{944174E6-C3D8-491D-9919-28CF638D6836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{944174E6-C3D8-491D-9919-28CF638D6836}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

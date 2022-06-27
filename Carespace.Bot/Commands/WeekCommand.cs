@@ -4,12 +4,12 @@ using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class WeekCommand : CommandBase<Bot, Config>
+internal sealed class WeekCommand : CommandBase<Bot, Config.Config>
 {
     protected override string Name => "week";
     protected override string Description => "Обновить расписание";
 
-    public override BotBase<Bot, Config>.AccessType Access => BotBase<Bot, Config>.AccessType.Admins;
+    public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.Admins;
 
     public WeekCommand(Bot bot) : base(bot) { }
 

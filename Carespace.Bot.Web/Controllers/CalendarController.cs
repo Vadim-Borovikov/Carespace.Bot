@@ -12,7 +12,7 @@ public sealed class CalendarController : Controller
     {
         if (!singleton.Bot.Calendars.ContainsKey(id) || singleton.Bot.Calendars[id].IsOver)
         {
-            return View();
+            return Redirect(singleton.ErrorPageUri.AbsoluteUri);
         }
 
         if (IsApple())
