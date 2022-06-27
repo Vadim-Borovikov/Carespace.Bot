@@ -19,11 +19,6 @@ internal sealed class JsonData : IConvertibleTo<Data>
 
     public Data? Convert()
     {
-        if (ScheduleId is null)
-        {
-            return null;
-        }
-
         Events ??= new Dictionary<int, EventData?>();
         Messages ??= new Dictionary<int, MessageData?>();
 
@@ -34,6 +29,6 @@ internal sealed class JsonData : IConvertibleTo<Data>
 
         // ReSharper disable NullableWarningSuppressionIsUsed
         //   Just null-checked
-        return new Data(ScheduleId.Value, Events!, Messages!);
+        return new Data(ScheduleId, Events!, Messages!);
     }
 }

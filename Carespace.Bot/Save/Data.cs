@@ -7,7 +7,7 @@ namespace Carespace.Bot.Save;
 
 internal sealed class Data : IConvertibleTo<JsonData>
 {
-    public int ScheduleId;
+    public int? ScheduleId;
 
     public Dictionary<int, EventData> Events = new();
 
@@ -15,7 +15,7 @@ internal sealed class Data : IConvertibleTo<JsonData>
 
     public Data() { }
 
-    public Data(int scheduleId, Dictionary<int, EventData> events, Dictionary<int, MessageData> messages)
+    public Data(int? scheduleId, Dictionary<int, EventData> events, Dictionary<int, MessageData> messages)
     {
         ScheduleId = scheduleId;
         Events = events;
