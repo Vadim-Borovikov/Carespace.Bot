@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using AbstractBot;
 using Carespace.FinanceHelper;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
@@ -105,7 +104,7 @@ internal sealed class FinanceManager
 
         if (statusMessage is not null)
         {
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            await _bot.FinalizeStatusMessageAsync(statusMessage);
         }
 
         statusMessage = chatId is null
@@ -130,7 +129,7 @@ internal sealed class FinanceManager
 
         if (statusMessage is not null)
         {
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            await _bot.FinalizeStatusMessageAsync(statusMessage);
         }
 
         statusMessage = chatId is null
@@ -146,7 +145,7 @@ internal sealed class FinanceManager
 
         if (statusMessage is not null)
         {
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            await _bot.FinalizeStatusMessageAsync(statusMessage);
         }
 
         List<Transaction> needPayment = transactions.Where(t => t.NeedPaynemt).ToList();
@@ -175,7 +174,7 @@ internal sealed class FinanceManager
 
             if (statusMessage is not null)
             {
-                await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+                await _bot.FinalizeStatusMessageAsync(statusMessage);
             }
         }
 
@@ -192,7 +191,7 @@ internal sealed class FinanceManager
 
         if (statusMessage is not null)
         {
-            await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+            await _bot.FinalizeStatusMessageAsync(statusMessage);
         }
 
         return productIdForMails is null
@@ -216,7 +215,7 @@ internal sealed class FinanceManager
         IList<Donation> newCustomDonations = await DataManager.GetValuesAsync(provider, Donation.Load, customRange);
         donations.AddRange(newCustomDonations);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
 
         statusMessage = await _bot.SendTextMessageAsync(chatId, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
@@ -232,7 +231,7 @@ internal sealed class FinanceManager
 
         donations.AddRange(newDonations);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
 
         DateTime firstThursday = Utils.GetNextThursday(donations.Min(d => d.Date));
 
@@ -247,7 +246,7 @@ internal sealed class FinanceManager
             donations.OrderByDescending(d => d.Date).ToList());
         await provider.ClearValuesAsync(clearRange);
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
 
         statusMessage =
             await _bot.SendTextMessageAsync(chatId, "_Считаю и заношу недельные суммы…_", ParseMode.MarkdownV2);
@@ -259,7 +258,7 @@ internal sealed class FinanceManager
         string sumsRange = _bot.Config.GoogleDonationSumsRange.GetValue(nameof(_bot.Config.GoogleDonationSumsRange));
         await DataManager.UpdateValuesAsync(provider, sumsRange, sums.OrderByDescending(s => s.Date).ToList());
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 
     private const string ApplicationName = "Carespace.FinanceHelper";

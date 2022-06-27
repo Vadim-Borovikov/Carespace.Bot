@@ -118,7 +118,7 @@ internal sealed class Manager : IDisposable
 
         _saveManager.Save();
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 
     private Task AskForConfirmationAsync(ChatId chatId)

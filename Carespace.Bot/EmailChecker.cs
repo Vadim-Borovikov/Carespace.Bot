@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using AbstractBot;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -22,7 +21,7 @@ internal sealed class EmailChecker
     {
         Message statusMessage = await _bot.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
         bool found = await CheckEmailAsync(email);
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        await _bot.FinalizeStatusMessageAsync(statusMessage);
         if (found)
         {
             await _bot.SendTextMessageAsync(chatId, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
