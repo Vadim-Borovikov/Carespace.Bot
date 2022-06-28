@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AbstractBot;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,14 +11,18 @@ internal static class Program
 {
     public static async Task Main(string[] args)
     {
-        AbstractBot.Utils.DeleteExceptionLog();
+        Utils.LogManager.SetTimeZone(SystemTimeZoneId);
+        Utils.LogManager.LogMessage();
+
+        Utils.LogManager.LogTimedMessage("Startup");
+        LogManager.DeleteExceptionLog();
         try
         {
             await CreateWebHostBuilder(args).Build().RunAsync();
         }
         catch (Exception ex)
         {
-            await AbstractBot.Utils.LogExceptionAsync(ex);
+            Utils.LogManager.LogException(ex);
         }
     }
 
@@ -31,4 +36,6 @@ internal static class Program
                    })
                    .ConfigureWebHostDefaults(builder => builder.UseStartup<Startup>());
     }
+
+    private const string SystemTimeZoneId = "Arabian Standard Time";
 }

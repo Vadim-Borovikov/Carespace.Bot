@@ -84,7 +84,7 @@ internal sealed class Timer : IDisposable
             }
             catch (Exception ex)
             {
-                AbstractBot.Utils.LogExceptionAsync(ex).Wait();
+                AbstractBot.Utils.LogManager.LogException(ex);
                 throw;
             }
         };
