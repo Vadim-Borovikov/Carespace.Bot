@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using AbstractBot;
 
 namespace Carespace.Bot.Events;
@@ -13,20 +13,29 @@ internal sealed class Timer : IDisposable
     public Timer(TimeManager timeManager)
     {
         _timeManager = timeManager;
-        _timer = new System.Timers.Timer();
+        _cancellationTokenSource = new CancellationTokenSource();
     }
 
-    public void Stop() => _timer.Stop();
-    public void Dispose() => _timer.Dispose();
+    public void Stop() => _cancellationTokenSource.Cancel();
+
+    public void Dispose()
+    {
+        Stop();
+        _cancellationTokenSource.Dispose();
+    }
 
     public void DoOnce(DateTime at, Func<Task> func, string funcName)
     {
         _at = at;
         _after = _at - _timeManager.Now();
 
+        _doPeriodically = false;
         _funcName = funcName;
 
-        Do(false, func);
+        Invoker.DoAfterDelay(_ => DoAndLog(func, _at), _after, _cancellationTokenSource.Token);
+
+        Logs[_at] = ToString();
+        UpdateLog();
     }
 
     public void DoWeekly(Func<Task> func, string funcName)
@@ -34,60 +43,41 @@ internal sealed class Timer : IDisposable
         _after = TimeSpan.FromDays(7);
         _at = _timeManager.Now() + _after;
 
+        _doPeriodically = true;
         _funcName = funcName;
 
-        Do(true, func);
+        Invoker.DoPeriodically(_ => DoUpdateAndLog(func), _after, false, _cancellationTokenSource.Token);
+
+        Logs[_at] = ToString();
+        UpdateLog();
     }
 
     public override string ToString()
     {
         string result = $"{_at}: {_funcName}";
-        if (_timer.AutoReset)
+        if (_doPeriodically)
         {
             result += $" with repeat every {_after}";
         }
         return result;
     }
 
-    private void Do(bool autoReset, Func<Task> func)
+    private async Task DoUpdateAndLog(Func<Task> func)
     {
-        _timer.Stop();
+        await func();
 
-        _timer.Interval = _after.TotalMilliseconds;
-        _timer.AutoReset = autoReset;
-        SetHandlerTo(func);
-
-        _timer.Start();
-
+        Logs.Remove(_at);
+        _at = _timeManager.Now() + _after;
         Logs[_at] = ToString();
+
         UpdateLog();
     }
 
-    private void SetHandlerTo(Func<Task> func)
+    private static async Task DoAndLog(Func<Task> func, DateTime at)
     {
-        if (_handler is not null)
-        {
-            _timer.Elapsed -= _handler;
-        }
-        _handler = CreateHandlerFor(func, _at);
-        _timer.Elapsed += _handler;
-    }
-
-    private static ElapsedEventHandler CreateHandlerFor(Func<Task> func, DateTime at)
-    {
-        return (_, _) => {
-            try
-            {
-                func().Wait();
-                Logs.Remove(at);
-                UpdateLog();
-            }
-            catch (Exception ex)
-            {
-                AbstractBot.Utils.LogManager.LogException(ex);
-                throw;
-            }
-        };
+        await func();
+        Logs.Remove(at);
+        UpdateLog();
     }
 
     private static void UpdateLog()
@@ -102,11 +92,12 @@ internal sealed class Timer : IDisposable
 
     private static readonly Dictionary<DateTime, string> Logs = new();
 
-    private readonly TimeManager _timeManager;
-    private readonly System.Timers.Timer _timer;
+    private readonly CancellationTokenSource _cancellationTokenSource;
 
-    private ElapsedEventHandler? _handler;
+    private readonly TimeManager _timeManager;
+
     private DateTime _at;
     private TimeSpan _after;
+    private bool _doPeriodically;
     private string? _funcName;
 }

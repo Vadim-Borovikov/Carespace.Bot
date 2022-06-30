@@ -7,7 +7,7 @@ internal sealed class Event : IDisposable
 {
     public readonly Template Template;
     public readonly EventData Data;
-    public readonly Timer Timer;
+    public Timer? Timer { get; private set; }
 
     public Event(Template template, EventData data, TimeManager timeManager)
     {
@@ -20,7 +20,11 @@ internal sealed class Event : IDisposable
 
     public void DisposeTimer()
     {
-        Timer.Stop();
+        if (Timer is null)
+        {
+            return;
+        }
         Timer.Dispose();
+        Timer = null;
     }
 }

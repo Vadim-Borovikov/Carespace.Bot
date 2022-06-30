@@ -33,12 +33,9 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         Commands.Add(new WeekCommand(this));
         Commands.Add(new ConfirmCommand(this));
 
-        long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
-
         await base.StartAsync(cancellationToken);
-        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
-        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
-            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
+
+        AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -112,6 +109,14 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         }
 
         return base.UpdateAsync(message, fromChat, command, payload);
+    }
+
+    private async Task PostOrUpdateWeekEventsAndScheduleAsync()
+    {
+        long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
+        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
+        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
+            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
     private void Schedule(Func<Task> func, string funcName)
