@@ -214,6 +214,10 @@ internal sealed class Manager : IDisposable
         TimeSpan startIn = e.Template.Start - now;
         if (startIn > Hour)
         {
+            if (e.Timer is null)
+            {
+                throw new NullReferenceException(nameof(e.Timer));
+            }
             e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
                 $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
             return DeleteNotificationAsync(e);
@@ -249,6 +253,10 @@ internal sealed class Manager : IDisposable
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
+        if (e.Timer is null)
+        {
+            throw new NullReferenceException(nameof(e.Timer));
+        }
         e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
     }
 
