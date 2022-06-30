@@ -3,6 +3,7 @@ using AbstractBot;
 using Carespace.Bot.Config;
 using GryphonUtilities;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
@@ -17,6 +18,11 @@ internal sealed class FeedbackCommand : CommandBase<Bot, Config.Config>
     {
         Link link = Bot.Config.FeedbackLink.GetValue(nameof(Bot.Config.FeedbackLink));
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.SendMessageAsync(link, user.Id);
+        Chat chat = new()
+        {
+            Id = user.Id,
+            Type = ChatType.Private
+        };
+        return Bot.SendMessageAsync(link, chat);
     }
 }

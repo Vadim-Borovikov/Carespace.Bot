@@ -13,17 +13,17 @@ namespace Carespace.Bot;
 
 internal static class Utils
 {
-    public static Task SendMessageAsync(this Bot bot, Link link, ChatId chatId)
+    public static Task SendMessageAsync(this Bot bot, Link link, Chat chat)
     {
         if (string.IsNullOrWhiteSpace(link.PhotoPath))
         {
             string name = link.Name.GetValue(nameof(link.Name));
             string text = $"[{AbstractBot.Utils.EscapeCharacters(name)}]({link.Uri.AbsoluteUri})";
-            return bot.SendTextMessageAsync(chatId, text, ParseMode.MarkdownV2);
+            return bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
         }
 
         InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
-        return PhotoRepository.SendPhotoAsync(bot, chatId, link.PhotoPath, replyMarkup: keyboard);
+        return PhotoRepository.SendPhotoAsync(bot, chat, link.PhotoPath, replyMarkup: keyboard);
     }
 
     public static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");

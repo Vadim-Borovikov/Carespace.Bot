@@ -53,21 +53,22 @@ public sealed class Config : ConfigGoogleSheets
     internal long? LogsChatId => SuperAdminId;
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, TimeSpan sendMessageDelayLocal, TimeSpan sendMessageDelayGlobal,
-        string googleCredentialJson, string applicationName, string googleSheetId, string template, Link feedbackLink,
-        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, int productId,
-        string googleSheetIdTransactions, string googleSheetIdDonations, string googleTransactionsCustomRange,
-        string googleTransactionsCustomRangeToClear, string googleTransactionsFinalRange, string googleDonationsRange,
-        string googleDonationsCustomRange, string googleDonationsCustomRangeToClear, string googleDonationSumsRange,
-        string digisellerProductUrlFormat, string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid,
-        string digisellerLogin, string digisellerPassword, decimal digisellerFeePercent, long taxPayerId,
-        decimal taxFeePercent, string payMasterPaymentUrlFormat, string payMasterLogin, string payMasterPassword,
+        string forbiddenStickerFileId, TimeSpan sendMessagePeriodPrivate, TimeSpan sendMessagePeriodGroup,
+        TimeSpan sendMessageDelayGlobal, string googleCredentialJson, string applicationName, string googleSheetId,
+        string template, Link feedbackLink, string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt,
+        string savePath, int productId, string googleSheetIdTransactions, string googleSheetIdDonations,
+        string googleTransactionsCustomRange, string googleTransactionsCustomRangeToClear,
+        string googleTransactionsFinalRange, string googleDonationsRange, string googleDonationsCustomRange,
+        string googleDonationsCustomRangeToClear, string googleDonationSumsRange, string digisellerProductUrlFormat,
+        string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid, string digisellerLogin,
+        string digisellerPassword, decimal digisellerFeePercent, long taxPayerId, decimal taxFeePercent,
+        string payMasterPaymentUrlFormat, string payMasterLogin, string payMasterPassword,
         string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats,
         List<Link> links, List<string> exercisesLinks, long eventsChannelId, string discussGroupLogin,
         string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
         Dictionary<string, List<Share>> shares)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelayLocal,
-            sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
+        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessagePeriodPrivate,
+            sendMessagePeriodGroup, sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
     {
         Template = template;
         FeedbackLink = feedbackLink;

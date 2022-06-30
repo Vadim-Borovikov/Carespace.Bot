@@ -17,9 +17,14 @@ internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
     public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
+        Chat chat = new()
+        {
+            Id = user.Id,
+            Type = ChatType.Private
+        };
         foreach (string text in Bot.Config.ExercisesLinks.Select(GetMessage))
         {
-            await Bot.SendTextMessageAsync(user.Id, text, ParseMode.MarkdownV2);
+            await Bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
         }
     }
 

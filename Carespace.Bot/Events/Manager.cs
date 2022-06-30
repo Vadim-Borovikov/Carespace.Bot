@@ -25,9 +25,17 @@ internal sealed class Manager : IDisposable
 
     private readonly Dictionary<int, Event> _events = new();
 
+    private readonly Chat _eventsChat;
+
     public Manager(Bot bot, SaveManager<Data, JsonData> saveManager)
     {
         _bot = bot;
+
+        _eventsChat = new Chat
+        {
+            Id = _bot.Config.EventsChannelId,
+            Type = ChatType.Channel
+        };
 
         _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
 
@@ -42,7 +50,7 @@ internal sealed class Manager : IDisposable
         _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
     }
 
-    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId, bool shouldConfirm)
+    public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat, bool shouldConfirm)
     {
         _weekStart = Utils.GetMonday(_bot.TimeManager);
         _weekEnd = _weekStart.AddDays(7);
@@ -63,29 +71,29 @@ internal sealed class Manager : IDisposable
 
         if (shouldConfirm && _toPost.Any())
         {
-            await AskForConfirmationAsync(chatId);
+            await AskForConfirmationAsync(chat);
         }
         else
         {
-            await PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+            await PostOrUpdateWeekEventsAndScheduleAsync(chat);
         }
     }
 
-    public Task ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public Task ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(Chat chat)
     {
         if (!_waitingForConfirmation)
         {
-            return _bot.SendTextMessageAsync(chatId, "Обновлений не запланировано.");
+            return _bot.SendTextMessageAsync(chat, "Обновлений не запланировано.");
         }
 
         _waitingForConfirmation = false;
-        return PostOrUpdateWeekEventsAndScheduleAsync(chatId);
+        return PostOrUpdateWeekEventsAndScheduleAsync(chat);
     }
 
-    public async Task PostOrUpdateWeekEventsAndScheduleAsync(ChatId chatId)
+    public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat)
     {
         Message statusMessage =
-            await _bot.SendTextMessageAsync(chatId, "_Обновляю расписание…_", ParseMode.MarkdownV2);
+            await _bot.SendTextMessageAsync(chat, "_Обновляю расписание…_", ParseMode.MarkdownV2);
 
         await PostOrUpdateEventsAsync();
         await PostOrUpdateScheduleAsync();
@@ -113,7 +121,7 @@ internal sealed class Manager : IDisposable
         _events.Clear();
     }
 
-    private Task AskForConfirmationAsync(ChatId chatId)
+    private Task AskForConfirmationAsync(Chat chat)
     {
         StringBuilder sb = new();
         sb.AppendLine("Я собираюсь опубликовать события:");
@@ -126,7 +134,7 @@ internal sealed class Manager : IDisposable
 
         _waitingForConfirmation = true;
 
-        return _bot.SendTextMessageAsync(chatId, sb.ToString());
+        return _bot.SendTextMessageAsync(chat, sb.ToString());
     }
 
     private async Task PostOrUpdateEventsAsync()
@@ -313,7 +321,7 @@ internal sealed class Manager : IDisposable
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.SendTextMessageAsync(_bot.Config.EventsChannelId, text, ParseMode.MarkdownV2,
+        Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
             null, disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
@@ -427,8 +435,8 @@ internal sealed class Manager : IDisposable
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.EditMessageTextAsync(_bot.Config.EventsChannelId, messageId, text,
-            ParseMode.MarkdownV2, null, disableWebPagePreview, keyboardMarkup);
+        Message message = await _bot.EditMessageTextAsync(_eventsChat, messageId, text, ParseMode.MarkdownV2, null,
+            disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
             _saveManager.Data.Messages[messageId] = new MessageData(message, text, keyboard);
@@ -465,7 +473,7 @@ internal sealed class Manager : IDisposable
     {
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
-            await _bot.Client.DeleteMessageAsync(_bot.Config.EventsChannelId, messageId);
+            await _bot.DeleteMessageAsync(_eventsChat, messageId);
         }
         _saveManager.Data.Messages.Remove(messageId);
     }

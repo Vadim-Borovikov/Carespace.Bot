@@ -13,7 +13,12 @@ internal abstract class TextCommand : CommandBase<Bot, Config.Config>
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.SendTextMessageAsync(user.Id, _text, ParseMode.MarkdownV2);
+        Chat chat = new()
+        {
+            Id = user.Id,
+            Type = ChatType.Private
+        };
+        return Bot.SendTextMessageAsync(chat, _text, ParseMode.MarkdownV2);
     }
 
     private readonly string _text;

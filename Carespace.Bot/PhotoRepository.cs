@@ -12,20 +12,20 @@ namespace Carespace.Bot;
 
 internal static class PhotoRepository
 {
-    public static async Task<Message> SendPhotoAsync(Bot bot, ChatId chatId, string photoPath, string? caption = null,
+    public static async Task<Message> SendPhotoAsync(Bot bot, Chat chat, string photoPath, string? caption = null,
         ParseMode? parseMode = null, IReplyMarkup? replyMarkup = null)
     {
         bool success = PhotoIds.TryGetValue(photoPath, out string? fileId);
         if (success && !string.IsNullOrWhiteSpace(fileId))
         {
             InputOnlineFile photo = new(fileId);
-            return await bot.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
+            return await bot.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
         }
 
         await using (FileStream stream = new(photoPath, FileMode.Open))
         {
             InputOnlineFile photo = new(stream);
-            Message message = await bot.SendPhotoAsync(chatId, photo, caption, parseMode, replyMarkup: replyMarkup);
+            Message message = await bot.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
             PhotoSize[] photoSizes = message.Photo.GetValue(nameof(message.Photo));
             fileId = photoSizes.First().FileId;
             PhotoIds.TryAdd(photoPath, fileId);

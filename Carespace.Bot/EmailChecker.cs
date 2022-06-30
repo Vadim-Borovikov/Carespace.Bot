@@ -17,19 +17,19 @@ internal sealed class EmailChecker
         _financeManager = financeManager;
     }
 
-    public async Task CheckEmailAsync(ChatId chatId, MailAddress email)
+    public async Task CheckEmailAsync(Chat chat, MailAddress email)
     {
-        Message statusMessage = await _bot.SendTextMessageAsync(chatId, "_Проверяю…_", ParseMode.MarkdownV2);
+        Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Проверяю…_", ParseMode.MarkdownV2);
         bool found = await CheckEmailAsync(email);
         await _bot.FinalizeStatusMessageAsync(statusMessage);
         if (found)
         {
-            await _bot.SendTextMessageAsync(chatId, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
+            await _bot.SendTextMessageAsync(chat, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
                 ParseMode.MarkdownV2);
         }
         else
         {
-            await _bot.SendTextMessageAsync(chatId, "Email не найден! Напиши @Netris");
+            await _bot.SendTextMessageAsync(chat, "Email не найден! Напиши @Netris");
         }
     }
 

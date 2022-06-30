@@ -20,9 +20,11 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public string? ForbiddenStickerFileId { get; set; }
     [JsonProperty]
-    public double? UpdatesPerMinuteLimitLocal { get; set; }
+    public double? UpdatesPerSecondLimitPrivate { get; set; }
     [JsonProperty]
-    public double? UpdatesPerMinuteLimitGlobal { get; set; }
+    public double? UpdatesPerMinuteLimitGroup { get; set; }
+    [JsonProperty]
+    public double? UpdatesPerSecondLimitGlobal { get; set; }
 
     [JsonProperty]
     public string? Host { get; set; }
@@ -141,11 +143,15 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         string dontUnderstandStickerFileId = DontUnderstandStickerFileId.GetValue(nameof(DontUnderstandStickerFileId));
         string forbiddenStickerFileId = ForbiddenStickerFileId.GetValue(nameof(ForbiddenStickerFileId));
 
-        double updatesPerMinuteLimitLocal = UpdatesPerMinuteLimitLocal.GetValue(nameof(UpdatesPerMinuteLimitLocal));
-        TimeSpan sendMessagePeriodLocal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitLocal);
+        double updatesPerSecondLimitPrivate =
+            UpdatesPerSecondLimitPrivate.GetValue(nameof(UpdatesPerSecondLimitPrivate));
+        TimeSpan sendMessagePeriodPrivate = TimeSpan.FromSeconds(1.0 / updatesPerSecondLimitPrivate);
 
-        double updatesPerMinuteLimitGlobal = UpdatesPerMinuteLimitGlobal.GetValue(nameof(UpdatesPerMinuteLimitGlobal));
-        TimeSpan sendMessagePeriodGlobal = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitGlobal);
+        double updatesPerMinuteLimitGroup = UpdatesPerMinuteLimitGroup.GetValue(nameof(UpdatesPerMinuteLimitGroup));
+        TimeSpan sendMessagePeriodGroup = TimeSpan.FromMinutes(1.0 / updatesPerMinuteLimitGroup);
+
+        double updatesPerSecondLimitGlobal = UpdatesPerSecondLimitGlobal.GetValue(nameof(UpdatesPerSecondLimitGlobal));
+        TimeSpan sendMessagePeriodGlobal = TimeSpan.FromSeconds(1.0 / updatesPerSecondLimitGlobal);
 
         string googleCredentialJson = string.IsNullOrWhiteSpace(GoogleCredentialJson)
             ? JsonConvert.SerializeObject(GoogleCredential)
@@ -217,9 +223,9 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         }
 
         return new Config.Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
-            sendMessagePeriodLocal, sendMessagePeriodGlobal, googleCredentialJson, applicationName, googleSheetId,
-            template, feedbackLink, googleRange, eventsFormUri, eventsUpdateAt, savePath, productId,
-            googleSheetIdTransactions, googleSheetIdDonations, googleTransactionsCustomRange,
+            sendMessagePeriodPrivate, sendMessagePeriodGroup, sendMessagePeriodGlobal, googleCredentialJson,
+            applicationName, googleSheetId, template, feedbackLink, googleRange, eventsFormUri, eventsUpdateAt,
+            savePath, productId, googleSheetIdTransactions, googleSheetIdDonations, googleTransactionsCustomRange,
             googleTransactionsCustomRangeToClear, googleTransactionsFinalRange, googleDonationsRange,
             googleDonationsCustomRange, googleDonationsCustomRangeToClear, googleDonationSumsRange,
             digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId, digisellerApiGuid, digisellerLogin,

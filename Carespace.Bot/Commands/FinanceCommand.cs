@@ -2,6 +2,7 @@
 using AbstractBot;
 using GryphonUtilities;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
@@ -17,7 +18,12 @@ internal sealed class FinanceCommand : CommandBase<Bot, Config.Config>
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
-        return _manager.UpdateFinances(user.Id);
+        Chat chat = new()
+        {
+            Id = user.Id,
+            Type = ChatType.Private
+        };
+        return _manager.UpdateFinances(chat);
     }
 
     private readonly FinanceManager _manager;
