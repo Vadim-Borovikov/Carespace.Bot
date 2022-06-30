@@ -113,6 +113,8 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public long? EventsChannelId { get; set; }
     [JsonProperty]
+    public long? DiscussGroupId { get; set; }
+    [JsonProperty]
     public string? DiscussGroupLogin { get; set; }
     [JsonProperty]
     public string? BookPromo { get; set; }
@@ -200,6 +202,7 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         List<Link> links = Links.GetValue(nameof(Links)).RemoveNulls().Select(l => l.Convert()).ToList();
         List<string> exercisesLinks = ExercisesLinks.GetValue(nameof(ExercisesLinks)).RemoveNulls().ToList();
         long eventsChannelId = EventsChannelId.GetValue(nameof(EventsChannelId));
+        long discussGroupId = DiscussGroupId.GetValue(nameof(DiscussGroupId));
         string discussGroupLogin = DiscussGroupLogin.GetValue(nameof(DiscussGroupLogin));
         string bookPromo = BookPromo.GetValue(nameof(BookPromo));
 
@@ -231,8 +234,8 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId, digisellerApiGuid, digisellerLogin,
             digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent, payMasterPaymentUrlFormat,
             payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller, payMasterSiteAliasDonations,
-            payMasterPurposesFormats, links, exercisesLinks, eventsChannelId, discussGroupLogin, bookPromo,
-            payMasterFeePercents, shares)
+            payMasterPurposesFormats, links, exercisesLinks, eventsChannelId, discussGroupId, discussGroupLogin,
+            bookPromo, payMasterFeePercents, shares)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),

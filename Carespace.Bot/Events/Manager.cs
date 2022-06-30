@@ -19,13 +19,13 @@ internal sealed class Manager : IDisposable
 {
     private readonly Bot _bot;
     private readonly SaveManager<Data, JsonData> _saveManager;
-    private readonly ChatId _discussChatId;
     private readonly InlineKeyboardButton _discussButton;
     private readonly InlineKeyboardMarkup _discussKeyboard;
 
     private readonly Dictionary<int, Event> _events = new();
 
     private readonly Chat _eventsChat;
+    private readonly Chat _discussChat;
 
     public Manager(Bot bot, SaveManager<Data, JsonData> saveManager)
     {
@@ -37,12 +37,16 @@ internal sealed class Manager : IDisposable
             Type = ChatType.Channel
         };
 
-        _discussChatId = new ChatId($"@{_bot.Config.DiscussGroupLogin}");
+        _discussChat = new Chat
+        {
+            Id = _bot.Config.DiscussGroupId,
+            Username = $"@{_bot.Config.DiscussGroupLogin}",
+            Type = ChatType.Channel
+        };
 
         _saveManager = saveManager;
 
-        Uri? chatUri = GetUri(_discussChatId);
-        Uri uri = chatUri.GetValue(nameof(chatUri));
+        Uri uri = GetUri(_discussChat.Username);
         _discussButton = new InlineKeyboardButton("💬 Обсудить")
         {
             Url = uri.AbsoluteUri
@@ -311,7 +315,7 @@ internal sealed class Manager : IDisposable
         MessageData.KeyboardType keyboard, InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
     {
         int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
-        await _bot.Client.ForwardMessageAsync(_discussChatId, _bot.Config.EventsChannelId, messageId);
+        await _bot.ForwardMessageAsync(_discussChat, _bot.Config.EventsChannelId, messageId);
         await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
         return messageId;
     }
@@ -391,9 +395,20 @@ internal sealed class Manager : IDisposable
     {
         string channelParameter = channelId.ToString().Remove(0, 4);
         string channelUriPostfix = $"c/{channelParameter}";
-        string channelUriString = string.Format(ChannelUriFormat, channelUriPostfix);
-        Uri chatUri = new(channelUriString);
-        string uriString = string.Format(ChannelMessageUriFormat, chatUri, messageId);
+        Uri chatUri = GetGroupUri(channelUriPostfix);
+        string uriString = string.Format(GroupMessageUriFormat, chatUri, messageId);
+        return new Uri(uriString);
+    }
+
+    private static Uri GetUri(string username)
+    {
+        string name = username.Remove(0, 1);
+        return GetGroupUri(name);
+    }
+
+    private static Uri GetGroupUri(string name)
+    {
+        string uriString = string.Format(GroupUriFormat, name);
         return new Uri(uriString);
     }
 
@@ -540,8 +555,8 @@ internal sealed class Manager : IDisposable
     private readonly Dictionary<int, Template> _templates = new();
     private readonly List<Template> _toPost = new();
 
-    private const string ChannelUriFormat = "https://t.me/{0}";
-    private const string ChannelMessageUriFormat = "{0}/{1}";
+    private const string GroupUriFormat = "https://t.me/{0}";
+    private const string GroupMessageUriFormat = "{0}/{1}";
     private const string WordJoiner = "\u2060";
 
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
