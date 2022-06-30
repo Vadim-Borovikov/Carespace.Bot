@@ -2,6 +2,7 @@
 using AbstractBot;
 using GryphonUtilities;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
@@ -15,6 +16,11 @@ internal sealed class StartCommand : CommandBase<Bot, Config>
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.SendTextMessageAsync(user.Id, Bot.GetDescriptionFor(user.Id));
+        Chat chat = new()
+        {
+            Id = user.Id,
+            Type = ChatType.Private
+        };
+        return Bot.SendTextMessageAsync(chat, Bot.GetDescriptionFor(user.Id));
     }
 }

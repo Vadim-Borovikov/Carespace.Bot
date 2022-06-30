@@ -7,7 +7,6 @@ using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -61,7 +60,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
                 return;
             }
 
-            await SendStickerAsync(textMessage.Chat.Id, DontUnderstandSticker);
+            await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
 
             return;
         }
@@ -70,7 +69,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         {
             try
             {
-                await Client.DeleteMessageAsync(textMessage.Chat.Id, textMessage.MessageId);
+                await DeleteMessageAsync(textMessage.Chat, textMessage.MessageId);
             }
             catch (ApiRequestException e)
                 when ((e.ErrorCode == MessageToDeleteNotFoundCode) && (e.Message == MessageToDeleteNotFoundText))
@@ -85,7 +84,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         {
             if (!fromChat)
             {
-                await SendStickerAsync(textMessage.Chat.Id, ForbiddenSticker);
+                await SendStickerAsync(textMessage.Chat, ForbiddenSticker);
             }
             return;
         }
@@ -113,9 +112,13 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
     {
-        long logsChatId = Config.LogsChatId.GetValue(nameof(Config.LogsChatId));
-        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, true);
-        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChatId, false),
+        Chat logsChat = new()
+        {
+            Id = Config.LogsChatId.GetValue(nameof(Config.LogsChatId)),
+            Type = ChatType.Private
+        };
+        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
+        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, false),
             nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
