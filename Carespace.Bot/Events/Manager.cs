@@ -350,8 +350,7 @@ internal sealed class Manager : IDisposable
             }
             string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
             int messageId = e.Data.MessageId.GetValue(nameof(e.Data.MessageId));
-            Uri? messageUri = GetMessageUri(_bot.Config.EventsChannelId, messageId);
-            Uri uri = messageUri.GetValue(nameof(messageUri));
+            Uri uri = GetChannelMessageUri(_bot.Config.EventsChannelId, messageId);
             string messageUrl = AbstractBot.Utils.EscapeCharacters(uri.AbsoluteUri);
             string weekly = e.Template.IsWeekly ? " 🔄" : "";
             scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{name}]({messageUrl}){weekly}");
@@ -363,41 +362,14 @@ internal sealed class Manager : IDisposable
         return scheduleBuilder.ToString();
     }
 
-    private static Uri? GetMessageUri(ChatId chatId, int messageId)
+    private static Uri GetChannelMessageUri(long channelId, int messageId)
     {
-        Uri? chatUri = GetUri(chatId);
-        if (chatUri is null)
-        {
-            return null;
-        }
+        string channelParameter = channelId.ToString().Remove(0, 4);
+        string channelUriPostfix = $"c/{channelParameter}";
+        string channelUriString = string.Format(ChannelUriFormat, channelUriPostfix);
+        Uri chatUri = new(channelUriString);
         string uriString = string.Format(ChannelMessageUriFormat, chatUri, messageId);
         return new Uri(uriString);
-    }
-    private static Uri? GetUri(ChatId chatId)
-    {
-        string? chatParam = GetUsername(chatId);
-        if (chatParam is null)
-        {
-            chatParam = GetId(chatId);
-            if (chatParam is null)
-            {
-                return null;
-            }
-        }
-        string uriString = string.Format(ChannelUriFormat, chatParam);
-        return new Uri(uriString);
-    }
-
-    private static string? GetUsername(ChatId chatId) => chatId.Username?.Remove(0, 1);
-
-    private static string? GetId(ChatId chatId)
-    {
-        if (chatId.Identifier is null)
-        {
-            return null;
-        }
-        string s = chatId.Identifier.Value.ToString().Remove(0, 4);
-        return $"c/{s}";
     }
 
     private async Task EditMessageTextAsync(int messageId, string text,
