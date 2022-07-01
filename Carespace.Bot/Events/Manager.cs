@@ -134,7 +134,7 @@ internal sealed class Manager : IDisposable
             sb.AppendLine($"• {template.Name}");
         }
         sb.AppendLine();
-        sb.AppendLine($"ОК? /{ConfirmCommand.CommandName}");
+        sb.Append($"ОК? /{ConfirmCommand.CommandName}");
 
         _waitingForConfirmation = true;
 
@@ -387,7 +387,7 @@ internal sealed class Manager : IDisposable
         scheduleBuilder.AppendLine();
         Uri formUri = _bot.Config.EventsFormUri.GetValue(nameof(_bot.Config.EventsFormUri));
         string url = AbstractBot.Utils.EscapeCharacters(formUri.AbsoluteUri);
-        scheduleBuilder.AppendLine($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
+        scheduleBuilder.Append($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
         return scheduleBuilder.ToString();
     }
 
@@ -419,6 +419,7 @@ internal sealed class Manager : IDisposable
         MessageData? data = GetMessageData(messageId);
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
+            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.Delete, messageId);
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
@@ -461,6 +462,10 @@ internal sealed class Manager : IDisposable
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
             await _bot.DeleteMessageAsync(_eventsChat, messageId);
+        }
+        else
+        {
+            UpdateInfo.LogRefused(_eventsChat, UpdateInfo.Type.Delete, messageId);
         }
         _saveManager.Data.Messages.Remove(messageId);
     }
@@ -524,7 +529,7 @@ internal sealed class Manager : IDisposable
         builder.AppendLine($"💰 *Цена*: {AbstractBot.Utils.EscapeCharacters(template.Price)}\\.");
 
         builder.AppendLine();
-        builder.AppendLine($"🗞️ *Принять участие*: {AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
+        builder.Append($"🗞️ *Принять участие*: {AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
 
         return builder.ToString();
     }
