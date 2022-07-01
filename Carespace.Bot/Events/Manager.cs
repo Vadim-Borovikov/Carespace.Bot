@@ -463,10 +463,6 @@ internal sealed class Manager : IDisposable
         {
             await _bot.DeleteMessageAsync(_eventsChat, messageId);
         }
-        else
-        {
-            UpdateInfo.LogRefused(_eventsChat, UpdateInfo.Type.Delete, messageId);
-        }
         _saveManager.Data.Messages.Remove(messageId);
     }
 
