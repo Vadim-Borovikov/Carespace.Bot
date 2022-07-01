@@ -15,7 +15,7 @@ internal static class Program
         Utils.LogManager.LogMessage();
 
         Utils.LogManager.LogTimedMessage("Startup");
-        LogManager.DeleteExceptionLog();
+        Utils.LogManager.DeleteExceptionLog();
         try
         {
             await CreateWebHostBuilder(args).Build().RunAsync();
