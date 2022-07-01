@@ -379,6 +379,7 @@ internal sealed class Manager : IDisposable
         MessageData? data = GetMessageData(messageId);
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
+            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.Delete, messageId);
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
@@ -413,6 +414,10 @@ internal sealed class Manager : IDisposable
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
             await _bot.DeleteMessageAsync(_eventsChat, messageId);
+        }
+        else
+        {
+            UpdateInfo.LogRefused(_eventsChat, UpdateInfo.Type.Delete, messageId);
         }
         _saveManager.Data.Messages.Remove(messageId);
     }
