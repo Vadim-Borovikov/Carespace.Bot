@@ -379,7 +379,7 @@ internal sealed class Manager : IDisposable
         MessageData? data = GetMessageData(messageId);
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
-            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.Delete, messageId);
+            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, messageId, text);
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
