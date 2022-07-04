@@ -5,10 +5,11 @@ namespace Carespace.Bot;
 
 public sealed class Config : ConfigGoogleSheets
 {
-    public readonly string GoogleRange;
-    public readonly Uri EventsFormUri;
     public readonly DateTime EventsUpdateAt;
     public readonly string SavePath;
+
+    internal readonly string GoogleRange;
+    internal readonly Uri EventsFormUri;
     internal readonly long EventsChannelId;
 
     internal long? LogsChatId => SuperAdminId;
