@@ -300,7 +300,7 @@ internal sealed class Manager : IDisposable
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
         Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
-            null, disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
+            null, disableWebPagePreview, disableNotification, null, replyToMessageId, null, keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
     }
