@@ -6,13 +6,15 @@ namespace Carespace.Bot.Events;
 internal sealed class Event : IDisposable
 {
     public readonly Template Template;
-    public readonly EventData Data;
+    public readonly int MessageId;
+    public int? NotificationId;
     public Timer? Timer { get; private set; }
 
-    public Event(Template template, EventData data, TimeManager timeManager)
+    public Event(Template template, int messageId, TimeManager timeManager, int? notificationId = null)
     {
         Template = template;
-        Data = data;
+        MessageId = messageId;
+        NotificationId = notificationId;
         Timer = new Timer(timeManager);
     }
 

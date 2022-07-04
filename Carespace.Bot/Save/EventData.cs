@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Carespace.Bot.Events;
+namespace Carespace.Bot.Save;
 
 internal sealed class EventData
 {
@@ -12,5 +12,9 @@ internal sealed class EventData
 
     public EventData() { }
 
-    public EventData(int messageId) => MessageId = messageId;
+    public EventData(int? messageId, int? notificationId)
+    {
+        MessageId = messageId;
+        NotificationId = notificationId;
+    }
 }

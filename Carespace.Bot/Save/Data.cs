@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Carespace.Bot.Events;
 using GoogleSheetsManager;
 
 namespace Carespace.Bot.Save;

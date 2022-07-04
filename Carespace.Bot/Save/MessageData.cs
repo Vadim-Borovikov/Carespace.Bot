@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Events;
+namespace Carespace.Bot.Save;
 
 internal sealed class MessageData
 {
