@@ -18,8 +18,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 {
     public Bot(Config config) : base(config)
     {
-        string savePath = Config.SavePath.GetValue(nameof(Config.SavePath));
-        _saveManager = new SaveManager<Data, JsonData>(savePath);
+        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath);
 
         Calendars = new Dictionary<int, Calendar>();
 
@@ -114,7 +113,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     {
         Chat logsChat = new()
         {
-            Id = Config.LogsChatId.GetValue(nameof(Config.LogsChatId)),
+            Id = Config.LogsChatId,
             Type = ChatType.Private
         };
         await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
@@ -124,8 +123,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     private void Schedule(Func<Task> func, string funcName)
     {
-        DateTime eventsUpdateAt = Config.EventsUpdateAt.GetValue(nameof(Config.EventsUpdateAt));
-        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + eventsUpdateAt.TimeOfDay;
+        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
         _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
     }
 

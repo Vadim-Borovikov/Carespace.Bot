@@ -44,14 +44,14 @@ internal sealed class Manager : IDisposable
         _templates.Clear();
         foreach (Template template in templates)
         {
-            _templates[template.Id.GetValue()] = template;
+            _templates[template.Id] = template;
         }
         _saveManager.Load();
 
         IEnumerable<int> savedTemplateIds = _saveManager.Data.Events.Keys;
         _toPost.Clear();
         _toPost.AddRange(_templates.Values
-                                   .Where(t => !savedTemplateIds.Contains(t.Id.GetValue()))
+                                   .Where(t => !savedTemplateIds.Contains(t.Id))
                                    .OrderBy(t => t.Start));
 
         if (shouldConfirm && _toPost.Any())
@@ -129,7 +129,7 @@ internal sealed class Manager : IDisposable
         ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
         foreach (int savedTemplateId in savedTemplateIds)
         {
-            EventData data = _saveManager.Data.Events[savedTemplateId].GetValue();
+            EventData data = _saveManager.Data.Events[savedTemplateId];
             if (_templates.ContainsKey(savedTemplateId))
             {
                 Template template = _templates[savedTemplateId];
@@ -151,10 +151,9 @@ internal sealed class Manager : IDisposable
 
         foreach (Template template in _toPost)
         {
-            int id = template.Id.GetValue();
-            _bot.Calendars[id] = new Calendar(template, _bot.TimeManager);
+            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
             EventData data = await PostEventAsync(template);
-            _events[id] = new Event(template, data, _bot.TimeManager);
+            _events[template.Id] = new Event(template, data, _bot.TimeManager);
         }
 
         _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
@@ -304,8 +303,8 @@ internal sealed class Manager : IDisposable
 
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
-        string range = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
-        IList<Template> templates = await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Template.Load, range);
+        IList<Template> templates =
+            await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Template.Load, _bot.Config.GoogleRange);
         return LoadRelevantTemplates(templates.RemoveNulls());
     }
 
@@ -356,8 +355,7 @@ internal sealed class Manager : IDisposable
             scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{name}]({messageUrl}){weekly}");
         }
         scheduleBuilder.AppendLine();
-        Uri formUri = _bot.Config.EventsFormUri.GetValue(nameof(_bot.Config.EventsFormUri));
-        string url = AbstractBot.Utils.EscapeCharacters(formUri.AbsoluteUri);
+        string url = AbstractBot.Utils.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
         scheduleBuilder.Append($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
         return scheduleBuilder.ToString();
     }

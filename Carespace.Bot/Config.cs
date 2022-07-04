@@ -1,5 +1,6 @@
 using System;
 using AbstractBot;
+using GryphonUtilities;
 
 namespace Carespace.Bot;
 
@@ -12,7 +13,7 @@ public sealed class Config : ConfigGoogleSheets
     internal readonly Uri EventsFormUri;
     internal readonly long EventsChannelId;
 
-    internal long? LogsChatId => SuperAdminId;
+    internal long LogsChatId => SuperAdminId.GetValue(nameof(SuperAdminId));
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
         string forbiddenStickerFileId, TimeSpan sendMessageDelayPrivate, TimeSpan sendMessageDelayGroup,
