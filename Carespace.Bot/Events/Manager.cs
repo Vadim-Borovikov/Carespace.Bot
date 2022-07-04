@@ -169,7 +169,7 @@ internal sealed class Manager : IDisposable
             MessageData? data = GetMessageData(scheduleId);
             if (data?.Date >= _weekStart)
             {
-                await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.None,
+                await EditMessageTextAsync(scheduleId, text, data, MessageData.KeyboardType.None,
                     disableWebPagePreview: true);
                 return;
             }
@@ -370,11 +370,18 @@ internal sealed class Manager : IDisposable
         return new Uri(uriString);
     }
 
-    private async Task EditMessageTextAsync(int messageId, string text,
+    private Task EditMessageTextAsync(int messageId, string text,
         MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
         MessageData? data = GetMessageData(messageId);
+        return EditMessageTextAsync(messageId, text, data, keyboard, icsButton, disableWebPagePreview);
+    }
+
+    private async Task EditMessageTextAsync(int messageId, string text, MessageData? data,
+        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
+        bool disableWebPagePreview = false)
+    {
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
             UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, messageId, text);
