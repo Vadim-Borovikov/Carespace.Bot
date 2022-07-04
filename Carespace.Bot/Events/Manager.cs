@@ -8,7 +8,6 @@ using Carespace.Bot.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -181,9 +180,9 @@ internal sealed class Manager : IDisposable
             await SendTextMessageAsync(text, MessageData.KeyboardType.None, disableWebPagePreview: true);
         if (oldScheduleId.HasValue)
         {
-            await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId, oldScheduleId.Value);
+            await _bot.UnpinChatMessageAsync(_eventsChat, oldScheduleId.Value);
         }
-        await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, _saveManager.Data.ScheduleId.Value, true);
+        await _bot.PinChatMessageAsync(_eventsChat, _saveManager.Data.ScheduleId.Value, true);
     }
 
     private async Task CreateOrUpdateNotificationsAsync()
