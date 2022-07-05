@@ -256,6 +256,7 @@ internal sealed class Manager : IDisposable
         else
         {
             e.NotificationId = await SendTextMessageAsync(text, replyToMessageId: e.MessageId);
+            _saveManager.Data.Events[e.Template.Id].NotificationId = e.NotificationId;
         }
 
         _saveManager.Save();
