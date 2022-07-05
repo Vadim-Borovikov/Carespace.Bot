@@ -143,7 +143,10 @@ internal sealed class Manager : IDisposable
             }
             else
             {
-                await DeleteNotificationAsync(data);
+                if (data.NotificationId.HasValue)
+                {
+                    await DeleteMessageAsync(data.NotificationId.Value);
+                }
             }
         }
 
@@ -262,22 +265,21 @@ internal sealed class Manager : IDisposable
         _saveManager.Save();
     }
 
-    private async Task DeleteNotificationAsync(EventData data)
-    {
-        await DeleteNotificationAsync(data.NotificationId);
-        data.NotificationId = null;
-        _saveManager.Save();
-    }
-
     private async Task DeleteNotificationAsync(Event e)
     {
-        await DeleteNotificationAsync(e.NotificationId);
-        e.NotificationId = null;
-    }
+        if (e.NotificationId is null)
+        {
+            return;
+        }
 
-    private Task DeleteNotificationAsync(int? notificationId)
-    {
-        return notificationId is null ? Task.CompletedTask : DeleteMessageAsync(notificationId.Value);
+        await DeleteMessageAsync(e.NotificationId.Value);
+        e.NotificationId = null;
+
+        if (_saveManager.Data.Events.ContainsKey(e.Template.Id))
+        {
+            _saveManager.Data.Events[e.Template.Id].NotificationId = null;
+        }
+        _saveManager.Save();
     }
 
     private Task<int> PostEventAsync(Template template)
