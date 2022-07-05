@@ -268,10 +268,10 @@ internal sealed class Manager : IDisposable
         _saveManager.Save();
     }
 
-    private async Task DeleteNotificationAsync(EventData datas)
+    private async Task DeleteNotificationAsync(EventData data)
     {
-        await DeleteNotificationAsync(datas.NotificationId);
-        datas.NotificationId = null;
+        await DeleteNotificationAsync(data.NotificationId);
+        data.NotificationId = null;
         _saveManager.Save();
     }
 
