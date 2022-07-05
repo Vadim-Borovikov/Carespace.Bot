@@ -135,12 +135,11 @@ internal sealed class Manager : IDisposable
 
                 string messageText = GetMessageText(template);
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-                int messageId = data.MessageId.GetValue(nameof(data.MessageId));
-                await EditMessageTextAsync(messageId, messageText, icsButton: icsButton,
+                await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                     keyboard: MessageData.KeyboardType.Ics);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
-                _events[savedTemplateId] = new Event(template, messageId, _bot.TimeManager, data.NotificationId);
+                _events[savedTemplateId] = new Event(template, data.MessageId, _bot.TimeManager, data.NotificationId);
             }
             else
             {

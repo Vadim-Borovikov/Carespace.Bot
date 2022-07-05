@@ -1,10 +1,10 @@
 ﻿using System;
-using Newtonsoft.Json;
+using GoogleSheetsManager;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Save;
 
-internal sealed class MessageData
+internal sealed class MessageData : IConvertibleTo<JsonMessageData>
 {
     public enum KeyboardType
     {
@@ -12,21 +12,22 @@ internal sealed class MessageData
         Ics
     }
 
-    [JsonProperty]
-    public string? Text { get; set; }
+    public readonly DateTime Date;
 
-    [JsonProperty]
-    public KeyboardType? Keyboard { get; set; }
+    public string Text;
+    public KeyboardType Keyboard;
 
-    [JsonProperty]
-    public DateTime? Date { get; set; }
-
-    public MessageData() { }
-
-    public MessageData(Message message, string text, KeyboardType keyboard)
+    public MessageData(Message message, string text, KeyboardType keyboard) :
+        this(message.Date.ToLocalTime(), text, keyboard)
     {
+    }
+
+    public MessageData(DateTime date, string text, KeyboardType keyboard)
+    {
+        Date = date;
         Text = text;
-        Date = message.Date.ToLocalTime();
         Keyboard = keyboard;
     }
+
+    public JsonMessageData Convert() => new(Text, Keyboard, Date);
 }

@@ -1,20 +1,18 @@
-﻿using Newtonsoft.Json;
+﻿using GoogleSheetsManager;
 
 namespace Carespace.Bot.Save;
 
-internal sealed class EventData
+internal sealed class EventData : IConvertibleTo<JsonEventData>
 {
-    [JsonProperty]
-    public int? MessageId { get; set; }
+    public readonly int MessageId;
 
-    [JsonProperty]
-    public int? NotificationId { get; set; }
+    public int? NotificationId;
 
-    public EventData() { }
-
-    public EventData(int? messageId, int? notificationId)
+    public EventData(int messageId, int? notificationId)
     {
         MessageId = messageId;
         NotificationId = notificationId;
     }
+
+    public JsonEventData Convert() => new(MessageId, NotificationId);
 }
