@@ -188,15 +188,15 @@ internal sealed class Manager : IDisposable
     {
         foreach (Event e in _events.Values)
         {
-            await CreateOrUpdateNotificationAsync(e, _weekEnd);
+            await CreateOrUpdateNotificationAsync(e);
         }
     }
 
-    private Task CreateOrUpdateNotificationAsync(Event e, DateTime end)
+    private Task CreateOrUpdateNotificationAsync(Event e)
     {
         DateTime now = _bot.TimeManager.Now();
 
-        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= end))
+        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= _weekEnd))
         {
             e.DisposeTimer();
             return DeleteNotificationAsync(e);
@@ -205,11 +205,7 @@ internal sealed class Manager : IDisposable
         TimeSpan startIn = e.Template.Start - now;
         if (startIn > Hour)
         {
-            if (e.Timer is null)
-            {
-                throw new NullReferenceException(nameof(e.Timer));
-            }
-            e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
+            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
                 $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
             return DeleteNotificationAsync(e);
         }
@@ -244,11 +240,8 @@ internal sealed class Manager : IDisposable
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
-        if (e.Timer is null)
-        {
-            throw new NullReferenceException(nameof(e.Timer));
-        }
-        e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
+        e.Timer.GetValue(nameof(e.Timer)).DoOnce(nextAt,
+            () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
     }
 
     private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)

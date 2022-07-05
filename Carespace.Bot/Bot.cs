@@ -36,12 +36,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
     }
 
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _weeklyUpdateTimer.Stop();
-        await base.StopAsync(cancellationToken);
-    }
-
     public override void Dispose()
     {
         _weeklyUpdateTimer.Dispose();
