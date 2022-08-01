@@ -9,10 +9,6 @@ public sealed class Config : ConfigGoogleSheets
 {
     public readonly string Template;
     public readonly Link FeedbackLink;
-    public readonly string GoogleRange;
-    public readonly Uri EventsFormUri;
-    public readonly DateTime EventsUpdateAt;
-    public readonly string SavePath;
     public readonly int ProductId;
     public readonly string GoogleSheetIdTransactions;
     public readonly string GoogleSheetIdDonations;
@@ -39,6 +35,10 @@ public sealed class Config : ConfigGoogleSheets
     public readonly string PayMasterSiteAliasDonations;
     public readonly List<string> PayMasterPurposesFormats;
 
+    internal readonly string GoogleRange;
+    internal readonly Uri EventsFormUri;
+    internal readonly DateTime EventsUpdateAt;
+    internal readonly string SavePath;
     internal readonly List<Link> Links;
     internal readonly List<string> ExercisesLinks;
     internal readonly long EventsChannelId;

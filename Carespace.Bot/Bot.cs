@@ -20,8 +20,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 {
     public Bot(Config.Config config) : base(config)
     {
-        string savePath = Config.SavePath.GetValue(nameof(Config.SavePath));
-        _saveManager = new SaveManager<Data, JsonData>(savePath);
+        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath);
 
         Calendars = new Dictionary<int, Calendar>();
 
@@ -43,12 +42,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         await base.StartAsync(cancellationToken);
 
         AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
-    }
-
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _weeklyUpdateTimer.Stop();
-        await base.StopAsync(cancellationToken);
     }
 
     public override void Dispose()
@@ -139,8 +132,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
     private void Schedule(Func<Task> func, string funcName)
     {
-        DateTime eventsUpdateAt = Config.EventsUpdateAt.GetValue(nameof(Config.EventsUpdateAt));
-        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + eventsUpdateAt.TimeOfDay;
+        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
         _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
     }
 

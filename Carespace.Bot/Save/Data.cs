@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Carespace.Bot.Events;
 using GoogleSheetsManager;
 
 namespace Carespace.Bot.Save;
@@ -27,8 +26,8 @@ internal sealed class Data : IConvertibleTo<JsonData>
         return new JsonData
         {
             ScheduleId = ScheduleId,
-            Events = Events.ToDictionary(p => p.Key, p => (EventData?) p.Value),
-            Messages = Messages.ToDictionary(p => p.Key, p => (MessageData?) p.Value)
+            Events = Events.ToDictionary(p => p.Key, p => (JsonEventData?) p.Value.Convert()),
+            Messages = Messages.ToDictionary(p => p.Key, p => (JsonMessageData?) p.Value.Convert())
         };
     }
 }

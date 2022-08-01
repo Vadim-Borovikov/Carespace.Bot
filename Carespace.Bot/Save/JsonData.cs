@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using Carespace.Bot.Events;
 using GoogleSheetsManager;
+using GryphonUtilities;
 using Newtonsoft.Json;
 
 namespace Carespace.Bot.Save;
@@ -12,23 +12,17 @@ internal sealed class JsonData : IConvertibleTo<Data>
     public int? ScheduleId { get; set; }
 
     [JsonProperty]
-    public Dictionary<int, EventData?>? Events { get; set; }
+    public Dictionary<int, JsonEventData?>? Events { get; set; }
 
     [JsonProperty]
-    public Dictionary<int, MessageData?>? Messages { get; set; }
+    public Dictionary<int, JsonMessageData?>? Messages { get; set; }
 
-    public Data? Convert()
+    public Data Convert()
     {
-        Events ??= new Dictionary<int, EventData?>();
-        Messages ??= new Dictionary<int, MessageData?>();
-
-        if (Events.Values.Any(v => v is null) || Messages.Values.Any(m => m is null))
-        {
-            return null;
-        }
-
-        // ReSharper disable NullableWarningSuppressionIsUsed
-        //   Just null-checked
-        return new Data(ScheduleId, Events!, Messages!);
+        Dictionary<int, EventData> events =
+            Events.GetValue().ToDictionary(p => p.Key, p => p.Value.GetValue().Convert());
+        Dictionary<int, MessageData> messages =
+            Messages.GetValue().ToDictionary(p => p.Key, p => p.Value.GetValue().Convert());
+        return new Data(ScheduleId, events, messages);
     }
 }

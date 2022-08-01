@@ -16,11 +16,9 @@ internal sealed class Timer : IDisposable
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
-    public void Stop() => _cancellationTokenSource.Cancel();
-
     public void Dispose()
     {
-        Stop();
+        _cancellationTokenSource.Cancel();
         _cancellationTokenSource.Dispose();
     }
 

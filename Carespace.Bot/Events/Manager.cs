@@ -8,7 +8,6 @@ using Carespace.Bot.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
 using GryphonUtilities;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -63,14 +62,14 @@ internal sealed class Manager : IDisposable
         _templates.Clear();
         foreach (Template template in templates)
         {
-            _templates[template.Id.GetValue()] = template;
+            _templates[template.Id] = template;
         }
         _saveManager.Load();
 
         IEnumerable<int> savedTemplateIds = _saveManager.Data.Events.Keys;
         _toPost.Clear();
         _toPost.AddRange(_templates.Values
-                                   .Where(t => !savedTemplateIds.Contains(t.Id.GetValue()))
+                                   .Where(t => !savedTemplateIds.Contains(t.Id))
                                    .OrderBy(t => t.Start));
 
         if (shouldConfirm && _toPost.Any())
@@ -148,35 +147,37 @@ internal sealed class Manager : IDisposable
         ICollection<int> savedTemplateIds = _saveManager.Data.Events.Keys;
         foreach (int savedTemplateId in savedTemplateIds)
         {
-            EventData data = _saveManager.Data.Events[savedTemplateId].GetValue();
+            EventData data = _saveManager.Data.Events[savedTemplateId];
             if (_templates.ContainsKey(savedTemplateId))
             {
                 Template template = _templates[savedTemplateId];
 
                 string messageText = GetMessageText(template);
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-                int messageId = data.MessageId.GetValue(nameof(data.MessageId));
-                await EditMessageTextAsync(messageId, messageText, icsButton: icsButton,
+                await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                     keyboard: MessageData.KeyboardType.Full);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
-                _events[savedTemplateId] = new Event(template, data, _bot.TimeManager);
+                _events[savedTemplateId] = new Event(template, data.MessageId, _bot.TimeManager, data.NotificationId);
             }
             else
             {
-                await DeleteNotificationAsync(data);
+                if (data.NotificationId.HasValue)
+                {
+                    await DeleteMessageAsync(data.NotificationId.Value);
+                }
             }
         }
 
         foreach (Template template in _toPost)
         {
-            int id = template.Id.GetValue();
-            _bot.Calendars[id] = new Calendar(template, _bot.TimeManager);
-            EventData data = await PostEventAsync(template);
-            _events[id] = new Event(template, data, _bot.TimeManager);
+            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
+            int messageId = await PostEventAsync(template);
+            _events[template.Id] = new Event(template, messageId, _bot.TimeManager);
         }
 
-        _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => e.Value.Data);
+        _saveManager.Data.Events =
+            _events.ToDictionary(e => e.Key, e => new EventData(e.Value.MessageId, e.Value.NotificationId));
     }
 
     private async Task PostOrUpdateScheduleAsync()
@@ -189,7 +190,7 @@ internal sealed class Manager : IDisposable
             MessageData? data = GetMessageData(scheduleId);
             if (data?.Date >= _weekStart)
             {
-                await EditMessageTextAsync(scheduleId, text, MessageData.KeyboardType.Discuss,
+                await EditMessageTextAsync(scheduleId, text, data, MessageData.KeyboardType.Discuss,
                     disableWebPagePreview: true);
                 return;
             }
@@ -200,24 +201,24 @@ internal sealed class Manager : IDisposable
             MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
         if (oldScheduleId.HasValue)
         {
-            await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId, oldScheduleId.Value);
+            await _bot.UnpinChatMessageAsync(_eventsChat, oldScheduleId.Value);
         }
-        await _bot.Client.PinChatMessageAsync(_bot.Config.EventsChannelId, _saveManager.Data.ScheduleId.Value, true);
+        await _bot.PinChatMessageAsync(_eventsChat, _saveManager.Data.ScheduleId.Value, true);
     }
 
     private async Task CreateOrUpdateNotificationsAsync()
     {
         foreach (Event e in _events.Values)
         {
-            await CreateOrUpdateNotificationAsync(e, _weekEnd);
+            await CreateOrUpdateNotificationAsync(e);
         }
     }
 
-    private Task CreateOrUpdateNotificationAsync(Event e, DateTime end)
+    private Task CreateOrUpdateNotificationAsync(Event e)
     {
         DateTime now = _bot.TimeManager.Now();
 
-        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= end))
+        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= _weekEnd))
         {
             e.DisposeTimer();
             return DeleteNotificationAsync(e);
@@ -226,11 +227,7 @@ internal sealed class Manager : IDisposable
         TimeSpan startIn = e.Template.Start - now;
         if (startIn > Hour)
         {
-            if (e.Timer is null)
-            {
-                throw new NullReferenceException(nameof(e.Timer));
-            }
-            e.Timer.DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
+            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
                 $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
             return DeleteNotificationAsync(e);
         }
@@ -265,50 +262,51 @@ internal sealed class Manager : IDisposable
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
-        if (e.Timer is null)
-        {
-            throw new NullReferenceException(nameof(e.Timer));
-        }
-        e.Timer.DoOnce(nextAt, () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
+        e.Timer.GetValue(nameof(e.Timer)).DoOnce(nextAt,
+            () => nextFunc(e), $"{nextFuncName} for event #{e.Template.Id}");
     }
 
     private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
     {
-        string text = $"{prefix} мероприятие [{AbstractBot.Utils.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
+        string text =
+            $"{prefix} мероприятие [{AbstractBot.Utils.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
 
-        if (e.Data.NotificationId.HasValue)
+        if (e.NotificationId.HasValue)
         {
-            await EditMessageTextAsync(e.Data.NotificationId.Value, text);
+            await EditMessageTextAsync(e.NotificationId.Value, text);
         }
         else
         {
-            int messageId = e.Data.MessageId.GetValue(nameof(e.Data.MessageId));
-            e.Data.NotificationId = await SendTextMessageAsync(text, replyToMessageId: messageId);
+            e.NotificationId = await SendTextMessageAsync(text, replyToMessageId: e.MessageId);
+            _saveManager.Data.Events[e.Template.Id].NotificationId = e.NotificationId;
         }
 
         _saveManager.Save();
     }
 
-    private Task DeleteNotificationAsync(Event e) => DeleteNotificationAsync(e.Data);
-    private async Task DeleteNotificationAsync(EventData data)
+    private async Task DeleteNotificationAsync(Event e)
     {
-        if (data.NotificationId is null)
+        if (e.NotificationId is null)
         {
             return;
         }
 
-        await DeleteMessageAsync(data.NotificationId.Value);
-        data.NotificationId = null;
+        await DeleteMessageAsync(e.NotificationId.Value);
+        e.NotificationId = null;
+
+        if (_saveManager.Data.Events.ContainsKey(e.Template.Id))
+        {
+            _saveManager.Data.Events[e.Template.Id].NotificationId = null;
+        }
         _saveManager.Save();
     }
 
-    private async Task<EventData> PostEventAsync(Template template)
+    private Task<int> PostEventAsync(Template template)
     {
         string text = GetMessageText(template);
         InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-        int messageId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Ics,
-            MessageData.KeyboardType.Full, icsButton);
-        return new EventData(messageId);
+        return PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Ics, MessageData.KeyboardType.Full,
+            icsButton);
     }
 
     private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
@@ -326,15 +324,15 @@ internal sealed class Manager : IDisposable
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
         Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
-            null, disableWebPagePreview, disableNotification, replyToMessageId, false, keyboardMarkup);
+            null, disableWebPagePreview, disableNotification, null, replyToMessageId, null, keyboardMarkup);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
         return message.MessageId;
     }
 
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
-        string range = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
-        IList<Template> templates = await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Template.Load, range);
+        IList<Template> templates =
+            await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Template.Load, _bot.Config.GoogleRange);
         return LoadRelevantTemplates(templates.RemoveNulls());
     }
 
@@ -378,15 +376,13 @@ internal sealed class Manager : IDisposable
                 scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
             }
             string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
-            int messageId = e.Data.MessageId.GetValue(nameof(e.Data.MessageId));
-            Uri uri = GetChannelMessageUri(_bot.Config.EventsChannelId, messageId);
+            Uri uri = GetChannelMessageUri(_bot.Config.EventsChannelId, e.MessageId);
             string messageUrl = AbstractBot.Utils.EscapeCharacters(uri.AbsoluteUri);
             string weekly = e.Template.IsWeekly ? " 🔄" : "";
             scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{name}]({messageUrl}){weekly}");
         }
         scheduleBuilder.AppendLine();
-        Uri formUri = _bot.Config.EventsFormUri.GetValue(nameof(_bot.Config.EventsFormUri));
-        string url = AbstractBot.Utils.EscapeCharacters(formUri.AbsoluteUri);
+        string url = AbstractBot.Utils.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
         scheduleBuilder.Append($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
         return scheduleBuilder.ToString();
     }
@@ -412,11 +408,18 @@ internal sealed class Manager : IDisposable
         return new Uri(uriString);
     }
 
-    private async Task EditMessageTextAsync(int messageId, string text,
+    private Task EditMessageTextAsync(int messageId, string text,
         MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
         MessageData? data = GetMessageData(messageId);
+        return EditMessageTextAsync(messageId, text, data, keyboard, icsButton, disableWebPagePreview);
+    }
+
+    private async Task EditMessageTextAsync(int messageId, string text, MessageData? data,
+        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
+        bool disableWebPagePreview = false)
+    {
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
             UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, messageId, text);
@@ -540,7 +543,7 @@ internal sealed class Manager : IDisposable
 
     private MessageData? GetMessageData(int id)
     {
-        return _saveManager.Data.Messages.TryGetValue(id, out MessageData? data) ? data : null;
+        return _saveManager.Data.Messages.ContainsKey(id) ? _saveManager.Data.Messages[id] : null;
     }
 
     private bool IsExcess(int id)
