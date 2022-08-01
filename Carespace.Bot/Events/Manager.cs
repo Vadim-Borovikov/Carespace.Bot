@@ -196,8 +196,8 @@ internal sealed class Manager : IDisposable
         }
 
         int? oldScheduleId = _saveManager.Data.ScheduleId;
-        _saveManager.Data.ScheduleId =
-            await SendTextMessageAsync(text, MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
+        _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
+            MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
         if (oldScheduleId.HasValue)
         {
             await _bot.Client.UnpinChatMessageAsync(_bot.Config.EventsChannelId, oldScheduleId.Value);
