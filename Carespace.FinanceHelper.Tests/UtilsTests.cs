@@ -96,7 +96,7 @@ public class UtilsTests
         Dictionary<string, object?> valueSet = new()
         {
             { "Комментарий", null },
-            { "Дата", DateTime.Today },
+            { "Дата", Date },
             { "Сумма", price },
             { "Цена", price },
             { "Товар", digisellerProductId },
@@ -127,6 +127,7 @@ public class UtilsTests
 
     private const string Agent1 = "Agent1";
     private const string Agent2 = "Agent2";
+    private static readonly DateTime Date = new(2022, 1, 1);
 
     // ReSharper disable once NullableWarningSuppressionIsUsed
     //   _config initializes in ClassInitialize

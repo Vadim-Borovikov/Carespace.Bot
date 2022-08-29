@@ -242,6 +242,7 @@ public static class Utils
         Dictionary<string, List<Share>> shares)
     {
         Dictionary<string, decimal> totals = new();
+        DateTime doomday = new(2022, 2, 24);
         foreach (Transaction transaction in transactions)
         {
             decimal amount = transaction.Amount;
@@ -252,9 +253,12 @@ public static class Utils
                 decimal price = transaction.Price.Value;
 
                 // Tax
-                decimal tax = Round(price * taxFeePercent);
-                transaction.Tax = tax;
-                amount -= transaction.Tax.Value;
+                if (transaction.Date.Date <= doomday)
+                {
+                    decimal tax = Round(price * taxFeePercent);
+                    transaction.Tax = tax;
+                    amount -= transaction.Tax.Value;
+                }
 
                 net = amount;
 
