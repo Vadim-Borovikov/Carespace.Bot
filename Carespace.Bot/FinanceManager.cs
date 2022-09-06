@@ -155,15 +155,13 @@ internal sealed class FinanceManager
                 ? null
                 : await _bot.SendTextMessageAsync(chat, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
-            string alias =
-                _bot.Config.PayMasterSiteAliasDigiseller.GetValue(nameof(_bot.Config.PayMasterSiteAliasDigiseller));
+            string merchantId =
+                _bot.Config.PayMasterMerchantIdDigiseller.GetValue(nameof(_bot.Config.PayMasterMerchantIdDigiseller));
             dateStart = needPayment.Select(o => o.Date).Min();
             dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
-            string payMasterLogin = _bot.Config.PayMasterLogin.GetValue(nameof(_bot.Config.PayMasterLogin));
-            string payMasterPassword = _bot.Config.PayMasterPassword.GetValue(nameof(_bot.Config.PayMasterPassword));
-            List<ListPaymentsFilterResult.ResponseInfo.Payment> payments =
-                await FinanceHelper.Utils.GetPaymentsAsync(alias, dateStart, dateEnd, payMasterLogin,
-                    payMasterPassword);
+            string payMasterToken = _bot.Config.PayMasterToken.GetValue(nameof(_bot.Config.PayMasterToken));
+            List<PaymentsResult.Item> payments =
+                await FinanceHelper.Utils.GetPaymentsAsync(merchantId, dateStart, dateEnd, payMasterToken);
 
             List<string> formats =
                 _bot.Config.PayMasterPurposesFormats.GetValue(nameof(_bot.Config.PayMasterPurposesFormats));
@@ -222,12 +220,11 @@ internal sealed class FinanceManager
         DateTime dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
 
-        string alias =
-            _bot.Config.PayMasterSiteAliasDonations.GetValue(nameof(_bot.Config.PayMasterSiteAliasDonations));
-        string login = _bot.Config.PayMasterLogin.GetValue(nameof(_bot.Config.PayMasterLogin));
-        string password = _bot.Config.PayMasterPassword.GetValue(nameof(_bot.Config.PayMasterPassword));
-        List<Donation> newDonations = await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(alias, dateStart, dateEnd,
-            login, password, oldDonations);
+        string merchantId =
+            _bot.Config.PayMasterMerchantIdDonations.GetValue(nameof(_bot.Config.PayMasterMerchantIdDonations));
+        string payMasterToken = _bot.Config.PayMasterToken.GetValue(nameof(_bot.Config.PayMasterToken));
+        List<Donation> newDonations = await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(merchantId, dateStart,
+            dateEnd, payMasterToken, oldDonations);
 
         donations.AddRange(newDonations);
 

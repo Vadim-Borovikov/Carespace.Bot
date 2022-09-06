@@ -136,18 +136,15 @@ public static class Utils
 
     #region PayMaster
 
-    public static async Task<List<Donation>> GetNewPayMasterPaymentsAsync(string siteAlias, DateTime start, DateTime end,
-        string login, string password, IEnumerable<Donation> oldPayments)
+    public static async Task<List<Donation>> GetNewPayMasterPaymentsAsync(string merchantId, DateTime start,
+        DateTime end, string token, IEnumerable<Donation> oldPayments)
     {
-        List<ListPaymentsFilterResult.ResponseInfo.Payment> allPayments =
-            await GetPaymentsAsync(siteAlias, start, end, login, password);
-        List<ListPaymentsFilterResult.ResponseInfo.Payment> payments =
-            allPayments.Where(p => p.IsTestPayment is null || !p.IsTestPayment.Value).ToList();
+        List<PaymentsResult.Item> allPayments = await GetPaymentsAsync(merchantId, start, end, token);
+        List<PaymentsResult.Item> payments = allPayments.Where(p => p.TestMode is null || !p.TestMode.Value).ToList();
 
         IEnumerable<int?> oldPaymentIds = oldPayments.Select(p => p.PaymentId);
 
-        IEnumerable<ListPaymentsFilterResult.ResponseInfo.Payment> newPayments =
-            payments.Where(p => !oldPaymentIds.Contains(p.PaymentId));
+        IEnumerable<PaymentsResult.Item> newPayments = payments.Where(p => !oldPaymentIds.Contains(p.Id));
 
         return newPayments.Select(p => new Donation(p)).ToList();
     }
@@ -157,68 +154,42 @@ public static class Utils
         return GetHyperlink(PayMasterPaymentUrlFormat, paymentId);
     }
 
-    public static async Task<List<ListPaymentsFilterResult.ResponseInfo.Payment>> GetPaymentsAsync(string siteAlias,
-        DateTime start, DateTime end, string login, string password)
+    public static async Task<List<PaymentsResult.Item>> GetPaymentsAsync(string merchantId, DateTime start,
+        DateTime end, string token)
     {
-        List<ListPaymentsFilterResult.ResponseInfo.Payment> result = new();
-        DateTime periodFrom = start;
-        while (periodFrom < end)
-        {
-            DateTime periodTo = Min(periodFrom + PayMasterMaxRequestPeriod, end);
+        string startFormatted = start.ToString(PayMasterDateTimeFormat);
+        string endFormatted = end.ToString(PayMasterDateTimeFormat);
 
-            List<ListPaymentsFilterResult.ResponseInfo.Payment?> payments =
-                await GetPaymentsLimitedAsync(siteAlias, periodFrom, periodTo, login, password);
-            result.AddRange(payments.RemoveNulls());
-
-            periodFrom = periodTo.AddDays(1);
-        }
-
-        return result;
+        PaymentsResult result = await PayMaster.GetPaymentsAsync(token, merchantId, startFormatted, endFormatted);
+        List<PaymentsResult.Item?> items = result.Items.GetValue(nameof(result.Items));
+        return items.RemoveNulls().Where(p => p.Status == PayMasterStatus).ToList();
     }
 
-    private static async Task<List<ListPaymentsFilterResult.ResponseInfo.Payment?>> GetPaymentsLimitedAsync(
-        string siteAlias, DateTime periodFrom, DateTime periodTo, string login, string password)
-    {
-        string start = periodFrom.ToString(PayMasterDateTimeFormat);
-        string end = periodTo.ToString(PayMasterDateTimeFormat);
-
-        ListPaymentsFilterResult result =
-            await PayMaster.GetPaymentsAsync(login, password, "", siteAlias, start, end, "", PayMasterState);
-
-        ListPaymentsFilterResult.ResponseInfo response = result.Response.GetValue(nameof(result.Response));
-        return response.Payments.GetValue(nameof(response.Payments));
-    }
-
-    public static void FindPayment(Transaction transaction,
-        IEnumerable<ListPaymentsFilterResult.ResponseInfo.Payment> payments, IEnumerable<string> purposesFormats)
+    public static void FindPayment(Transaction transaction, IEnumerable<PaymentsResult.Item> payments,
+        IEnumerable<string> descriptionFormats)
     {
         if (transaction.DigisellerSellId is null || transaction.PayMasterPaymentId.HasValue)
         {
             return;
         }
 
-        IEnumerable<string> purposes =
-            purposesFormats.Select(f => string.Format(f, transaction.DigisellerSellId.Value));
+        IEnumerable<string> descriptions =
+            descriptionFormats.Select(f => string.Format(f, transaction.DigisellerSellId.Value));
 
-        ListPaymentsFilterResult.ResponseInfo.Payment? payment =
-            payments.SingleOrDefault(p => purposes.Contains(p.Purpose));
+        PaymentsResult.Item? payment = payments.SingleOrDefault(p => !string.IsNullOrWhiteSpace(p.Invoice?.Description)
+                                                                     && descriptions.Contains(p.Invoice.Description));
 
-        transaction.PayMasterPaymentId = payment?.PaymentId;
+        transaction.PayMasterPaymentId = payment?.Id;
     }
 
     private const string PayMasterDateTimeFormat = "yyyy-MM-dd";
-    private const string PayMasterState = "COMPLETE";
+    private const string PayMasterStatus = "Settled";
 
     #endregion // PayMaster
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     #region Common
-
-    private static DateTime Min(DateTime dateTime1, DateTime dataTime2)
-    {
-        return new DateTime(Math.Min(dateTime1.Ticks, dataTime2.Ticks));
-    }
 
     public static void CalculateTotalsAndWeeks(IEnumerable<Donation> donations,
         Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, DateTime firstThursday)
@@ -349,8 +320,6 @@ public static class Utils
     private const string NoProductSharesKey = "None";
 
     public static string PayMasterPaymentUrlFormat = "";
-
-    private static readonly TimeSpan PayMasterMaxRequestPeriod = TimeSpan.FromDays(179);
 
     #endregion // Common
 }

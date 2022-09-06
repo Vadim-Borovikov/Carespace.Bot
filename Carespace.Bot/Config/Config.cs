@@ -29,10 +29,9 @@ public sealed class Config : ConfigGoogleSheets
     public readonly long TaxPayerId;
     public readonly decimal TaxFeePercent;
     public readonly string PayMasterPaymentUrlFormat;
-    public readonly string PayMasterLogin;
-    public readonly string PayMasterPassword;
-    public readonly string PayMasterSiteAliasDigiseller;
-    public readonly string PayMasterSiteAliasDonations;
+    public readonly string PayMasterToken;
+    public readonly string PayMasterMerchantIdDigiseller;
+    public readonly string PayMasterMerchantIdDonations;
     public readonly List<string> PayMasterPurposesFormats;
 
     internal readonly string GoogleRange;
@@ -63,10 +62,10 @@ public sealed class Config : ConfigGoogleSheets
         string googleDonationsCustomRangeToClear, string googleDonationSumsRange, string digisellerProductUrlFormat,
         string digisellerSellUrlFormat, int digisellerId, string digisellerApiGuid, string digisellerLogin,
         string digisellerPassword, decimal digisellerFeePercent, long taxPayerId, decimal taxFeePercent,
-        string payMasterPaymentUrlFormat, string payMasterLogin, string payMasterPassword,
-        string payMasterSiteAliasDigiseller, string payMasterSiteAliasDonations, List<string> payMasterPurposesFormats,
-        List<Link> links, List<string> exercisesLinks, long eventsChannelId, long discussGroupId,
-        string discussGroupLogin, string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
+        string payMasterPaymentUrlFormat, string payMasterToken, string payMasterMerchantIdDigiseller,
+        string payMasterMerchantIdDonations, List<string> payMasterPurposesFormats, List<Link> links,
+        List<string> exercisesLinks, long eventsChannelId, long discussGroupId, string discussGroupLogin,
+        string bookPromo, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
         Dictionary<string, List<Share>> shares)
         : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessagePeriodPrivate,
             sendMessagePeriodGroup, sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
@@ -97,10 +96,9 @@ public sealed class Config : ConfigGoogleSheets
         TaxPayerId = taxPayerId;
         TaxFeePercent = taxFeePercent;
         PayMasterPaymentUrlFormat = payMasterPaymentUrlFormat;
-        PayMasterLogin = payMasterLogin;
-        PayMasterPassword = payMasterPassword;
-        PayMasterSiteAliasDigiseller = payMasterSiteAliasDigiseller;
-        PayMasterSiteAliasDonations = payMasterSiteAliasDonations;
+        PayMasterToken = payMasterToken;
+        PayMasterMerchantIdDigiseller = payMasterMerchantIdDigiseller;
+        PayMasterMerchantIdDonations = payMasterMerchantIdDonations;
         PayMasterPurposesFormats = payMasterPurposesFormats;
 
         Links = links;

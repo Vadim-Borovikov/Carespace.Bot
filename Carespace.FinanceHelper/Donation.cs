@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
 using GryphonUtilities;
@@ -19,22 +20,45 @@ public sealed class Donation : ISavable
     public decimal Total { get; internal set; }
 
 
-    internal Donation(ListPaymentsFilterResult.ResponseInfo.Payment payment)
+    internal Donation(PaymentsResult.Item payment)
     {
-        Date = payment.LastUpdateTime.GetValue(nameof(payment.LastUpdateTime));
-        Amount = payment.PaymentAmount.GetValue(nameof(payment.PaymentAmount));
+        Date = payment.Created.GetValue(nameof(payment.Created));
+        Amount = (payment.Amount?.Value).GetValue(nameof(payment.Amount.Value));
 
-        PaymentId = payment.PaymentId;
+        PaymentId = payment.Id;
 
-        PayMethodInfo = payment.PaymentSystemId switch
+        PaymentsResult.Item.Payment paymentData = payment.PaymentData.GetValue(nameof(payment.PaymentData));
+        PayMethodInfo = paymentData.PaymentMethod switch
         {
-            161 => Transaction.PayMethod.Sbp,
-            162 => Transaction.PayMethod.BankCard,
-            _   => throw new ArgumentOutOfRangeException(nameof(payment.PaymentSystemId), payment.PaymentSystemId,
+            "sbp"      => Transaction.PayMethod.Sbp,
+            "bankcard" => Transaction.PayMethod.BankCard,
+            "qiwi"     => Transaction.PayMethod.BankCard,
+            null       => Analyze(paymentData.PaymentInstrumentTitle),
+            _ => throw new ArgumentOutOfRangeException(nameof(paymentData.PaymentMethod), paymentData.PaymentMethod,
                 null)
         };
 
-        _name = payment.SiteInvoiceId.GetValue(nameof(payment.SiteInvoiceId));
+        _name = payment.Invoice?.OrderNo;
+    }
+
+    private static Transaction.PayMethod? Analyze(string? paymentDataTitle)
+    {
+        if (string.IsNullOrWhiteSpace(paymentDataTitle))
+        {
+            return null;
+        }
+
+        if (paymentDataTitle.Length is CardNumberLength && paymentDataTitle.Contains(CardNumberPart))
+        {
+            return Transaction.PayMethod.BankCard;
+        }
+
+        if (PhoneRegex.IsMatch(paymentDataTitle))
+        {
+            return Transaction.PayMethod.Sbp;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(paymentDataTitle), paymentDataTitle, "Can't analyze pay method");
     }
 
     private Donation(DateTime date, decimal amount, int? paymentId, Transaction.PayMethod? payMethodInfo, string? name)
@@ -96,4 +120,9 @@ public sealed class Donation : ISavable
     private const string WeekTitle = "Неделя";
 
     private readonly string? _name;
+
+    private const int CardNumberLength = 16;
+    private const string CardNumberPart = "XXXXXX";
+    private const string PhonePattern = ".*, 7\\d{10}$";
+    private static readonly Regex PhoneRegex = new(PhonePattern);
 }

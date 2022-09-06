@@ -97,13 +97,11 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
     [JsonProperty]
     public string? PayMasterPaymentUrlFormat { get; set; }
     [JsonProperty]
-    public string? PayMasterLogin { get; set; }
+    public string? PayMasterToken { get; set; }
     [JsonProperty]
-    public string? PayMasterPassword { get; set; }
+    public string? PayMasterMerchantIdDigiseller { get; set; }
     [JsonProperty]
-    public string? PayMasterSiteAliasDigiseller { get; set; }
-    [JsonProperty]
-    public string? PayMasterSiteAliasDonations { get; set; }
+    public string? PayMasterMerchantIdDonations { get; set; }
     [JsonProperty]
     public List<string?>? PayMasterPurposesFormats { get; set; }
     [JsonProperty]
@@ -191,11 +189,11 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
         long taxPayerId = TaxPayerId.GetValue(nameof(TaxPayerId));
         decimal taxFeePercent = TaxFeePercent.GetValue(nameof(TaxFeePercent));
         string payMasterPaymentUrlFormat = PayMasterPaymentUrlFormat.GetValue(nameof(PayMasterPaymentUrlFormat));
-        string payMasterLogin = PayMasterLogin.GetValue(nameof(PayMasterLogin));
-        string payMasterPassword = PayMasterPassword.GetValue(nameof(PayMasterPassword));
-        string payMasterSiteAliasDigiseller =
-            PayMasterSiteAliasDigiseller.GetValue(nameof(PayMasterSiteAliasDigiseller));
-        string payMasterSiteAliasDonations = PayMasterSiteAliasDonations.GetValue(nameof(PayMasterSiteAliasDonations));
+        string payMasterToken = PayMasterToken.GetValue(nameof(PayMasterToken));
+        string payMasterMerchantIdDigiseller =
+            PayMasterMerchantIdDigiseller.GetValue(nameof(PayMasterMerchantIdDigiseller));
+        string payMasterMerchantIdDonations =
+            PayMasterMerchantIdDonations.GetValue(nameof(PayMasterMerchantIdDonations));
         List<string> payMasterPurposesFormats =
             PayMasterPurposesFormats.GetValue(nameof(PayMasterPurposesFormats)).RemoveNulls().ToList();
 
@@ -233,14 +231,14 @@ public sealed class ConfigJson : IConvertibleTo<Config.Config>
             googleDonationsCustomRange, googleDonationsCustomRangeToClear, googleDonationSumsRange,
             digisellerProductUrlFormat, digisellerSellUrlFormat, digisellerId, digisellerApiGuid, digisellerLogin,
             digisellerPassword, digisellerFeePercent, taxPayerId, taxFeePercent, payMasterPaymentUrlFormat,
-            payMasterLogin, payMasterPassword, payMasterSiteAliasDigiseller, payMasterSiteAliasDonations,
-            payMasterPurposesFormats, links, exercisesLinks, eventsChannelId, discussGroupId, discussGroupLogin,
+            payMasterToken, payMasterMerchantIdDigiseller, payMasterMerchantIdDonations, payMasterPurposesFormats,
+            links, exercisesLinks, eventsChannelId, discussGroupId, discussGroupLogin,
             bookPromo, payMasterFeePercents, shares)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
             ExtraCommands = ExtraCommands is null ? null : string.Join(Environment.NewLine, ExtraCommands),
-            AdminIds = AdminIds?.Select(id => id.GetValue("Admin id")).ToList(),
+            AdminIds = AdminIds is null ? new List<long>() : AdminIds.Select(id => id.GetValue("Admin id")).ToList(),
             SuperAdminId = SuperAdminId,
             Introduction = Introduction is null ? null : string.Join(Environment.NewLine, Introduction),
             Schedule = Schedule is null ? null : string.Join(Environment.NewLine, Schedule)
