@@ -18,7 +18,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 {
     public Bot(Config config) : base(config)
     {
-        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath);
+        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath, JsonData.Convert, Data.Convert);
 
         Calendars = new Dictionary<int, Calendar>();
 
