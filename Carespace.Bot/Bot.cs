@@ -18,7 +18,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 {
     public Bot(Config config) : base(config)
     {
-        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath, JsonData.Convert, Data.Convert);
+        _saveManager = new SaveManager<Data>(Config.SavePath);
 
         Calendars = new Dictionary<int, Calendar>();
 
@@ -134,7 +134,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     private Manager? _eventManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly SaveManager<Data, JsonData> _saveManager;
+    private readonly SaveManager<Data> _saveManager;
 
     private const int MessageToDeleteNotFoundCode = 400;
     private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";

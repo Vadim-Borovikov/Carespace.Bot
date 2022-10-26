@@ -1,30 +1,32 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using AbstractBot;
 using GryphonUtilities;
+using JetBrains.Annotations;
+
+// ReSharper disable NullableWarningSuppressionIsUsed
 
 namespace Carespace.Bot;
 
-public sealed class Config : ConfigGoogleSheets
+[PublicAPI]
+public class Config : ConfigGoogleSheets
 {
-    internal readonly string GoogleRange;
-    internal readonly Uri EventsFormUri;
-    internal readonly DateTime EventsUpdateAt;
-    internal readonly string SavePath;
-    internal readonly long EventsChannelId;
+    [Required]
+    [MinLength(1)]
+    public string GoogleRange { get; init; } = null!;
+
+    [Required]
+    public Uri EventsFormUri { get; init; } = null!;
+
+    [Required]
+    public DateTime EventsUpdateAt { get; init; }
+
+    [Required]
+    [MinLength(1)]
+    public string SavePath { get; init; } = null!;
+
+    [Required]
+    public long EventsChannelId { get; init; }
 
     internal long LogsChatId => SuperAdminId.GetValue(nameof(SuperAdminId));
-
-    public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, TimeSpan sendMessageDelayPrivate, TimeSpan sendMessageDelayGroup,
-        TimeSpan sendMessageDelayGlobal, string googleCredentialJson, string applicationName, string googleSheetId,
-        string googleRange, Uri eventsFormUri, DateTime eventsUpdateAt, string savePath, long eventsChannelId)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelayPrivate,
-            sendMessageDelayGroup, sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
-    {
-        GoogleRange = googleRange;
-        EventsFormUri = eventsFormUri;
-        EventsUpdateAt = eventsUpdateAt;
-        SavePath = savePath;
-        EventsChannelId = eventsChannelId;
-    }
 }

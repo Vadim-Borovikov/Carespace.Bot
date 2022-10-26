@@ -22,7 +22,17 @@ internal static class Utils
         return $"{day}, {date:d MMMM}";
     }
 
-    internal const string CalendarUriFormat = "{0}/calendar/{1}";
+    public static Uri? ToUri(object? o)
+    {
+        if (o is Uri uri)
+        {
+            return uri;
+        }
+        string? uriString = o?.ToString();
+        return string.IsNullOrWhiteSpace(uriString) ? null : new Uri(uriString);
+    }
+
+    public const string CalendarUriFormat = "{0}/calendar/{1}";
 
     private const string TimersLogPath = "timers.txt";
 }
