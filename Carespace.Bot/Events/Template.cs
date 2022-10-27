@@ -11,7 +11,7 @@ internal sealed class Template
 {
     [UsedImplicitly]
     [Required]
-    [SheetField("Id")]
+    [SheetField]
     public int Id;
 
     [UsedImplicitly]
