@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Commands;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
@@ -27,7 +28,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        Commands.Add(new StartCommand(this));
         Commands.Add(new WeekCommand(this));
         Commands.Add(new ConfirmCommand(this));
 

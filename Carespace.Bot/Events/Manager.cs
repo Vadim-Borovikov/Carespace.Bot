@@ -32,7 +32,6 @@ internal sealed class Manager : IDisposable
             Id = _bot.Config.EventsChannelId,
             Type = ChatType.Channel
         };
-        GoogleSheetsManager.Utils.Converters[typeof(Uri)] = Utils.ToUri;
     }
 
     public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat, bool shouldConfirm)
@@ -306,8 +305,8 @@ internal sealed class Manager : IDisposable
 
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
-        SheetData<Template> templates =
-            await DataManager.GetValuesAsync<Template>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+        SheetData<Template> templates = await DataManager<Template>.LoadAsync(_bot.GoogleSheetsProvider,
+            _bot.Config.GoogleRange, additionalConverters: AdditionalConverters);
         return LoadRelevantTemplates(templates.Instances);
     }
 
@@ -525,4 +524,9 @@ internal sealed class Manager : IDisposable
 
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
     private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
+
+    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
+    {
+        { typeof(Uri), Utils.ToUri }
+    };
 }
