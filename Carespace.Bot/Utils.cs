@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Config;
-using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -17,8 +16,7 @@ internal static class Utils
     {
         if (string.IsNullOrWhiteSpace(link.PhotoPath))
         {
-            string name = link.Name.GetValue(nameof(link.Name));
-            string text = $"[{AbstractBot.Utils.EscapeCharacters(name)}]({link.Uri.AbsoluteUri})";
+            string text = $"[{AbstractBot.Utils.EscapeCharacters(link.Name)}]({link.Uri.AbsoluteUri})";
             return bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
         }
 
@@ -47,14 +45,23 @@ internal static class Utils
         return date.AddDays(diff);
     }
 
+    public static Uri? ToUri(this object? o)
+    {
+        if (o is Uri uri)
+        {
+            return uri;
+        }
+        string? uriString = o?.ToString();
+        return string.IsNullOrWhiteSpace(uriString) ? null : new Uri(uriString);
+    }
+
     private static InlineKeyboardMarkup GetReplyMarkup(Link link)
     {
-        string name = link.Name.GetValue(nameof(link.Name));
-        InlineKeyboardButton button = new(name) { Url = link.Uri.AbsoluteUri };
+        InlineKeyboardButton button = new(link.Name) { Url = link.Uri.AbsoluteUri };
         return new InlineKeyboardMarkup(button);
     }
 
-    internal const string CalendarUriFormat = "{0}/calendar/{1}";
+    public const string CalendarUriFormat = "{0}/calendar/{1}";
 
     private const string TimersLogPath = "timers.txt";
 }

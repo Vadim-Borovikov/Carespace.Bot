@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot;
+using AbstractBot.Commands;
 using Carespace.Bot.Config;
 using GryphonUtilities;
 using Telegram.Bot.Types;
@@ -9,10 +9,7 @@ namespace Carespace.Bot.Commands;
 
 internal sealed class LinksCommand : CommandBase<Bot, Config.Config>
 {
-    protected override string Name => "links";
-    protected override string Description => "Полезные ссылки";
-
-    public LinksCommand(Bot bot) : base(bot)  { }
+    public LinksCommand(Bot bot) : base(bot, "links", "полезные ссылки")  { }
 
     public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {

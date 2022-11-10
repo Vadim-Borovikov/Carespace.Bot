@@ -4,11 +4,13 @@ using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Commands;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
+using Newtonsoft.Json;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -20,16 +22,39 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 {
     public Bot(Config.Config config) : base(config)
     {
-        _saveManager = new SaveManager<Data, JsonData>(Config.SavePath, JsonData.Convert, Data.Convert);
+        _saveManager = new SaveManager<Data>(Config.SavePath);
 
         Calendars = new Dictionary<int, Calendar>();
 
         _weeklyUpdateTimer = new Events.Timer(TimeManager);
+
+        GoogleCredentialJson = string.IsNullOrWhiteSpace(Config.GoogleCredentialJson)
+            ? JsonConvert.SerializeObject(Config.GoogleCredential)
+            : Config.GoogleCredentialJson;
+
+        if (config.Shares is not null)
+        {
+            Shares = config.Shares;
+        }
+        else if (config.SharesJson is not null)
+        {
+            Dictionary<string, List<Share>>? deserialized =
+                JsonConvert.DeserializeObject<Dictionary<string, List<Share>>>(config.SharesJson);
+            if (deserialized is not null)
+            {
+                Shares = deserialized;
+            }
+        }
+
+        _logsChatId = Config.SuperAdminId.GetValue(nameof(Config.SuperAdminId));
+        PracticeIntroduction = string.Join(Environment.NewLine, Config.PracticeIntroduction);
+        PracticeSchedule = string.Join(Environment.NewLine, Config.PracticeSchedule);
     }
+
+    internal readonly Dictionary<string, List<Share>> Shares = new();
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        Commands.Add(new StartCommand(this));
         Commands.Add(new IntroCommand(this));
         Commands.Add(new ScheduleCommand(this));
         Commands.Add(new ExercisesCommand(this));
@@ -122,7 +147,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     {
         Chat logsChat = new()
         {
-            Id = Config.LogsChatId.GetValue(nameof(Config.LogsChatId)),
+            Id = _logsChatId,
             Type = ChatType.Private
         };
         await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
@@ -144,6 +169,10 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
     public readonly IDictionary<int, Calendar> Calendars;
 
+    internal readonly string GoogleCredentialJson;
+    internal readonly string PracticeIntroduction;
+    internal readonly string PracticeSchedule;
+
     internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
 
     private FinanceManager FinanceManager => _financeManager ??= new FinanceManager(this);
@@ -154,7 +183,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
     private FinanceManager? _financeManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly SaveManager<Data, JsonData> _saveManager;
+    private readonly SaveManager<Data> _saveManager;
+    private readonly long _logsChatId;
 
     private const int MessageToDeleteNotFoundCode = 400;
     private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";

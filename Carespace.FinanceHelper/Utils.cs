@@ -14,7 +14,7 @@ public static class Utils
 {
     #region Google
 
-    internal static Transaction.PayMethod? ToPayMathod(this object? o)
+    public static Transaction.PayMethod? ToPayMathod(this object? o)
     {
         if (o is Transaction.PayMethod p)
         {

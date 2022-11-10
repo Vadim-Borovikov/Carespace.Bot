@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -35,8 +34,8 @@ internal sealed class EmailChecker
 
     private async Task<bool> CheckEmailAsync(MailAddress email)
     {
-        int productId = _bot.Config.ProductId.GetValue(nameof(_bot.Config.ProductId));
-        IEnumerable<MailAddress> mailAddresses = await _financeManager.LoadTransactionEmailsAsync(productId);
+        IEnumerable<MailAddress> mailAddresses =
+            await _financeManager.LoadTransactionEmailsAsync(_bot.Config.ProductId);
         return mailAddresses.Select(m => m.Address)
                             .Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
     }

@@ -1,167 +1,142 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using GoogleSheetsManager;
-using GryphonUtilities;
+using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper;
 
-public sealed class Transaction : ISavable
+public sealed class Transaction
 {
-    IList<string> ISavable.Titles => Titles;
-
     public enum PayMethod
     {
         BankCard,
         Sbp
     }
 
-    public static readonly List<string> Agents = new();
+    public readonly Dictionary<string, decimal> Shares = new();
 
     // Common URL formats
     public static string DigisellerSellUrlFormat = "";
     public static string DigisellerProductUrlFormat = "";
     private const string EmailFormat = "mailto:{0}";
 
-    public static long TaxPayerId;
+    [Required]
+    [SheetField("Дата", "{0:d MMMM yyyy}")]
+    public DateTime Date;
 
-    public readonly DateTime Date;
-    public readonly Dictionary<string, decimal> Shares = new();
-
+    [SheetField("Digiseller")]
     public decimal? DigisellerFee { get; internal set; }
+
+    [SheetField("Paymaster")]
     public decimal? PayMasterFee { get; internal set; }
+
+    [SheetField("Налог")]
     public decimal? Tax { get; internal set; }
 
-    private readonly string? _taxReceiptId;
-    internal int? PayMasterPaymentId;
+    [UsedImplicitly]
+    [SheetField("Чек")]
+    public string? TaxReceiptIdLink
+    {
+        get
+        {
+            Uri? taxReceiptUri = string.IsNullOrWhiteSpace(_taxReceiptId)
+                ? null
+                : SelfWork.DataManager.GetReceiptUri(TaxPayerId, _taxReceiptId);
+            return taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, _taxReceiptId);
+        }
+        set => _taxReceiptId = value;
+    }
 
-    private readonly string? _name;
-    internal readonly decimal Amount;
-    internal readonly decimal? Price;
-    internal readonly string? PromoCode;
-    internal readonly int? DigisellerSellId;
-    public readonly int? DigisellerProductId;
-    public readonly MailAddress? Email;
-    internal readonly PayMethod? PayMethodInfo;
+    [UsedImplicitly]
+    [SheetField("Поступление")]
+    public string? PayMasterPaymentIdLink
+    {
+        get => Utils.GetPayMasterHyperlink(PayMasterPaymentId);
+        set => PayMasterPaymentId = value.ToInt();
+    }
+
+    [UsedImplicitly]
+    [SheetField("Комментарий")]
+    public string? Name;
+
+    [UsedImplicitly]
+    [Required]
+    [SheetField("Сумма")]
+    public decimal Amount;
+
+    [UsedImplicitly]
+    [SheetField("Цена")]
+    public decimal? Price;
+
+    [UsedImplicitly]
+    [SheetField("Промокод")]
+    public string? PromoCode;
+
+    [UsedImplicitly]
+    [SheetField("Покупка")]
+    public string? DigisellerSellIdLink
+    {
+        get => Utils.GetHyperlink(DigisellerSellUrlFormat, DigisellerSellId);
+        set => DigisellerSellId = value.ToInt();
+    }
+
+    [UsedImplicitly]
+    [SheetField("Товар")]
+    public string? DigisellerProductIdLink
+    {
+        get => Utils.GetHyperlink(DigisellerProductUrlFormat, DigisellerProductId);
+        set => DigisellerProductId = value.ToInt();
+    }
+
+    [UsedImplicitly]
+    [SheetField("Email")]
+    public string? EmailLink
+    {
+        get => Utils.GetHyperlink(EmailFormat, Email?.Address);
+        set => Email = value.ToEmail();
+    }
+
+    [UsedImplicitly]
+    [SheetField("Способ", "{0}")]
+    public PayMethod? PayMethodInfo;
+
+    public static long TaxPayerId;
+
+    public int? DigisellerProductId;
+
+    public MailAddress? Email;
 
     public bool NeedPaynemt => DigisellerSellId.HasValue && PayMasterPaymentId is null;
 
-    internal Transaction(DateTime date, string? name, decimal price, string? promoCode, int? digisellerSellId,
-        int? digisellerProductId, MailAddress? email, PayMethod? payMethod)
-        : this(date, name, price, price, promoCode, digisellerSellId, digisellerProductId, payMethod, email)
+    internal int? PayMasterPaymentId;
+
+    internal int? DigisellerSellId;
+
+    public Transaction() { }
+
+    public static void Save(Transaction t, IDictionary<string, object?> valueSet)
     {
+        foreach (string agent in t.Shares.Keys)
+        {
+            valueSet[agent] = t.Shares[agent];
+        }
     }
 
-    private Transaction(DateTime date, string? name, decimal amount, decimal? price, string? promoCode,
-        int? digisellerSellId, int? digisellerProductId, PayMethod? payMethod, MailAddress? email = null,
-        string? taxReceiptId = null, int? payMasterPaymentId = null)
+    public Transaction(DateTime date, string? name, decimal price, string? promoCode, int? digisellerSellId,
+        int? digisellerProductId, MailAddress? email, PayMethod? payMethod)
     {
         Date = date;
-        _name = name;
-        Amount = amount;
+        Name = name;
+        Amount = price;
         Price = price;
         PromoCode = promoCode;
         DigisellerSellId = digisellerSellId;
         DigisellerProductId = digisellerProductId;
         PayMethodInfo = payMethod;
         Email = email;
-        _taxReceiptId = taxReceiptId;
-        PayMasterPaymentId = payMasterPaymentId;
     }
 
-    public static Transaction Load(IDictionary<string, object?> valueSet)
-    {
-        string? name = valueSet[NameTitle]?.ToString();
-
-        DateTime date = valueSet[DateTitle].ToDateTime().GetValue($"Empty date in \"{name}\"");
-
-        decimal amount = valueSet[AmountTitle].ToDecimal().GetValue($"Empty amount in \"{name}\"");
-
-        decimal? price = valueSet[PriceTitle].ToDecimal();
-
-        string? promoCode = valueSet[PromoCodeTitle]?.ToString();
-
-        int? digisellerSellId =
-            valueSet.ContainsKey(DigisellerSellIdTitle) ? valueSet[DigisellerSellIdTitle].ToInt() : null;
-
-        int? digisellerProductId = valueSet[DigisellerProductIdTitle].ToInt();
-
-        PayMethod? payMethod =
-            valueSet.ContainsKey(PayMethodInfoTitle) ? valueSet[PayMethodInfoTitle].ToPayMathod() : null;
-
-        MailAddress? email = valueSet.ContainsKey(EmailTitle) ? valueSet[EmailTitle].ToEmail() : null;
-
-        string? taxReceiptId =
-            valueSet.ContainsKey(TaxReceiptIdTitle) ? valueSet[TaxReceiptIdTitle]?.ToString() : null;
-
-        int? payMasterPaymentId =
-            valueSet.ContainsKey(PayMasterPaymentIdTitle) ? valueSet[PayMasterPaymentIdTitle].ToInt() : null;
-
-        return new Transaction(date, name, amount, price, promoCode, digisellerSellId, digisellerProductId, payMethod,
-            email, taxReceiptId, payMasterPaymentId);
-    }
-
-    public IDictionary<string, object?> Convert()
-    {
-        Uri? taxReceiptUri = string.IsNullOrWhiteSpace(_taxReceiptId)
-            ? null
-            : SelfWork.DataManager.GetReceiptUri(TaxPayerId, _taxReceiptId);
-        string? taxHyperLink = taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, _taxReceiptId);
-        Dictionary<string, object?> result = new()
-        {
-            { NameTitle, _name },
-            { DateTitle, $"{Date:d MMMM yyyy}" },
-            { AmountTitle, Amount },
-            { PriceTitle, Price },
-            { PromoCodeTitle, PromoCode },
-            { DigisellerProductIdTitle, Utils.GetHyperlink(DigisellerProductUrlFormat, DigisellerProductId) },
-            { EmailTitle, Utils.GetHyperlink(EmailFormat, Email?.Address) },
-            { PayMethodInfoTitle, PayMethodInfo.ToString() },
-            { DigisellerSellIdTitle, Utils.GetHyperlink(DigisellerSellUrlFormat, DigisellerSellId) },
-            { PayMasterPaymentIdTitle, Utils.GetPayMasterHyperlink(PayMasterPaymentId) },
-            { TaxReceiptIdTitle, taxHyperLink },
-            { DigisellerFeeTitle, DigisellerFee },
-            { PayMasterFeeTitle, PayMasterFee },
-            { TaxTitle, Tax }
-        };
-        foreach (string agent in Agents)
-        {
-            result[agent] = Shares.ContainsKey(agent) ? Shares[agent] : null;
-        }
-
-        return result;
-    }
-
-    public static readonly List<string> Titles = new()
-    {
-        NameTitle,
-        DateTitle,
-        AmountTitle,
-        PriceTitle,
-        PromoCodeTitle,
-        DigisellerProductIdTitle,
-        EmailTitle,
-        PayMethodInfoTitle,
-        DigisellerSellIdTitle,
-        PayMasterPaymentIdTitle,
-        TaxReceiptIdTitle,
-        DigisellerFeeTitle,
-        PayMasterFeeTitle,
-        TaxTitle
-    };
-
-    private const string NameTitle = "Комментарий";
-    private const string DateTitle = "Дата";
-    private const string AmountTitle = "Сумма";
-    private const string PriceTitle = "Цена";
-    private const string PromoCodeTitle = "Промокод";
-    private const string DigisellerProductIdTitle = "Товар";
-    private const string EmailTitle = "Email";
-    private const string PayMethodInfoTitle = "Способ";
-    private const string DigisellerSellIdTitle = "Покупка";
-    private const string PayMasterPaymentIdTitle = "Поступление";
-    private const string TaxReceiptIdTitle = "Чек";
-    private const string DigisellerFeeTitle = "Digiseller";
-    private const string PayMasterFeeTitle = "Paymaster";
-    private const string TaxTitle = "Налог";
+    private string? _taxReceiptId;
 }

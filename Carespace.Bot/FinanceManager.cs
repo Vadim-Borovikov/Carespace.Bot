@@ -19,24 +19,12 @@ internal sealed class FinanceManager
     {
         _bot = bot;
 
-        FinanceHelper.Utils.PayMasterPaymentUrlFormat =
-            _bot.Config.PayMasterPaymentUrlFormat.GetValue(nameof(_bot.Config.PayMasterPaymentUrlFormat));
+        FinanceHelper.Utils.PayMasterPaymentUrlFormat = _bot.Config.PayMasterPaymentUrlFormat;
 
-        Transaction.DigisellerSellUrlFormat =
-            _bot.Config.DigisellerSellUrlFormat.GetValue(nameof(_bot.Config.DigisellerSellUrlFormat));
-        Transaction.DigisellerProductUrlFormat =
-            _bot.Config.DigisellerProductUrlFormat.GetValue(nameof(_bot.Config.DigisellerProductUrlFormat));
+        Transaction.DigisellerSellUrlFormat = _bot.Config.DigisellerSellUrlFormat;
+        Transaction.DigisellerProductUrlFormat = _bot.Config.DigisellerProductUrlFormat;
 
-        Transaction.TaxPayerId = _bot.Config.TaxPayerId.GetValue(nameof(_bot.Config.TaxPayerId));
-
-        Transaction.Agents.Clear();
-        Transaction.Agents.AddRange(_bot.Config.Shares.Values
-                                        .SelectMany(s => s)
-                                        .Select(s => s.Agent)
-                                        .Distinct()
-                                        .OrderBy(a => a));
-
-        Transaction.Titles.AddRange(Transaction.Agents);
+        Transaction.TaxPayerId = _bot.Config.TaxPayerId;
     }
 
     public async Task UpdateFinances(Chat chat)
@@ -56,8 +44,8 @@ internal sealed class FinanceManager
 
     public async Task<IEnumerable<MailAddress>> LoadTransactionEmailsAsync(int productId)
     {
-        string sheetId = _bot.Config.GoogleSheetIdTransactions.GetValue(nameof(_bot.Config.GoogleSheetIdTransactions));
-        using (SheetsProvider provider = new(_bot.Config.GoogleCredentialJson, ApplicationName, sheetId))
+        using (SheetsProvider provider =
+               new(_bot.GoogleCredentialJson, ApplicationName, _bot.Config.GoogleSheetIdTransactions))
         {
             IEnumerable<MailAddress> emails = await LoadGoogleTransactionsAsync(provider, null, productId);
             return emails;
@@ -66,8 +54,8 @@ internal sealed class FinanceManager
 
     private async Task UpdatePurchasesAsync(Chat chat)
     {
-        string sheetId = _bot.Config.GoogleSheetIdTransactions.GetValue(nameof(_bot.Config.GoogleSheetIdTransactions));
-        using (SheetsProvider provider = new(_bot.Config.GoogleCredentialJson, ApplicationName, sheetId))
+        using (SheetsProvider provider =
+               new(_bot.GoogleCredentialJson, ApplicationName, _bot.Config.GoogleSheetIdTransactions))
         {
             await LoadGoogleTransactionsAsync(provider, chat);
         }
@@ -75,8 +63,8 @@ internal sealed class FinanceManager
 
     private async Task UpdateDonationsAsync(Chat chat)
     {
-        string sheetId = _bot.Config.GoogleSheetIdDonations.GetValue(nameof(_bot.Config.GoogleSheetIdDonations));
-        using (SheetsProvider provider = new(_bot.Config.GoogleCredentialJson, ApplicationName, sheetId))
+        using (SheetsProvider provider =
+               new(_bot.GoogleCredentialJson, ApplicationName, _bot.Config.GoogleSheetIdDonations))
         {
             await UpdateDonationsAsync(chat, provider);
         }
@@ -91,16 +79,13 @@ internal sealed class FinanceManager
             ? null
             : await _bot.SendTextMessageAsync(chat, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
 
-        string finalRange =
-            _bot.Config.GoogleTransactionsFinalRange.GetValue(nameof(_bot.Config.GoogleTransactionsFinalRange));
-        IList<Transaction> oldTransactions = await DataManager.GetValuesAsync(provider, Transaction.Load, finalRange);
-        transactions.AddRange(oldTransactions);
+        SheetData<Transaction> oldTransactions = await DataManager<Transaction>.LoadAsync(provider,
+            _bot.Config.GoogleTransactionsFinalRange, additionalConverters: AdditionalConverters);
+        transactions.AddRange(oldTransactions.Instances);
 
-        string customRange =
-            _bot.Config.GoogleTransactionsCustomRange.GetValue(nameof(_bot.Config.GoogleTransactionsCustomRange));
-        IList<Transaction> newCustomTransactions =
-            await DataManager.GetValuesAsync(provider, Transaction.Load, customRange);
-        transactions.AddRange(newCustomTransactions);
+        SheetData<Transaction> newCustomTransactions = await DataManager<Transaction>.LoadAsync(provider,
+            _bot.Config.GoogleTransactionsCustomRange, additionalConverters: AdditionalConverters);
+        transactions.AddRange(newCustomTransactions.Instances);
 
         if (statusMessage is not null)
         {
@@ -114,16 +99,11 @@ internal sealed class FinanceManager
         DateTime dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
 
-        int digisellerId = _bot.Config.DigisellerId.GetValue(nameof(_bot.Config.DigisellerId));
+        List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
 
-        string digisellerLogin = _bot.Config.DigisellerLogin.GetValue(nameof(_bot.Config.DigisellerLogin));
-        string digisellerPassword = _bot.Config.DigisellerPassword.GetValue(nameof(_bot.Config.DigisellerPassword));
-        string guid = _bot.Config.DigisellerApiGuid.GetValue(nameof(_bot.Config.DigisellerApiGuid));
-
-        List<int> productIds = _bot.Config.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
-
-        List<Transaction> newSells = await FinanceHelper.Utils.GetNewDigisellerSellsAsync(digisellerLogin,
-            digisellerPassword, digisellerId, productIds, dateStart, dateEnd, guid, oldTransactions);
+        List<Transaction> newSells = await FinanceHelper.Utils.GetNewDigisellerSellsAsync(_bot.Config.DigisellerLogin,
+            _bot.Config.DigisellerPassword, _bot.Config.DigisellerId, productIds, dateStart, dateEnd,
+            _bot.Config.DigisellerApiGuid, oldTransactions.Instances);
 
         transactions.AddRange(newSells);
 
@@ -136,12 +116,8 @@ internal sealed class FinanceManager
             ? null
             : await _bot.SendTextMessageAsync(chat, "_Считаю доли…_", ParseMode.MarkdownV2);
 
-        decimal taxFeePercent = _bot.Config.TaxFeePercent.GetValue(nameof(_bot.Config.TaxFeePercent));
-        decimal digisellerFeePercent =
-            _bot.Config.DigisellerFeePercent.GetValue(nameof(_bot.Config.DigisellerFeePercent));
-
-        FinanceHelper.Utils.CalculateShares(transactions, taxFeePercent, digisellerFeePercent,
-            _bot.Config.PayMasterFeePercents, _bot.Config.Shares);
+        FinanceHelper.Utils.CalculateShares(transactions, _bot.Config.TaxFeePercent, _bot.Config.DigisellerFeePercent,
+            _bot.Config.PayMasterFeePercents, _bot.Shares);
 
         if (statusMessage is not null)
         {
@@ -155,19 +131,15 @@ internal sealed class FinanceManager
                 ? null
                 : await _bot.SendTextMessageAsync(chat, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
-            string merchantId =
-                _bot.Config.PayMasterMerchantIdDigiseller.GetValue(nameof(_bot.Config.PayMasterMerchantIdDigiseller));
             dateStart = needPayment.Select(o => o.Date).Min();
             dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
-            string payMasterToken = _bot.Config.PayMasterToken.GetValue(nameof(_bot.Config.PayMasterToken));
             List<PaymentsResult.Item> payments =
-                await FinanceHelper.Utils.GetPaymentsAsync(merchantId, dateStart, dateEnd, payMasterToken);
+                await FinanceHelper.Utils.GetPaymentsAsync(_bot.Config.PayMasterMerchantIdDigiseller, dateStart,
+                    dateEnd, _bot.Config.PayMasterToken);
 
-            List<string> formats =
-                _bot.Config.PayMasterPurposesFormats.GetValue(nameof(_bot.Config.PayMasterPurposesFormats));
             foreach (Transaction transaction in needPayment)
             {
-                FinanceHelper.Utils.FindPayment(transaction, payments, formats);
+                FinanceHelper.Utils.FindPayment(transaction, payments, _bot.Config.PayMasterPurposesFormats);
             }
 
             if (statusMessage is not null)
@@ -180,12 +152,11 @@ internal sealed class FinanceManager
             ? null
             : await _bot.SendTextMessageAsync(chat, "_Заношу покупки в таблицу…_", ParseMode.MarkdownV2);
 
+        SheetData<Transaction> data = new(transactions.OrderBy(t => t.Date).ToList(), oldTransactions.Titles);
+        await DataManager<Transaction>.SaveAsync(provider, _bot.Config.GoogleTransactionsFinalRange, data,
+            AdditionalSavers);
 
-        await DataManager.UpdateValuesAsync(provider, finalRange, transactions.OrderBy(t => t.Date).ToList());
-
-        string rangeToClear =
-            _bot.Config.GoogleTransactionsCustomRangeToClear.GetValue(nameof(_bot.Config.GoogleTransactionsCustomRangeToClear));
-        await provider.ClearValuesAsync(rangeToClear);
+        await provider.ClearValuesAsync(_bot.Config.GoogleTransactionsCustomRangeToClear);
 
         if (statusMessage is not null)
         {
@@ -204,14 +175,13 @@ internal sealed class FinanceManager
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Загружаю донаты из таблицы…_", ParseMode.MarkdownV2);
 
-        string range = _bot.Config.GoogleDonationsRange.GetValue(nameof(_bot.Config.GoogleDonationsRange));
-        IList<Donation> oldDonations = await DataManager.GetValuesAsync(provider, Donation.Load, range);
-        donations.AddRange(oldDonations);
+        SheetData<Donation> oldDonations =
+            await DataManager<Donation>.LoadAsync(provider, _bot.Config.GoogleDonationsRange);
+        donations.AddRange(oldDonations.Instances);
 
-        string customRange =
-            _bot.Config.GoogleDonationsCustomRange.GetValue(nameof(_bot.Config.GoogleDonationsCustomRange));
-        IList<Donation> newCustomDonations = await DataManager.GetValuesAsync(provider, Donation.Load, customRange);
-        donations.AddRange(newCustomDonations);
+        SheetData<Donation> newCustomDonations =
+            await DataManager<Donation>.LoadAsync(provider, _bot.Config.GoogleDonationsCustomRange);
+        donations.AddRange(newCustomDonations.Instances);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
 
@@ -220,11 +190,9 @@ internal sealed class FinanceManager
         DateTime dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
         DateTime dateEnd = DateTime.Today.AddDays(1);
 
-        string merchantId =
-            _bot.Config.PayMasterMerchantIdDonations.GetValue(nameof(_bot.Config.PayMasterMerchantIdDonations));
-        string payMasterToken = _bot.Config.PayMasterToken.GetValue(nameof(_bot.Config.PayMasterToken));
-        List<Donation> newDonations = await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(merchantId, dateStart,
-            dateEnd, payMasterToken, oldDonations);
+        List<Donation> newDonations =
+            await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations, dateStart,
+            dateEnd, _bot.Config.PayMasterToken, oldDonations.Instances);
 
         donations.AddRange(newDonations);
 
@@ -236,12 +204,9 @@ internal sealed class FinanceManager
 
         statusMessage = await _bot.SendTextMessageAsync(chat, "_Заношу донаты в таблицу…_", ParseMode.MarkdownV2);
 
-        string donationsRange = _bot.Config.GoogleDonationsRange.GetValue(nameof(_bot.Config.GoogleDonationsRange));
-        string clearRange =
-            _bot.Config.GoogleDonationsCustomRangeToClear.GetValue(nameof(_bot.Config.GoogleDonationsCustomRangeToClear));
-        await DataManager.UpdateValuesAsync(provider, donationsRange,
-            donations.OrderByDescending(d => d.Date).ToList());
-        await provider.ClearValuesAsync(clearRange);
+        SheetData<Donation> data = new(donations.OrderByDescending(d => d.Date).ToList(), oldDonations.Titles);
+        await DataManager<Donation>.SaveAsync(provider, _bot.Config.GoogleDonationsRange, data);
+        await provider.ClearValuesAsync(_bot.Config.GoogleDonationsCustomRangeToClear);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
 
@@ -251,12 +216,24 @@ internal sealed class FinanceManager
         List<DonationsSum> sums = donations.GroupBy(d => d.Week)
                                            .Select(g => new DonationsSum(firstThursday, g.Key, g.Sum(d => d.Total)))
                                            .ToList();
-
-        string sumsRange = _bot.Config.GoogleDonationSumsRange.GetValue(nameof(_bot.Config.GoogleDonationSumsRange));
-        await DataManager.UpdateValuesAsync(provider, sumsRange, sums.OrderByDescending(s => s.Date).ToList());
+        List<string> titles =
+            await GoogleSheetsManager.Utils.LoadTitlesAsync(provider, _bot.Config.GoogleDonationSumsRange);
+        SheetData<DonationsSum> sumsData = new(sums.OrderByDescending(s => s.Date).ToList(), titles);
+        await DataManager<DonationsSum>.SaveAsync(provider, _bot.Config.GoogleDonationSumsRange, sumsData);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
+
+    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
+    {
+        { typeof(Transaction.PayMethod), o => o.ToPayMathod() },
+        { typeof(Transaction.PayMethod?), o => o.ToPayMathod() }
+    };
+
+    private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers = new()
+    {
+        Transaction.Save
+    };
 
     private const string ApplicationName = "Carespace.FinanceHelper";
 

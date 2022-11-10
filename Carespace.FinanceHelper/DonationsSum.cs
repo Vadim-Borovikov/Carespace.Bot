@@ -1,43 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
 using GoogleSheetsManager;
+using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper;
 
-public sealed class DonationsSum : ISavable
+public sealed class DonationsSum
 {
-    IList<string> ISavable.Titles => Titles;
+    [SheetField("Дата", "{0:d MMMM yyyy}")]
+    public DateTime Date;
 
-    public readonly DateTime Date;
+    [UsedImplicitly]
+    [SheetField("Сумма")]
+    public decimal Amount;
 
-    private readonly decimal _amount;
+    public DonationsSum() { }
 
     public DonationsSum(DateTime firstDate, ushort weeksPast, decimal amount)
-        : this(firstDate.AddDays(weeksPast * 7), amount)
     {
+        Date = firstDate.AddDays(weeksPast * 7);
+        Amount = amount;
     }
-
-    private DonationsSum(DateTime date, decimal amount)
-    {
-        Date = date;
-        _amount = amount;
-    }
-
-    public IDictionary<string, object?> Convert()
-    {
-        return new Dictionary<string, object?>
-        {
-            { DateTitle, $"{Date:d MMMM yyyy}" },
-            { AmountTitle, _amount }
-        };
-    }
-
-    private static readonly List<string> Titles = new()
-    {
-        DateTitle,
-        AmountTitle
-    };
-
-    private const string DateTitle = "Дата";
-    private const string AmountTitle = "Сумма";
 }

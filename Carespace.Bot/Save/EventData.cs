@@ -1,18 +1,21 @@
-﻿using GoogleSheetsManager;
+﻿using Carespace.Bot.Events;
+using JetBrains.Annotations;
 
 namespace Carespace.Bot.Save;
 
-internal sealed class EventData : IConvertibleTo<JsonEventData>
+public sealed class EventData
 {
-    public readonly int MessageId;
+    [UsedImplicitly]
+    public int MessageId { get; set; }
 
-    public int? NotificationId;
+    [UsedImplicitly]
+    public int? NotificationId { get; set; }
 
-    public EventData(int messageId, int? notificationId)
+    public EventData() { }
+
+    internal EventData(Event e)
     {
-        MessageId = messageId;
-        NotificationId = notificationId;
+        MessageId = e.MessageId;
+        NotificationId = e.NotificationId;
     }
-
-    public JsonEventData Convert() => new(MessageId, NotificationId);
 }

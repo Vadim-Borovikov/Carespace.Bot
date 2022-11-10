@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot;
+using AbstractBot.Commands;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -8,7 +8,10 @@ namespace Carespace.Bot.Commands;
 
 internal abstract class TextCommand : CommandBase<Bot, Config.Config>
 {
-    protected TextCommand(Bot bot, string? text) : base(bot) => _text = text.GetValue(nameof(text));
+    protected TextCommand(Bot bot, string command, string description, string text) : base(bot, command, description)
+    {
+        _text = text;
+    }
 
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {

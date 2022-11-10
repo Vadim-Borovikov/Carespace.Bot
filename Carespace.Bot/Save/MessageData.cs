@@ -1,10 +1,12 @@
 ﻿using System;
-using GoogleSheetsManager;
+using JetBrains.Annotations;
 using Telegram.Bot.Types;
+
+// ReSharper disable NullableWarningSuppressionIsUsed
 
 namespace Carespace.Bot.Save;
 
-internal sealed class MessageData : IConvertibleTo<JsonMessageData>
+public sealed class MessageData
 {
     public enum KeyboardType
     {
@@ -14,22 +16,15 @@ internal sealed class MessageData : IConvertibleTo<JsonMessageData>
         Full
     }
 
-    public readonly DateTime Date;
+    [UsedImplicitly]
+    public DateTime Date { get; set; }
 
-    public string Text;
-    public KeyboardType Keyboard;
+    [UsedImplicitly]
+    public string Text { get; set; } = null!;
+    [UsedImplicitly]
+    public KeyboardType Keyboard { get; set; }
 
-    public MessageData(Message message, string text, KeyboardType keyboard) :
-        this(message.Date.ToLocalTime(), text, keyboard)
-    {
-    }
+    public MessageData() { }
 
-    public MessageData(DateTime date, string text, KeyboardType keyboard)
-    {
-        Date = date;
-        Text = text;
-        Keyboard = keyboard;
-    }
-
-    public JsonMessageData Convert() => new(Text, Keyboard, Date);
+    internal MessageData(Message message) => Date = message.Date.ToLocalTime();
 }

@@ -17,7 +17,7 @@ namespace Carespace.Bot.Events;
 internal sealed class Manager : IDisposable
 {
     private readonly Bot _bot;
-    private readonly SaveManager<Data, JsonData> _saveManager;
+    private readonly SaveManager<Data> _saveManager;
     private readonly InlineKeyboardButton _discussButton;
     private readonly InlineKeyboardMarkup _discussKeyboard;
 
@@ -26,7 +26,7 @@ internal sealed class Manager : IDisposable
     private readonly Chat _eventsChat;
     private readonly Chat _discussChat;
 
-    public Manager(Bot bot, SaveManager<Data, JsonData> saveManager)
+    public Manager(Bot bot, SaveManager<Data> saveManager)
     {
         _bot = bot;
 
@@ -176,8 +176,7 @@ internal sealed class Manager : IDisposable
             _events[template.Id] = new Event(template, messageId, _bot.TimeManager);
         }
 
-        _saveManager.Data.Events =
-            _events.ToDictionary(e => e.Key, e => new EventData(e.Value.MessageId, e.Value.NotificationId));
+        _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => new EventData(e.Value));
     }
 
     private async Task PostOrUpdateScheduleAsync()
@@ -325,15 +324,19 @@ internal sealed class Manager : IDisposable
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
         Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
             null, disableWebPagePreview, disableNotification, null, replyToMessageId, null, keyboardMarkup);
-        _saveManager.Data.Messages[message.MessageId] = new MessageData(message, text, keyboard);
+        _saveManager.Data.Messages[message.MessageId] = new MessageData(message)
+        {
+            Text = text,
+            Keyboard = keyboard
+        };
         return message.MessageId;
     }
 
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
-        IList<Template> templates =
-            await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Template.Load, _bot.Config.GoogleRange);
-        return LoadRelevantTemplates(templates.RemoveNulls());
+        SheetData<Template> templates = await DataManager<Template>.LoadAsync(_bot.GoogleSheetsProvider,
+            _bot.Config.GoogleRange, additionalConverters: AdditionalConverters);
+        return LoadRelevantTemplates(templates.Instances);
     }
 
     private IEnumerable<Template> LoadRelevantTemplates(IEnumerable<Template> templates)
@@ -430,7 +433,11 @@ internal sealed class Manager : IDisposable
             disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
-            _saveManager.Data.Messages[messageId] = new MessageData(message, text, keyboard);
+            _saveManager.Data.Messages[messageId] = new MessageData(message)
+            {
+                Text = text,
+                Keyboard = keyboard
+            };
         }
         else
         {
@@ -537,7 +544,7 @@ internal sealed class Manager : IDisposable
     {
         return new InlineKeyboardButton("📅 В календарь")
         {
-            Url = string.Format(Utils.CalendarUriFormat, _bot.Config.Host, template.Id)
+            Url = string.Format(Utils.CalendarUriFormat, _bot.Host, template.Id)
         };
     }
 
@@ -565,4 +572,9 @@ internal sealed class Manager : IDisposable
 
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
     private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
+
+    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
+    {
+        { typeof(Uri), Utils.ToUri }
+    };
 }

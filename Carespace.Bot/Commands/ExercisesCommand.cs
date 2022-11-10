@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using AbstractBot;
+using AbstractBot.Commands;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -9,10 +9,7 @@ namespace Carespace.Bot.Commands;
 
 internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
 {
-    protected override string Name => "exercises";
-    protected override string Description => "Упражнения";
-
-    public ExercisesCommand(Bot bot) : base(bot) { }
+    public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения") { }
 
     public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
@@ -30,8 +27,7 @@ internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
 
     private string GetMessage(string link)
     {
-        string template = Bot.Config.Template.GetValue(nameof(Bot.Config.Template));
-        return string.Format(template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
+        return string.Format(Bot.Config.Template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
     }
 
     private const string WordJoiner = "\u2060";

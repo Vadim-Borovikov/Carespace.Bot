@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GoogleSheetsManager" Version="15.0.0" />
+    <PackageReference Include="GoogleSheetsManager" Version="18.0.1" />
     <PackageReference Include="SelfWork" Version="5.0.1" />
   </ItemGroup>
 

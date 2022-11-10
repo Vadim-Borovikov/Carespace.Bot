@@ -1,32 +1,38 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using JetBrains.Annotations;
+
+// ReSharper disable NullableWarningSuppressionIsUsed
 
 namespace Carespace.FinanceHelper;
 
+[PublicAPI]
 public sealed class Share
 {
-    public readonly string Agent;
-    private readonly decimal? _valueAfterLimit;
+    [Required]
+    [MinLength(1)]
+    public string Agent { get; init; } = null!;
 
-    public Share(string agent, decimal? valueAfterLimit, string? promo, bool? promoForNet, decimal? limit,
-        decimal value)
-    {
-        Agent = agent;
-        _promo = promo;
-        _promoForNet = promoForNet;
-        _limit = limit;
-        _value = value;
-        _valueAfterLimit = valueAfterLimit;
-    }
+    public string? Promo { get; init; }
+
+    public bool? PromoForNet { get; init; }
+
+    public decimal? Limit { get; init; }
+
+    [Required]
+    public decimal Value { get; init; }
+
+    public decimal? ValueAfterLimit { get; init; }
 
     internal decimal Calculate(decimal amount, decimal? net, decimal total, string? promo)
     {
-        if (!string.IsNullOrWhiteSpace(_promo))
+        if (!string.IsNullOrWhiteSpace(Promo))
         {
-            if (promo != _promo)
+            if (promo != Promo)
             {
                 return 0;
             }
-            if (_promoForNet is null || _promoForNet.Value)
+            if (PromoForNet is null || PromoForNet.Value)
             {
                 if (net is null)
                 {
@@ -36,15 +42,15 @@ public sealed class Share
             }
         }
 
-        decimal value = amount * _value;
+        decimal value = amount * Value;
 
-        if (_limit is null)
+        if (Limit is null)
         {
             return value;
         }
 
-        decimal beforeLimit = Math.Max(0, _limit.Value - total);
-        decimal valueAfterLimit = _valueAfterLimit ?? 0;
+        decimal beforeLimit = Math.Max(0, Limit.Value - total);
+        decimal valueAfterLimit = ValueAfterLimit ?? 0;
         if (beforeLimit == 0)
         {
             return amount * valueAfterLimit;
@@ -59,9 +65,4 @@ public sealed class Share
         decimal afterLimitPart = valueAfterLimit * Math.Max(0, value - beforeLimitPart);
         return beforeLimitPart + afterLimitPart;
     }
-
-    private readonly string? _promo;
-    private readonly bool? _promoForNet;
-    private readonly decimal? _limit;
-    private readonly decimal _value;
 }

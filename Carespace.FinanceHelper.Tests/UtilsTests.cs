@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using GryphonUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,17 +17,17 @@ public class UtilsTests
                                             // Create appsettings.json for private settings
                                             .AddJsonFile("appsettings.json")
                                             .Build()
-                                            .Get<ConfigJson>();
+                                            .Get<Config>();
 
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);
         Assert.IsNotNull(_config.PayMasterFeePercents);
-        Assert.IsNotNull(_config.ShareJsons);
+        Assert.IsNotNull(_config.Shares);
 
         Shares.Clear();
-        foreach (string p in _config.ShareJsons.Keys)
+        foreach (string p in _config.Shares.Keys)
         {
-            Shares[p] = _config.ShareJsons[p].GetValue().RemoveNulls().Select(s => s.Convert()).ToList();
+            Shares[p] = _config.Shares[p].ToList();
         }
     }
 
@@ -93,18 +92,8 @@ public class UtilsTests
 
     private static Transaction CreateTransaction(decimal price, int digisellerProductId, string? promoCode = null)
     {
-        Dictionary<string, object?> valueSet = new()
-        {
-            { "Комментарий", null },
-            { "Дата", Date },
-            { "Сумма", price },
-            { "Цена", price },
-            { "Товар", digisellerProductId },
-            { "Промокод", promoCode },
-            { "Покупка", 135120565 },
-            { "Способ", Transaction.PayMethod.BankCard }
-        };
-        return Transaction.Load(valueSet);
+        return new Transaction(Date, null, price, promoCode, 135120565, digisellerProductId, null,
+            Transaction.PayMethod.BankCard);
     }
 
     private static void TestCalculateShares(Transaction transaction, decimal shareAgent3,
@@ -113,7 +102,7 @@ public class UtilsTests
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);
         Assert.IsNotNull(_config.PayMasterFeePercents);
-        Utils.CalculateShares(new[] { transaction }, _config.TaxFeePercent.Value, _config.DigisellerFeePercent.Value,
+        Utils.CalculateShares(new[] { transaction }, _config.TaxFeePercent, _config.DigisellerFeePercent,
             _config.PayMasterFeePercents, Shares);
         Assert.AreEqual(digisellerFee, transaction.DigisellerFee);
         Assert.AreEqual(payMasterFee, transaction.PayMasterFee);
@@ -131,6 +120,6 @@ public class UtilsTests
 
     // ReSharper disable once NullableWarningSuppressionIsUsed
     //   _config initializes in ClassInitialize
-    private static ConfigJson _config = null!;
+    private static Config _config = null!;
     private static readonly Dictionary<string, List<Share>> Shares = new();
 }
