@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GoogleSheetsManager" Version="14.0.1" />
+    <PackageReference Include="SelfWork" Version="5.0.1" />
+  </ItemGroup>
+
+</Project>
