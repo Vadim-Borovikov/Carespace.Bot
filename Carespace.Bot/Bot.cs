@@ -44,7 +44,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     }
 
     protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
-        CommandBase<Bot, Config>? command = null, string? payload = null)
+        CommandBase? command = null, string? payload = null)
     {
         if (command is null)
         {
@@ -92,8 +92,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         }
     }
 
-    protected override Task UpdateAsync(Message message, bool fromChat,
-        CommandBase<Bot, Config>? command = null, string? payload = null)
+    protected override Task UpdateAsync(Message message, bool fromChat, CommandBase? command = null,
+        string? payload = null)
     {
         if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
         {
@@ -117,7 +117,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     private void Schedule(Func<Task> func, string funcName)
     {
-        DateTime nextUpdateAt = Utils.GetMonday(TimeManager).AddDays(7) + Config.EventsUpdateAt.TimeOfDay;
+        DateTimeOffset nextUpdateAt =
+            DateTimeOffsetHelper.FromOnly(Utils.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
         _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
     }
 

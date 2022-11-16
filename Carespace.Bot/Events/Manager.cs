@@ -137,7 +137,7 @@ internal sealed class Manager : IDisposable
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                 await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                     keyboard: MessageData.KeyboardType.Ics);
-                _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
+                _bot.Calendars[savedTemplateId] = new Calendar(template);
 
                 _events[savedTemplateId] = new Event(template, data.MessageId, _bot.TimeManager, data.NotificationId);
             }
@@ -152,7 +152,7 @@ internal sealed class Manager : IDisposable
 
         foreach (Template template in _toPost)
         {
-            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
+            _bot.Calendars[template.Id] = new Calendar(template);
             int messageId = await PostEventAsync(template);
             _events[template.Id] = new Event(template, messageId, _bot.TimeManager);
         }
@@ -196,9 +196,9 @@ internal sealed class Manager : IDisposable
 
     private Task CreateOrUpdateNotificationAsync(Event e)
     {
-        DateTime now = _bot.TimeManager.Now();
+        DateTimeOffset now = _bot.TimeManager.Now();
 
-        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= _weekEnd))
+        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.StartDate >= _weekEnd))
         {
             e.DisposeTimer();
             return DeleteNotificationAsync(e);
@@ -238,7 +238,7 @@ internal sealed class Manager : IDisposable
             nameof(DeleteNotificationAsync));
     }
 
-    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc,
+    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTimeOffset nextAt, Func<Event, Task> nextFunc,
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
@@ -316,13 +316,13 @@ internal sealed class Manager : IDisposable
         {
             if (t.IsWeekly)
             {
-                if (t.Start >= _weekEnd)
+                if (t.StartDate >= _weekEnd)
                 {
                     continue;
                 }
                 t.MoveToWeek(_weekStart);
             }
-            else if (t.Start < _weekStart)
+            else if (t.StartDate < _weekStart)
             {
                 continue;
             }
@@ -335,18 +335,18 @@ internal sealed class Manager : IDisposable
     {
         StringBuilder scheduleBuilder = new();
         scheduleBuilder.AppendLine("🗓 *Расписание* \\(время московское, 🔄 — еженедельные\\)");
-        DateTime date = _weekStart.AddDays(-1);
+        DateOnly date = _weekStart.AddDays(-1);
         foreach (Event e in _events.Values
-                                   .Where(e => e.Template.Active && (e.Template.Start < _weekEnd))
+                                   .Where(e => e.Template.Active && (e.Template.StartDate < _weekEnd))
                                    .OrderBy(e => e.Template.Start))
         {
-            if (e.Template.Start.Date > date)
+            if (e.Template.StartDate > date)
             {
                 if (scheduleBuilder.Length > 0)
                 {
                     scheduleBuilder.AppendLine();
                 }
-                date = e.Template.Start.Date;
+                date = e.Template.StartDate;
                 scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
             }
             string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
@@ -419,7 +419,7 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    private async Task DeleteMessageAsync(int messageId, DateTime? weekStart = null)
+    private async Task DeleteMessageAsync(int messageId, DateOnly? weekStart = null)
     {
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
@@ -511,8 +511,8 @@ internal sealed class Manager : IDisposable
                && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
     }
 
-    private DateTime _weekStart;
-    private DateTime _weekEnd;
+    private DateOnly _weekStart;
+    private DateOnly _weekEnd;
     private bool _waitingForConfirmation;
 
     private readonly Dictionary<int, Template> _templates = new();
@@ -527,6 +527,12 @@ internal sealed class Manager : IDisposable
 
     private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
     {
-        { typeof(Uri), Utils.ToUri }
+        { typeof(Uri), Utils.ToUri },
+        { typeof(DateOnly), o => Utils.ToDateOnly(o) },
+        { typeof(DateOnly?), o => Utils.ToDateOnly(o) },
+        { typeof(TimeOnly), o => Utils.ToTimeOnly(o) },
+        { typeof(TimeOnly?), o => Utils.ToTimeOnly(o) },
+        { typeof(TimeSpan), o => Utils.ToTimeSpan(o) },
+        { typeof(TimeSpan?), o => Utils.ToTimeSpan(o) }
     };
 }

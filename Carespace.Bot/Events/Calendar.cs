@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using AbstractBot;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
@@ -15,12 +14,11 @@ public sealed class Calendar
     public readonly byte[] IcsContent;
     public readonly string GoogleCalendarLink;
 
-    public bool IsOver => DateTime.UtcNow > _endTime;
+    public bool IsOver => DateTimeOffset.UtcNow > _endTime;
 
-    internal Calendar(Template template, TimeManager timeManager)
+    internal Calendar(Template template)
     {
-        _timeManager = timeManager;
-        _endTime = _timeManager.ToUtc(template.End);
+        _endTime = template.End.UtcDateTime;
 
         StringBuilder sb = new();
         sb.AppendLine(template.Description);
@@ -59,8 +57,8 @@ public sealed class Calendar
     {
         CalendarEvent e = new()
         {
-            Start = new CalDateTime(_timeManager.ToUtc(template.Start)),
-            End = new CalDateTime(_endTime),
+            Start = new CalDateTime(template.Start.UtcDateTime),
+            End = new CalDateTime(_endTime.UtcDateTime),
             Summary = template.Name,
             Description = description,
             Url = template.Uri
@@ -72,13 +70,13 @@ public sealed class Calendar
         return e;
     }
 
-    private string AsGoogleLink(Template template, string details, string rule)
+    private static string AsGoogleLink(Template template, string details, string rule)
     {
         Dictionary<string, string> queryString = new()
         {
             ["action"] = "TEMPLATE" ,
             ["text"] = template.Name,
-            ["dates"] = $"{_timeManager.ToUtc(template.Start):yyyyMMddTHHmmssZ}/{_timeManager.ToUtc(template.End):yyyyMMddTHHmmssZ}",
+            ["dates"] = $"{template.Start.UtcDateTime:yyyyMMddTHHmmssZ}/{template.End.UtcDateTime:yyyyMMddTHHmmssZ}",
             ["details"] = details
         };
         if (template.IsWeekly)
@@ -90,6 +88,5 @@ public sealed class Calendar
     }
 
     private const string GoogleUri = "https://www.google.com/calendar/render";
-    private readonly TimeManager _timeManager;
-    private readonly DateTime _endTime;
+    private readonly DateTimeOffset _endTime;
 }

@@ -19,7 +19,7 @@ public class Config : ConfigGoogleSheets
     public Uri EventsFormUri { get; init; } = null!;
 
     [Required]
-    public DateTime EventsUpdateAt { get; init; }
+    public TimeOnly EventsUpdateAt { get; init; }
 
     [Required]
     [MinLength(1)]
