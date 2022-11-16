@@ -1,4 +1,5 @@
 ﻿using System;
+using GryphonUtilities;
 using JetBrains.Annotations;
 using Telegram.Bot.Types;
 
@@ -17,7 +18,7 @@ public sealed class MessageData
     }
 
     [UsedImplicitly]
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 
     [UsedImplicitly]
     public string Text { get; set; } = null!;
@@ -26,5 +27,5 @@ public sealed class MessageData
 
     public MessageData() { }
 
-    internal MessageData(Message message) => Date = message.Date.ToLocalTime();
+    internal MessageData(Message message) => Date = new DateTimeOffset(message.Date.ToLocalTime()).DateOnly();
 }

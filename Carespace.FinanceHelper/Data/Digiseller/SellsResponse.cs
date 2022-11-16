@@ -29,7 +29,7 @@ public sealed class SellsResponse
         public string? ProductName { get; set; }
 
         [JsonProperty]
-        public DateTime? DatePay { get; set; }
+        public DateTimeOffset? DatePay { get; set; }
 
         [JsonProperty]
         public decimal? AmountIn { get; set; }

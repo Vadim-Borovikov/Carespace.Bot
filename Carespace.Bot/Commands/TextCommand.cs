@@ -6,7 +6,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal abstract class TextCommand : CommandBase<Bot, Config.Config>
+internal abstract class TextCommand : CommandBaseCustom<Bot, Config.Config>
 {
     protected TextCommand(Bot bot, string command, string description, string text) : base(bot, command, description)
     {

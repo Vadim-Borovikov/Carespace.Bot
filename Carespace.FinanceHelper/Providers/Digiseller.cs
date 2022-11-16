@@ -36,7 +36,7 @@ internal static class Digiseller
 
     public static Task<TokenResponse> GetTokenAsync(string login, string password, string sellerSecret)
     {
-        long timestamp = DateTime.Now.ToFileTime();
+        long timestamp = DateTimeOffset.Now.ToFileTime();
         string sign = Hash($"{password}{sellerSecret}{timestamp}");
         TokenRequest obj = new()
         {

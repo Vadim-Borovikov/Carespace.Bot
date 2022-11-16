@@ -6,7 +6,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class FeedbackCommand : CommandBase<Bot, Config.Config>
+internal sealed class FeedbackCommand : CommandBaseCustom<Bot, Config.Config>
 {
     public FeedbackCommand(Bot bot) : base(bot, "feedback", "оставить обратную связь") { }
 

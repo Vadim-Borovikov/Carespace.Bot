@@ -46,11 +46,11 @@ public static class Utils
     #region Digiseller
 
     public static async Task<List<Transaction>> GetNewDigisellerSellsAsync(string login, string password, int sellerId,
-        List<int> productIds, DateTime dateStart, DateTime dateFinish, string sellerSecret,
+        List<int> productIds, DateOnly dateStart, DateOnly dateFinish, string sellerSecret,
         IEnumerable<Transaction> oldTransactions)
     {
-        List<SellsResponse.Sell> sells =
-            await GetDigisellerSellsAsync(sellerId, productIds, dateStart, dateFinish, sellerSecret);
+        List<SellsResponse.Sell> sells = await GetDigisellerSellsAsync(sellerId, productIds,
+            DateTimeOffsetHelper.FromOnly(dateStart), DateTimeOffsetHelper.FromOnly(dateFinish), sellerSecret);
 
         IEnumerable<int> oldSellIds = oldTransactions.Select(t => t.DigisellerSellId).RemoveNulls();
 
@@ -69,7 +69,7 @@ public static class Utils
     }
 
     private static async Task<List<SellsResponse.Sell>> GetDigisellerSellsAsync(int sellerId, List<int> productIds,
-        DateTime dateStart, DateTime dateFinish, string sellerSecret)
+        DateTimeOffset dateStart, DateTimeOffset dateFinish, string sellerSecret)
     {
         string start = dateStart.ToString(GoogleDateTimeFormat);
         string end = dateFinish.ToString(GoogleDateTimeFormat);
@@ -91,7 +91,7 @@ public static class Utils
 
     private static async Task<Transaction> CreateTransactionAsync(SellsResponse.Sell sell, string token)
     {
-        DateTime datePay = sell.DatePay.GetValue(nameof(sell.DatePay));
+        DateTimeOffset datePay = sell.DatePay.GetValue(nameof(sell.DatePay));
 
         decimal amountIn = sell.AmountIn.GetValue(nameof(sell.AmountIn));
 
@@ -111,8 +111,8 @@ public static class Utils
                                                                                          sell.PayMethodInfo, null)
         };
 
-        return new Transaction(datePay, sell.ProductName, amountIn, promoCode, sell.InvoiceId, sell.ProductId, email,
-            payMethod);
+        return new Transaction(datePay.DateOnly(), sell.ProductName, amountIn, promoCode, sell.InvoiceId,
+            sell.ProductId, email, payMethod);
     }
 
     private static async Task<string> GetTokenAsync(string login, string password, string sellerSecret)
@@ -136,8 +136,8 @@ public static class Utils
 
     #region PayMaster
 
-    public static async Task<List<Donation>> GetNewPayMasterPaymentsAsync(string merchantId, DateTime start,
-        DateTime end, string token, IEnumerable<Donation> oldPayments)
+    public static async Task<List<Donation>> GetNewPayMasterPaymentsAsync(string merchantId, DateOnly start,
+        DateOnly end, string token, IEnumerable<Donation> oldPayments)
     {
         List<PaymentsResult.Item> allPayments = await GetPaymentsAsync(merchantId, start, end, token);
         List<PaymentsResult.Item> payments = allPayments.Where(p => p.TestMode is null || !p.TestMode.Value).ToList();
@@ -154,8 +154,8 @@ public static class Utils
         return GetHyperlink(PayMasterPaymentUrlFormat, paymentId);
     }
 
-    public static async Task<List<PaymentsResult.Item>> GetPaymentsAsync(string merchantId, DateTime start,
-        DateTime end, string token)
+    public static async Task<List<PaymentsResult.Item>> GetPaymentsAsync(string merchantId, DateOnly start,
+        DateOnly end, string token)
     {
         string startFormatted = start.ToString(PayMasterDateTimeFormat);
         string endFormatted = end.ToString(PayMasterDateTimeFormat);
@@ -192,7 +192,7 @@ public static class Utils
     #region Common
 
     public static void CalculateTotalsAndWeeks(IEnumerable<Donation> donations,
-        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, DateTime firstThursday)
+        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, DateOnly firstThursday)
     {
         foreach (Donation donation in donations)
         {
@@ -204,7 +204,9 @@ public static class Utils
             }
             donation.Total = donation.Amount - payMasterFee;
 
-            donation.Week = (ushort) Math.Ceiling((donation.Date - firstThursday).TotalDays / 7);
+            TimeSpan difference =
+                DateTimeOffsetHelper.FromOnly(donation.Date) - DateTimeOffsetHelper.FromOnly(firstThursday);
+            donation.Week = (ushort) Math.Ceiling(difference.TotalDays / 7);
         }
     }
 
@@ -213,7 +215,7 @@ public static class Utils
         Dictionary<string, List<Share>> shares)
     {
         Dictionary<string, decimal> totals = new();
-        DateTime doomday = new(2022, 2, 24);
+        DateOnly doomday = new(2022, 2, 24);
         foreach (Transaction transaction in transactions)
         {
             decimal amount = transaction.Amount;
@@ -224,7 +226,7 @@ public static class Utils
                 decimal price = transaction.Price.Value;
 
                 // Tax
-                if (transaction.Date.Date <= doomday)
+                if (transaction.Date <= doomday)
                 {
                     decimal tax = Round(price * taxFeePercent);
                     transaction.Tax = tax;

@@ -70,7 +70,8 @@ internal sealed class Manager : IDisposable
         _toPost.Clear();
         _toPost.AddRange(_templates.Values
                                    .Where(t => !savedTemplateIds.Contains(t.Id))
-                                   .OrderBy(t => t.Start));
+                                   .OrderBy(t => t.StartDate)
+                                   .ThenBy(t => t.StartTime));
 
         if (shouldConfirm && _toPost.Any())
         {
@@ -156,7 +157,7 @@ internal sealed class Manager : IDisposable
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                 await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                     keyboard: MessageData.KeyboardType.Full);
-                _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
+                _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager.TimeZoneInfo);
 
                 _events[savedTemplateId] = new Event(template, data.MessageId, _bot.TimeManager, data.NotificationId);
             }
@@ -171,7 +172,7 @@ internal sealed class Manager : IDisposable
 
         foreach (Template template in _toPost)
         {
-            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
+            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager.TimeZoneInfo);
             int messageId = await PostEventAsync(template);
             _events[template.Id] = new Event(template, messageId, _bot.TimeManager);
         }
@@ -215,19 +216,19 @@ internal sealed class Manager : IDisposable
 
     private Task CreateOrUpdateNotificationAsync(Event e)
     {
-        DateTime now = _bot.TimeManager.Now();
+        DateTimeOffset now = _bot.TimeManager.Now();
 
-        if (!e.Template.Active || (e.Template.End <= now) || (e.Template.Start >= _weekEnd))
+        if (!e.Template.Active || (e.Template.GetEnd(_bot.TimeManager.TimeZoneInfo) <= now) || (e.Template.StartDate >= _weekEnd))
         {
             e.DisposeTimer();
             return DeleteNotificationAsync(e);
         }
 
-        TimeSpan startIn = e.Template.Start - now;
+        TimeSpan startIn = e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - now;
         if (startIn > Hour)
         {
-            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.Start - Hour, () => NotifyInAnHourAsync(e),
-                $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
+            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - Hour,
+                () => NotifyInAnHourAsync(e), $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
             return DeleteNotificationAsync(e);
         }
 
@@ -241,23 +242,23 @@ internal sealed class Manager : IDisposable
 
     private async Task NotifyInAnHourAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.Start - Soon, NotifySoonAsync,
-            nameof(NotifySoonAsync));
+        await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - Soon,
+            NotifySoonAsync, nameof(NotifySoonAsync));
     }
 
     private async Task NotifySoonAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.Start, NotifyCurrentAsync,
-            nameof(NotifyCurrentAsync));
+        await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.GetStart(_bot.TimeManager.TimeZoneInfo),
+            NotifyCurrentAsync, nameof(NotifyCurrentAsync));
     }
 
     private async Task NotifyCurrentAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.End, DeleteNotificationAsync,
-            nameof(DeleteNotificationAsync));
+        await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.GetEnd(_bot.TimeManager.TimeZoneInfo),
+            DeleteNotificationAsync, nameof(DeleteNotificationAsync));
     }
 
-    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTime nextAt, Func<Event, Task> nextFunc,
+    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTimeOffset nextAt, Func<Event, Task> nextFunc,
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
@@ -345,13 +346,13 @@ internal sealed class Manager : IDisposable
         {
             if (t.IsWeekly)
             {
-                if (t.Start >= _weekEnd)
+                if (t.StartDate >= _weekEnd)
                 {
                     continue;
                 }
                 t.MoveToWeek(_weekStart);
             }
-            else if (t.Start < _weekStart)
+            else if (t.StartDate < _weekStart)
             {
                 continue;
             }
@@ -364,25 +365,26 @@ internal sealed class Manager : IDisposable
     {
         StringBuilder scheduleBuilder = new();
         scheduleBuilder.AppendLine("🗓 *Расписание* \\(время московское, 🔄 — еженедельные\\)");
-        DateTime date = _weekStart.AddDays(-1);
+        DateOnly date = _weekStart.AddDays(-1);
         foreach (Event e in _events.Values
-                                   .Where(e => e.Template.Active && (e.Template.Start < _weekEnd))
-                                   .OrderBy(e => e.Template.Start))
+                                   .Where(e => e.Template.Active && (e.Template.StartDate < _weekEnd))
+                                   .OrderBy(e => e.Template.StartDate)
+                                   .ThenBy(e => e.Template.StartTime))
         {
-            if (e.Template.Start.Date > date)
+            if (e.Template.StartDate > date)
             {
                 if (scheduleBuilder.Length > 0)
                 {
                     scheduleBuilder.AppendLine();
                 }
-                date = e.Template.Start.Date;
+                date = e.Template.StartDate;
                 scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
             }
             string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
             Uri uri = GetChannelMessageUri(_bot.Config.EventsChannelId, e.MessageId);
             string messageUrl = AbstractBot.Utils.EscapeCharacters(uri.AbsoluteUri);
             string weekly = e.Template.IsWeekly ? " 🔄" : "";
-            scheduleBuilder.AppendLine($"{e.Template.Start:HH:mm} [{name}]({messageUrl}){weekly}");
+            scheduleBuilder.AppendLine($"{e.Template.StartTime:HH:mm} [{name}]({messageUrl}){weekly}");
         }
         scheduleBuilder.AppendLine();
         string url = AbstractBot.Utils.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
@@ -467,7 +469,7 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    private async Task DeleteMessageAsync(int messageId, DateTime? weekStart = null)
+    private async Task DeleteMessageAsync(int messageId, DateOnly? weekStart = null)
     {
         if (weekStart is null || (_saveManager.Data.Messages[messageId].Date >= weekStart))
         {
@@ -476,7 +478,7 @@ internal sealed class Manager : IDisposable
         _saveManager.Data.Messages.Remove(messageId);
     }
 
-    private static string GetMessageText(Template template)
+    private string GetMessageText(Template template)
     {
         StringBuilder builder = new();
 
@@ -491,7 +493,7 @@ internal sealed class Manager : IDisposable
         if (template.IsWeekly)
         {
             builder.Append("по ");
-            switch (template.Start.DayOfWeek)
+            switch (template.StartDate.DayOfWeek)
             {
                 case DayOfWeek.Monday:
                     builder.Append("понедельникам");
@@ -515,15 +517,15 @@ internal sealed class Manager : IDisposable
                     builder.Append("воскресеньям");
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(template.Start.DayOfWeek), template.Start.DayOfWeek,
-                                                          null);
+                    throw new ArgumentOutOfRangeException(nameof(template.StartDate.DayOfWeek),
+                        template.StartDate.DayOfWeek, null);
             }
         }
         else
         {
-            builder.Append($"{template.Start:d MMMM}");
+            builder.Append($"{template.StartDate:d MMMM}");
         }
-        builder.AppendLine($", {template.Start:HH:mm}\\-{template.End:HH:mm} \\(Мск\\)\\.");
+        builder.AppendLine($", {template.StartTime:HH:mm}\\-{template.GetEnd(_bot.TimeManager.TimeZoneInfo):HH:mm} \\(Мск\\)\\.");
 
         if (!string.IsNullOrWhiteSpace(template.Hosts))
         {
@@ -559,8 +561,8 @@ internal sealed class Manager : IDisposable
                && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
     }
 
-    private DateTime _weekStart;
-    private DateTime _weekEnd;
+    private DateOnly _weekStart;
+    private DateOnly _weekEnd;
     private bool _waitingForConfirmation;
 
     private readonly Dictionary<int, Template> _templates = new();
@@ -575,6 +577,12 @@ internal sealed class Manager : IDisposable
 
     private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
     {
-        { typeof(Uri), Utils.ToUri }
+        { typeof(Uri), Utils.ToUri },
+        { typeof(DateOnly), o => Utils.ToDateOnly(o) },
+        { typeof(DateOnly?), o => Utils.ToDateOnly(o) },
+        { typeof(TimeOnly), o => Utils.ToTimeOnly(o) },
+        { typeof(TimeOnly?), o => Utils.ToTimeOnly(o) },
+        { typeof(TimeSpan), o => Utils.ToTimeSpan(o) },
+        { typeof(TimeSpan?), o => Utils.ToTimeSpan(o) }
     };
 }

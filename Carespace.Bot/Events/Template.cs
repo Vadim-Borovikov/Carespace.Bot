@@ -1,6 +1,7 @@
 ﻿using System;
 using GoogleSheetsManager;
 using System.ComponentModel.DataAnnotations;
+using GryphonUtilities;
 using JetBrains.Annotations;
 
 // ReSharper disable NullableWarningSuppressionIsUsed
@@ -46,12 +47,12 @@ internal sealed class Template
     [UsedImplicitly]
     [Required]
     [SheetField("Дата проведения")]
-    public DateTime StartDate;
+    public DateOnly StartDate;
 
     [UsedImplicitly]
     [Required]
     [SheetField("Время начала")]
-    public DateTime StartTime;
+    public TimeOnly StartTime;
 
     [UsedImplicitly]
     [Required]
@@ -60,7 +61,7 @@ internal sealed class Template
 
     [UsedImplicitly]
     [SheetField("Пропуск")]
-    public DateTime? Skip;
+    public DateOnly? Skip;
 
     public bool IsWeekly
     {
@@ -75,15 +76,16 @@ internal sealed class Template
         }
     }
 
-    public DateTime Start => StartDate + StartTime.TimeOfDay;
+    public DateTimeOffset GetStart(TimeZoneInfo info) => DateTimeOffsetHelper.FromOnly(StartDate, StartTime, info);
 
-    public DateTime End => Start + Duration;
+    public DateTimeOffset GetEnd(TimeZoneInfo info) => GetStart(info) + Duration;
 
-    public bool Active => !IsWeekly || (Skip != Start.Date);
+    public bool Active => !IsWeekly || (Skip != StartDate);
 
-    public void MoveToWeek(DateTime weekStart)
+    public void MoveToWeek(DateOnly weekStart)
     {
-        int weeks = (int) Math.Ceiling((weekStart - Start).TotalDays / 7);
+        TimeSpan difference = DateTimeOffsetHelper.FromOnly(weekStart) - DateTimeOffsetHelper.FromOnly(StartDate);
+        int weeks = (int) Math.Ceiling(difference.TotalDays / 7);
         StartDate = StartDate.AddDays(7 * weeks);
     }
 }

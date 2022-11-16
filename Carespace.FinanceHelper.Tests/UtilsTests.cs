@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GryphonUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,7 +18,8 @@ public class UtilsTests
                                             // Create appsettings.json for private settings
                                             .AddJsonFile("appsettings.json")
                                             .Build()
-                                            .Get<Config>();
+                                            .Get<Config>()
+                                            .GetValue();
 
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);
@@ -116,7 +118,7 @@ public class UtilsTests
 
     private const string Agent1 = "Agent1";
     private const string Agent2 = "Agent2";
-    private static readonly DateTime Date = new(2022, 1, 1);
+    private static readonly DateOnly Date = new(2022, 1, 1);
 
     // ReSharper disable once NullableWarningSuppressionIsUsed
     //   _config initializes in ClassInitialize

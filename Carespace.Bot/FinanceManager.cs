@@ -96,8 +96,8 @@ internal sealed class FinanceManager
             ? null
             : await _bot.SendTextMessageAsync(chat, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
 
-        DateTime dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
-        DateTime dateEnd = DateTime.Today.AddDays(1);
+        DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
+        DateOnly dateEnd = DateTimeOffset.Now.AddDays(1).DateOnly();
 
         List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
 
@@ -175,20 +175,20 @@ internal sealed class FinanceManager
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Загружаю донаты из таблицы…_", ParseMode.MarkdownV2);
 
-        SheetData<Donation> oldDonations =
-            await DataManager<Donation>.LoadAsync(provider, _bot.Config.GoogleDonationsRange);
+        SheetData<Donation> oldDonations = await DataManager<Donation>.LoadAsync(provider,
+            _bot.Config.GoogleDonationsRange, additionalConverters: AdditionalConverters);
         donations.AddRange(oldDonations.Instances);
 
-        SheetData<Donation> newCustomDonations =
-            await DataManager<Donation>.LoadAsync(provider, _bot.Config.GoogleDonationsCustomRange);
+        SheetData<Donation> newCustomDonations = await DataManager<Donation>.LoadAsync(provider,
+            _bot.Config.GoogleDonationsCustomRange, additionalConverters: AdditionalConverters);
         donations.AddRange(newCustomDonations.Instances);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
 
         statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
-        DateTime dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
-        DateTime dateEnd = DateTime.Today.AddDays(1);
+        DateOnly dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
+        DateOnly dateEnd = DateTimeOffset.Now.AddDays(1).DateOnly();
 
         List<Donation> newDonations =
             await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations, dateStart,
@@ -198,7 +198,7 @@ internal sealed class FinanceManager
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
 
-        DateTime firstThursday = Utils.GetNextThursday(donations.Min(d => d.Date));
+        DateOnly firstThursday = Utils.GetNextThursday(donations.Min(d => d.Date));
 
         FinanceHelper.Utils.CalculateTotalsAndWeeks(donations, _bot.Config.PayMasterFeePercents, firstThursday);
 
@@ -227,7 +227,9 @@ internal sealed class FinanceManager
     private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
     {
         { typeof(Transaction.PayMethod), o => o.ToPayMathod() },
-        { typeof(Transaction.PayMethod?), o => o.ToPayMathod() }
+        { typeof(Transaction.PayMethod?), o => o.ToPayMathod() },
+        { typeof(DateOnly), o => Utils.ToDateOnly(o) },
+        { typeof(DateOnly?), o => Utils.ToDateOnly(o) }
     };
 
     private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers = new()

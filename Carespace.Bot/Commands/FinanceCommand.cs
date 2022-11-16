@@ -7,9 +7,9 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class FinanceCommand : CommandBase<Bot, Config.Config>
+internal sealed class FinanceCommand : CommandBaseCustom<Bot, Config.Config>
 {
-    public override BotBase<Bot, Config.Config>.AccessType Access => BotBase<Bot, Config.Config>.AccessType.SuperAdmin;
+    public override BotBase.AccessType Access => BotBase.AccessType.SuperAdmin;
 
     public FinanceCommand(Bot bot, FinanceManager manager) : base(bot, "finance", "обновить финансы")
     {

@@ -22,7 +22,7 @@ internal sealed class Timer : IDisposable
         _cancellationTokenSource.Dispose();
     }
 
-    public void DoOnce(DateTime at, Func<Task> func, string funcName)
+    public void DoOnce(DateTimeOffset at, Func<Task> func, string funcName)
     {
         _at = at;
         _after = _at - _timeManager.Now();
@@ -71,7 +71,7 @@ internal sealed class Timer : IDisposable
         UpdateLog();
     }
 
-    private static async Task DoAndLog(Func<Task> func, DateTime at)
+    private static async Task DoAndLog(Func<Task> func, DateTimeOffset at)
     {
         await func();
         Logs.Remove(at);
@@ -81,20 +81,20 @@ internal sealed class Timer : IDisposable
     private static void UpdateLog()
     {
         StringBuilder sb = new();
-        foreach (DateTime at in Logs.Keys.OrderBy(d => d))
+        foreach (DateTimeOffset at in Logs.Keys.Order())
         {
             sb.AppendLine(Logs[at]);
         }
         Utils.LogTimers(sb.ToString());
     }
 
-    private static readonly Dictionary<DateTime, string> Logs = new();
+    private static readonly Dictionary<DateTimeOffset, string> Logs = new();
 
     private readonly CancellationTokenSource _cancellationTokenSource;
 
     private readonly TimeManager _timeManager;
 
-    private DateTime _at;
+    private DateTimeOffset _at;
     private TimeSpan _after;
     private bool _doPeriodically;
     private string? _funcName;

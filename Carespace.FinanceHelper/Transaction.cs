@@ -24,7 +24,7 @@ public sealed class Transaction
 
     [Required]
     [SheetField("Дата", "{0:d MMMM yyyy}")]
-    public DateTime Date;
+    public DateOnly Date;
 
     [SheetField("Digiseller")]
     public decimal? DigisellerFee { get; internal set; }
@@ -124,7 +124,7 @@ public sealed class Transaction
         }
     }
 
-    public Transaction(DateTime date, string? name, decimal price, string? promoCode, int? digisellerSellId,
+    public Transaction(DateOnly date, string? name, decimal price, string? promoCode, int? digisellerSellId,
         int? digisellerProductId, MailAddress? email, PayMethod? payMethod)
     {
         Date = date;

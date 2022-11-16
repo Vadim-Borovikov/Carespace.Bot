@@ -10,7 +10,7 @@ namespace Carespace.FinanceHelper;
 public sealed class Donation
 {
     [SheetField("Дата", "{0:d MMMM yyyy}")]
-    public DateTime Date;
+    public DateOnly Date;
 
     [UsedImplicitly]
     [SheetField("Сумма")]
@@ -44,7 +44,7 @@ public sealed class Donation
 
     internal Donation(PaymentsResult.Item payment)
     {
-        Date = payment.Created.GetValue(nameof(payment.Created));
+        Date = payment.Created.GetValue(nameof(payment.Created)).DateOnly();
         Amount = (payment.Amount?.Value).GetValue(nameof(payment.Amount.Value));
 
         PaymentId = payment.Id;

@@ -7,7 +7,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class LinksCommand : CommandBase<Bot, Config.Config>
+internal sealed class LinksCommand : CommandBaseCustom<Bot, Config.Config>
 {
     public LinksCommand(Bot bot) : base(bot, "links", "полезные ссылки")  { }
 

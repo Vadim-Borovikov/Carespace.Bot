@@ -7,7 +7,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class ExercisesCommand : CommandBase<Bot, Config.Config>
+internal sealed class ExercisesCommand : CommandBaseCustom<Bot, Config.Config>
 {
     public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения") { }
 

@@ -36,7 +36,7 @@ public sealed class PaymentsResult
         public int? Id { get; set; }
 
         [JsonProperty]
-        public DateTime? Created { get; set; }
+        public DateTimeOffset? Created { get; set; }
 
         [JsonProperty]
         public Payment? PaymentData { get; set; }

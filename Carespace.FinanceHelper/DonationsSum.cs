@@ -7,7 +7,7 @@ namespace Carespace.FinanceHelper;
 public sealed class DonationsSum
 {
     [SheetField("Дата", "{0:d MMMM yyyy}")]
-    public DateTime Date;
+    public DateOnly Date;
 
     [UsedImplicitly]
     [SheetField("Сумма")]
@@ -15,7 +15,7 @@ public sealed class DonationsSum
 
     public DonationsSum() { }
 
-    public DonationsSum(DateTime firstDate, ushort weeksPast, decimal amount)
+    public DonationsSum(DateOnly firstDate, ushort weeksPast, decimal amount)
     {
         Date = firstDate.AddDays(weeksPast * 7);
         Amount = amount;
