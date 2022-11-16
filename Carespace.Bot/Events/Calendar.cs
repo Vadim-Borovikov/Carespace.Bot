@@ -14,32 +14,33 @@ public sealed class Calendar
     public readonly byte[] IcsContent;
     public readonly string GoogleCalendarLink;
 
-    public bool IsOver => DateTimeOffset.UtcNow > _endTime;
+    public bool IsOver => DateTimeOffset.UtcNow > _template.GetEnd(_timeZoneInfo);
 
-    internal Calendar(Template template)
+    internal Calendar(Template template, TimeZoneInfo timeZoneInfo)
     {
-        _endTime = template.End.UtcDateTime;
+        _template = template;
+        _timeZoneInfo = timeZoneInfo;
 
         StringBuilder sb = new();
-        sb.AppendLine(template.Description);
+        sb.AppendLine(_template.Description);
         sb.AppendLine();
-        sb.Append($"Цена: {template.Price}");
-        if (!string.IsNullOrWhiteSpace(template.Hosts))
+        sb.Append($"Цена: {_template.Price}");
+        if (!string.IsNullOrWhiteSpace(_template.Hosts))
         {
             sb.AppendLine();
-            sb.Append($"Кто ведёт: {template.Hosts}");
+            sb.Append($"Кто ведёт: {_template.Hosts}");
         }
         string icsDescription = sb.ToString();
         sb.AppendLine();
         sb.AppendLine();
-        sb.Append($"Принять участе: {template.Uri}");
+        sb.Append($"Принять участе: {_template.Uri}");
         string googleDetails = sb.ToString();
 
         RecurrencePattern rule = new(FrequencyType.Weekly);
-        CalendarEvent icsEvent = AsIcsEvent(template, icsDescription, rule);
+        CalendarEvent icsEvent = AsIcsEvent(icsDescription, rule);
         IcsContent = GetIcsContent(icsEvent);
 
-        GoogleCalendarLink = AsGoogleLink(template, googleDetails, rule.ToString());
+        GoogleCalendarLink = AsGoogleLink(googleDetails, rule.ToString());
     }
 
     private static byte[] GetIcsContent(CalendarEvent icsEvent)
@@ -53,33 +54,33 @@ public sealed class Calendar
         return Encoding.UTF8.GetBytes(content);
     }
 
-    private CalendarEvent AsIcsEvent(Template template, string description, RecurrencePattern rule)
+    private CalendarEvent AsIcsEvent(string description, RecurrencePattern rule)
     {
         CalendarEvent e = new()
         {
-            Start = new CalDateTime(template.Start.UtcDateTime),
-            End = new CalDateTime(_endTime.UtcDateTime),
-            Summary = template.Name,
+            Start = new CalDateTime(_template.GetStart(_timeZoneInfo).UtcDateTime),
+            End = new CalDateTime(_template.GetEnd(_timeZoneInfo).UtcDateTime),
+            Summary = _template.Name,
             Description = description,
-            Url = template.Uri
+            Url = _template.Uri
         };
-        if (template.IsWeekly)
+        if (_template.IsWeekly)
         {
             e.RecurrenceRules = new List<RecurrencePattern> { rule };
         }
         return e;
     }
 
-    private static string AsGoogleLink(Template template, string details, string rule)
+    private string AsGoogleLink(string details, string rule)
     {
         Dictionary<string, string> queryString = new()
         {
             ["action"] = "TEMPLATE" ,
-            ["text"] = template.Name,
-            ["dates"] = $"{template.Start.UtcDateTime:yyyyMMddTHHmmssZ}/{template.End.UtcDateTime:yyyyMMddTHHmmssZ}",
+            ["text"] = _template.Name,
+            ["dates"] = $"{_template.GetStart(_timeZoneInfo).UtcDateTime:yyyyMMddTHHmmssZ}/{_template.GetEnd(_timeZoneInfo).UtcDateTime:yyyyMMddTHHmmssZ}",
             ["details"] = details
         };
-        if (template.IsWeekly)
+        if (_template.IsWeekly)
         {
             queryString["recur"] = $"RRULE:{rule}";
         }
@@ -88,5 +89,6 @@ public sealed class Calendar
     }
 
     private const string GoogleUri = "https://www.google.com/calendar/render";
-    private readonly DateTimeOffset _endTime;
+    private readonly Template _template;
+    private readonly TimeZoneInfo _timeZoneInfo;
 }

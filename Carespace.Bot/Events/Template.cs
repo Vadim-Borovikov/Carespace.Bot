@@ -76,9 +76,9 @@ internal sealed class Template
         }
     }
 
-    public DateTimeOffset Start => DateTimeOffsetHelper.FromOnly(StartDate, StartTime);
+    public DateTimeOffset GetStart(TimeZoneInfo info) => DateTimeOffsetHelper.FromOnly(StartDate, StartTime, info);
 
-    public DateTimeOffset End => Start + Duration;
+    public DateTimeOffset GetEnd(TimeZoneInfo info) => GetStart(info) + Duration;
 
     public bool Active => !IsWeekly || (Skip != StartDate);
 
