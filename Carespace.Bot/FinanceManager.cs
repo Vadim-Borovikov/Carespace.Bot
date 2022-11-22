@@ -25,6 +25,10 @@ internal sealed class FinanceManager
         Transaction.DigisellerProductUrlFormat = _bot.Config.DigisellerProductUrlFormat;
 
         Transaction.TaxPayerId = _bot.Config.TaxPayerId;
+
+        _additionalConverters = _bot.AdditionalConverters.ToDictionary(p => p.Key, p => p.Value);
+        _additionalConverters[typeof(Transaction.PayMethod)] = _additionalConverters[typeof(Transaction.PayMethod?)] =
+            o => o.ToPayMathod();
     }
 
     public async Task UpdateFinances(Chat chat)
@@ -80,11 +84,11 @@ internal sealed class FinanceManager
             : await _bot.SendTextMessageAsync(chat, "_Загружаю покупки из таблицы…_", ParseMode.MarkdownV2);
 
         SheetData<Transaction> oldTransactions = await DataManager<Transaction>.LoadAsync(provider,
-            _bot.Config.GoogleTransactionsFinalRange, additionalConverters: AdditionalConverters);
+            _bot.Config.GoogleTransactionsFinalRange, additionalConverters: _additionalConverters);
         transactions.AddRange(oldTransactions.Instances);
 
         SheetData<Transaction> newCustomTransactions = await DataManager<Transaction>.LoadAsync(provider,
-            _bot.Config.GoogleTransactionsCustomRange, additionalConverters: AdditionalConverters);
+            _bot.Config.GoogleTransactionsCustomRange, additionalConverters: _additionalConverters);
         transactions.AddRange(newCustomTransactions.Instances);
 
         if (statusMessage is not null)
@@ -97,7 +101,7 @@ internal sealed class FinanceManager
             : await _bot.SendTextMessageAsync(chat, "_Загружаю покупки из Digiseller…_", ParseMode.MarkdownV2);
 
         DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
-        DateOnly dateEnd = DateTimeOffset.Now.AddDays(1).DateOnly();
+        DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
 
         List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
 
@@ -176,11 +180,11 @@ internal sealed class FinanceManager
             await _bot.SendTextMessageAsync(chat, "_Загружаю донаты из таблицы…_", ParseMode.MarkdownV2);
 
         SheetData<Donation> oldDonations = await DataManager<Donation>.LoadAsync(provider,
-            _bot.Config.GoogleDonationsRange, additionalConverters: AdditionalConverters);
+            _bot.Config.GoogleDonationsRange, additionalConverters: _additionalConverters);
         donations.AddRange(oldDonations.Instances);
 
         SheetData<Donation> newCustomDonations = await DataManager<Donation>.LoadAsync(provider,
-            _bot.Config.GoogleDonationsCustomRange, additionalConverters: AdditionalConverters);
+            _bot.Config.GoogleDonationsCustomRange, additionalConverters: _additionalConverters);
         donations.AddRange(newCustomDonations.Instances);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
@@ -188,7 +192,7 @@ internal sealed class FinanceManager
         statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю платежи…_", ParseMode.MarkdownV2);
 
         DateOnly dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
-        DateOnly dateEnd = DateTimeOffset.Now.AddDays(1).DateOnly();
+        DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
 
         List<Donation> newDonations =
             await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations, dateStart,
@@ -224,13 +228,7 @@ internal sealed class FinanceManager
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 
-    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
-    {
-        { typeof(Transaction.PayMethod), o => o.ToPayMathod() },
-        { typeof(Transaction.PayMethod?), o => o.ToPayMathod() },
-        { typeof(DateOnly), o => Utils.ToDateOnly(o) },
-        { typeof(DateOnly?), o => Utils.ToDateOnly(o) }
-    };
+    private readonly Dictionary<Type, Func<object?, object?>> _additionalConverters;
 
     private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers = new()
     {

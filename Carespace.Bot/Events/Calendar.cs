@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
+using GryphonUtilities;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
@@ -14,12 +14,12 @@ public sealed class Calendar
     public readonly byte[] IcsContent;
     public readonly string GoogleCalendarLink;
 
-    public bool IsOver => DateTimeOffset.UtcNow > _template.GetEnd(_timeZoneInfo);
+    public bool IsOver => DateTimeFull.CreateUtcNow() > _template.GetEnd(_timeManager);
 
-    internal Calendar(Template template, TimeZoneInfo timeZoneInfo)
+    internal Calendar(Template template, TimeManager timeManager)
     {
         _template = template;
-        _timeZoneInfo = timeZoneInfo;
+        _timeManager = timeManager;
 
         StringBuilder sb = new();
         sb.AppendLine(_template.Description);
@@ -58,8 +58,8 @@ public sealed class Calendar
     {
         CalendarEvent e = new()
         {
-            Start = new CalDateTime(_template.GetStart(_timeZoneInfo).UtcDateTime),
-            End = new CalDateTime(_template.GetEnd(_timeZoneInfo).UtcDateTime),
+            Start = new CalDateTime(_template.GetStart(_timeManager).UtcDateTime),
+            End = new CalDateTime(_template.GetEnd(_timeManager).UtcDateTime),
             Summary = _template.Name,
             Description = description,
             Url = _template.Uri
@@ -77,7 +77,7 @@ public sealed class Calendar
         {
             ["action"] = "TEMPLATE" ,
             ["text"] = _template.Name,
-            ["dates"] = $"{_template.GetStart(_timeZoneInfo).UtcDateTime:yyyyMMddTHHmmssZ}/{_template.GetEnd(_timeZoneInfo).UtcDateTime:yyyyMMddTHHmmssZ}",
+            ["dates"] = $"{_template.GetStart(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}/{_template.GetEnd(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}",
             ["details"] = details
         };
         if (_template.IsWeekly)
@@ -90,5 +90,5 @@ public sealed class Calendar
 
     private const string GoogleUri = "https://www.google.com/calendar/render";
     private readonly Template _template;
-    private readonly TimeZoneInfo _timeZoneInfo;
+    private readonly TimeManager _timeManager;
 }

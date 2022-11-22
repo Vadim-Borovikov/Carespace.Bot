@@ -76,15 +76,15 @@ internal sealed class Template
         }
     }
 
-    public DateTimeOffset GetStart(TimeZoneInfo info) => DateTimeOffsetHelper.FromOnly(StartDate, StartTime, info);
+    public DateTimeFull GetStart(TimeManager timeManager) => timeManager.GetDateTimeFull(StartDate, StartTime);
 
-    public DateTimeOffset GetEnd(TimeZoneInfo info) => GetStart(info) + Duration;
+    public DateTimeFull GetEnd(TimeManager timeManager) => GetStart(timeManager) + Duration;
 
     public bool Active => !IsWeekly || (Skip != StartDate);
 
     public void MoveToWeek(DateOnly weekStart)
     {
-        TimeSpan difference = DateTimeOffsetHelper.FromOnly(weekStart) - DateTimeOffsetHelper.FromOnly(StartDate);
+        TimeSpan difference = weekStart.ToDateTime(TimeOnly.MinValue) - StartDate.ToDateTime(TimeOnly.MinValue);
         int weeks = (int) Math.Ceiling(difference.TotalDays / 7);
         StartDate = StartDate.AddDays(7 * weeks);
     }

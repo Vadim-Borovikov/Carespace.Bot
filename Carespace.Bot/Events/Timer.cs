@@ -5,16 +5,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
+using GryphonUtilities;
 
 namespace Carespace.Bot.Events;
 
 internal sealed class Timer : IDisposable
 {
-    public Timer(TimeManager timeManager)
-    {
-        _timeManager = timeManager;
-        _cancellationTokenSource = new CancellationTokenSource();
-    }
+    public Timer() => _cancellationTokenSource = new CancellationTokenSource();
 
     public void Dispose()
     {
@@ -22,10 +19,10 @@ internal sealed class Timer : IDisposable
         _cancellationTokenSource.Dispose();
     }
 
-    public void DoOnce(DateTimeOffset at, Func<Task> func, string funcName)
+    public void DoOnce(DateTimeFull at, Func<Task> func, string funcName)
     {
         _at = at;
-        _after = _at - _timeManager.Now();
+        _after = _at - DateTimeFull.CreateUtcNow();
 
         _doPeriodically = false;
         _funcName = funcName;
@@ -39,7 +36,7 @@ internal sealed class Timer : IDisposable
     public void DoWeekly(Func<Task> func, string funcName)
     {
         _after = TimeSpan.FromDays(7);
-        _at = _timeManager.Now() + _after;
+        _at = DateTimeFull.CreateUtcNow() + _after;
 
         _doPeriodically = true;
         _funcName = funcName;
@@ -65,13 +62,13 @@ internal sealed class Timer : IDisposable
         await func();
 
         Logs.Remove(_at);
-        _at = _timeManager.Now() + _after;
+        _at = DateTimeFull.CreateUtcNow() + _after;
         Logs[_at] = ToString();
 
         UpdateLog();
     }
 
-    private static async Task DoAndLog(Func<Task> func, DateTimeOffset at)
+    private static async Task DoAndLog(Func<Task> func, DateTimeFull at)
     {
         await func();
         Logs.Remove(at);
@@ -81,20 +78,18 @@ internal sealed class Timer : IDisposable
     private static void UpdateLog()
     {
         StringBuilder sb = new();
-        foreach (DateTimeOffset at in Logs.Keys.Order())
+        foreach (DateTimeFull at in Logs.Keys.Order())
         {
             sb.AppendLine(Logs[at]);
         }
         Utils.LogTimers(sb.ToString());
     }
 
-    private static readonly Dictionary<DateTimeOffset, string> Logs = new();
+    private static readonly Dictionary<DateTimeFull, string> Logs = new();
 
     private readonly CancellationTokenSource _cancellationTokenSource;
 
-    private readonly TimeManager _timeManager;
-
-    private DateTimeOffset _at;
+    private DateTimeFull _at;
     private TimeSpan _after;
     private bool _doPeriodically;
     private string? _funcName;

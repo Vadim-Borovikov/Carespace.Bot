@@ -157,9 +157,9 @@ internal sealed class Manager : IDisposable
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                 await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
                     keyboard: MessageData.KeyboardType.Full);
-                _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager.TimeZoneInfo);
+                _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
-                _events[savedTemplateId] = new Event(template, data.MessageId, _bot.TimeManager, data.NotificationId);
+                _events[savedTemplateId] = new Event(template, data.MessageId, data.NotificationId);
             }
             else
             {
@@ -172,9 +172,9 @@ internal sealed class Manager : IDisposable
 
         foreach (Template template in _toPost)
         {
-            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager.TimeZoneInfo);
+            _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
             int messageId = await PostEventAsync(template);
-            _events[template.Id] = new Event(template, messageId, _bot.TimeManager);
+            _events[template.Id] = new Event(template, messageId);
         }
 
         _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => new EventData(e.Value));
@@ -216,18 +216,20 @@ internal sealed class Manager : IDisposable
 
     private Task CreateOrUpdateNotificationAsync(Event e)
     {
-        DateTimeOffset now = _bot.TimeManager.Now();
+        DateTimeFull now = DateTimeFull.CreateUtcNow();
 
-        if (!e.Template.Active || (e.Template.GetEnd(_bot.TimeManager.TimeZoneInfo) <= now) || (e.Template.StartDate >= _weekEnd))
+        if (!e.Template.Active
+            || (e.Template.GetEnd(_bot.TimeManager) <= now)
+            || (e.Template.StartDate >= _weekEnd))
         {
             e.DisposeTimer();
             return DeleteNotificationAsync(e);
         }
 
-        TimeSpan startIn = e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - now;
+        TimeSpan startIn = e.Template.GetStart(_bot.TimeManager) - now;
         if (startIn > Hour)
         {
-            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - Hour,
+            e.Timer.GetValue(nameof(e.Timer)).DoOnce(e.Template.GetStart(_bot.TimeManager) - Hour,
                 () => NotifyInAnHourAsync(e), $"{nameof(NotifyInAnHourAsync)} for event #{e.Template.Id}");
             return DeleteNotificationAsync(e);
         }
@@ -242,23 +244,23 @@ internal sealed class Manager : IDisposable
 
     private async Task NotifyInAnHourAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.GetStart(_bot.TimeManager.TimeZoneInfo) - Soon,
+        await NotifyAndPlanAsync(e, "*Через час* начнётся", e.Template.GetStart(_bot.TimeManager) - Soon,
             NotifySoonAsync, nameof(NotifySoonAsync));
     }
 
     private async Task NotifySoonAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.GetStart(_bot.TimeManager.TimeZoneInfo),
+        await NotifyAndPlanAsync(e, "*Через 15 минут* начнётся", e.Template.GetStart(_bot.TimeManager),
             NotifyCurrentAsync, nameof(NotifyCurrentAsync));
     }
 
     private async Task NotifyCurrentAsync(Event e)
     {
-        await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.GetEnd(_bot.TimeManager.TimeZoneInfo),
+        await NotifyAndPlanAsync(e, "*Сейчас* идёт", e.Template.GetEnd(_bot.TimeManager),
             DeleteNotificationAsync, nameof(DeleteNotificationAsync));
     }
 
-    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTimeOffset nextAt, Func<Event, Task> nextFunc,
+    private async Task NotifyAndPlanAsync(Event e, string prefix, DateTimeFull nextAt, Func<Event, Task> nextFunc,
         string nextFuncName)
     {
         await CreateOrUpdateNotificationAsync(e, prefix);
@@ -325,7 +327,7 @@ internal sealed class Manager : IDisposable
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
         Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
             null, disableWebPagePreview, disableNotification, null, replyToMessageId, null, keyboardMarkup);
-        _saveManager.Data.Messages[message.MessageId] = new MessageData(message)
+        _saveManager.Data.Messages[message.MessageId] = new MessageData(message, _bot.TimeManager)
         {
             Text = text,
             Keyboard = keyboard
@@ -336,7 +338,7 @@ internal sealed class Manager : IDisposable
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
         SheetData<Template> templates = await DataManager<Template>.LoadAsync(_bot.GoogleSheetsProvider,
-            _bot.Config.GoogleRange, additionalConverters: AdditionalConverters);
+            _bot.Config.GoogleRange, additionalConverters: _bot.AdditionalConverters);
         return LoadRelevantTemplates(templates.Instances);
     }
 
@@ -435,7 +437,7 @@ internal sealed class Manager : IDisposable
             disableWebPagePreview, keyboardMarkup);
         if (data is null)
         {
-            _saveManager.Data.Messages[messageId] = new MessageData(message)
+            _saveManager.Data.Messages[messageId] = new MessageData(message, _bot.TimeManager)
             {
                 Text = text,
                 Keyboard = keyboard
@@ -525,7 +527,7 @@ internal sealed class Manager : IDisposable
         {
             builder.Append($"{template.StartDate:d MMMM}");
         }
-        builder.AppendLine($", {template.StartTime:HH:mm}\\-{template.GetEnd(_bot.TimeManager.TimeZoneInfo):HH:mm} \\(Мск\\)\\.");
+        builder.AppendLine($", {template.StartTime:HH:mm}\\-{template.GetEnd(_bot.TimeManager):HH:mm} \\(Мск\\)\\.");
 
         if (!string.IsNullOrWhiteSpace(template.Hosts))
         {
@@ -574,15 +576,4 @@ internal sealed class Manager : IDisposable
 
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
     private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
-
-    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
-    {
-        { typeof(Uri), Utils.ToUri },
-        { typeof(DateOnly), o => Utils.ToDateOnly(o) },
-        { typeof(DateOnly?), o => Utils.ToDateOnly(o) },
-        { typeof(TimeOnly), o => Utils.ToTimeOnly(o) },
-        { typeof(TimeOnly?), o => Utils.ToTimeOnly(o) },
-        { typeof(TimeSpan), o => Utils.ToTimeSpan(o) },
-        { typeof(TimeSpan?), o => Utils.ToTimeSpan(o) }
-    };
 }

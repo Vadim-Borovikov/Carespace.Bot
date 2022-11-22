@@ -1,5 +1,4 @@
 ﻿using System;
-using AbstractBot;
 
 namespace Carespace.Bot.Events;
 
@@ -10,12 +9,12 @@ internal sealed class Event : IDisposable
     public int? NotificationId;
     public Timer? Timer { get; private set; }
 
-    public Event(Template template, int messageId, TimeManager timeManager, int? notificationId = null)
+    public Event(Template template, int messageId, int? notificationId = null)
     {
         Template = template;
         MessageId = messageId;
         NotificationId = notificationId;
-        Timer = new Timer(timeManager);
+        Timer = new Timer();
     }
 
     public void Dispose() => DisposeTimer();
