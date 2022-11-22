@@ -23,7 +23,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
         Calendars = new Dictionary<int, Calendar>();
 
-        _weeklyUpdateTimer = new Events.Timer(TimeManager);
+        _weeklyUpdateTimer = new Events.Timer();
+
+        AdditionalConverters[typeof(DateOnly)] = AdditionalConverters[typeof(DateOnly?)] = o => GetDateOnly(o);
+        AdditionalConverters[typeof(TimeOnly)] = AdditionalConverters[typeof(TimeOnly?)] = o => GetTimeOnly(o);
+        AdditionalConverters[typeof(TimeSpan)] = AdditionalConverters[typeof(TimeSpan?)] = o => GetTimeSpan(o);
+        AdditionalConverters[typeof(Uri)] = Utils.ToUri;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
@@ -117,8 +122,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     private void Schedule(Func<Task> func, string funcName)
     {
-        DateTimeOffset nextUpdateAt =
-            DateTimeOffsetHelper.FromOnly(Utils.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
+        DateTimeFull nextUpdateAt =
+            TimeManager.GetDateTimeFull(Utils.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
         _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
     }
 
@@ -126,6 +131,39 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     {
         await func();
         _weeklyUpdateTimer.DoWeekly(func, funcName);
+    }
+
+    private DateOnly? GetDateOnly(object? o)
+    {
+        if (o is DateOnly d)
+        {
+            return d;
+        }
+
+        DateTimeFull? dtf = GetDateTimeFull(o);
+        return dtf?.DateOnly;
+    }
+
+    private TimeOnly? GetTimeOnly(object? o)
+    {
+        if (o is TimeOnly t)
+        {
+            return t;
+        }
+
+        DateTimeFull? dtf = GetDateTimeFull(o);
+        return dtf?.TimeOnly;
+    }
+
+    private TimeSpan? GetTimeSpan(object? o)
+    {
+        if (o is TimeSpan t)
+        {
+            return t;
+        }
+
+        DateTimeFull? dtf = GetDateTimeFull(o);
+        return dtf?.DateTimeOffset.TimeOfDay;
     }
 
     public readonly IDictionary<int, Calendar> Calendars;

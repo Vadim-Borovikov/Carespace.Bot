@@ -25,5 +25,8 @@ public sealed class MessageData
 
     public MessageData() { }
 
-    internal MessageData(Message message) => Date = new DateTimeOffset(message.Date.ToLocalTime()).DateOnly();
+    internal MessageData(Message message, TimeManager timeManager)
+    {
+        Date = timeManager.GetDateTimeFull(message.Date).DateOnly;
+    }
 }
