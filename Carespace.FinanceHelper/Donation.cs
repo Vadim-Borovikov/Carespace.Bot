@@ -21,7 +21,7 @@ public sealed class Donation
     public string? PaymentIdLink
     {
         get => Utils.GetPayMasterHyperlink(PaymentId);
-        set => PaymentId = value.ToInt();
+        set => PaymentId = value;
     }
 
     [SheetField("Способ")]
@@ -38,13 +38,13 @@ public sealed class Donation
     [SheetField("Итого")]
     public decimal Total { get; internal set; }
 
-    internal int? PaymentId;
+    internal string? PaymentId;
 
     public Donation() { }
 
     internal Donation(PaymentsResult.Item payment)
     {
-        Date = payment.Created.GetValue(nameof(payment.Created)).DateOnly();
+        Date = payment.Created.GetValue(nameof(payment.Created)).DateOnly;
         Amount = (payment.Amount?.Value).GetValue(nameof(payment.Amount.Value));
 
         PaymentId = payment.Id;

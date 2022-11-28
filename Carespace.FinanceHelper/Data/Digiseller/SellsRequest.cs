@@ -1,31 +1,33 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;
 
-public sealed class SellsRequest
+internal sealed class SellsRequest
 {
-    [JsonProperty("id_seller")]
-    public int? SellerId { get; set; }
+    [UsedImplicitly]
+    [JsonPropertyName("id_seller")]
+    public int? SellerId;
 
-    [JsonProperty]
-    public List<int?>? ProductIds { get; set; }
+    [UsedImplicitly]
+    public List<int?>? ProductIds;
 
-    [JsonProperty]
-    public string? DateStart { get; set; }
+    [UsedImplicitly]
+    public string? DateStart;
 
-    [JsonProperty]
-    public string? DateFinish { get; set; }
+    [UsedImplicitly]
+    public string? DateFinish;
 
-    [JsonProperty]
-    public int? Returned { get; set; }
+    [UsedImplicitly]
+    public int? Returned;
 
-    [JsonProperty]
-    public int? Rows { get; set; }
+    [UsedImplicitly]
+    public int? Rows;
 
-    [JsonProperty]
-    public int? Page { get; set; }
+    [UsedImplicitly]
+    public int? Page;
 
-    [JsonProperty]
-    public string? Sign { get; set; }
+    [UsedImplicitly]
+    public string? Sign;
 }

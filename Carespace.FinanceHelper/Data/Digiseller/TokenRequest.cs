@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;
 
-public sealed class TokenRequest
+internal sealed class TokenRequest
 {
-    [JsonProperty]
-    public string? Login { get; set; }
+    [UsedImplicitly]
+    public string? Login;
 
-    [JsonProperty]
-    public long? Timestamp { get; set; }
+    [UsedImplicitly]
+    public long? Timestamp;
 
-    [JsonProperty]
-    public string? Sign { get; set; }
+    [UsedImplicitly]
+    public string? Sign;
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.Digiseller;
 using Carespace.FinanceHelper.Data.PayMaster;
@@ -47,29 +48,30 @@ public static class Utils
 
     public static async Task<List<Transaction>> GetNewDigisellerSellsAsync(string login, string password, int sellerId,
         List<int> productIds, DateOnly dateStart, DateOnly dateFinish, string sellerSecret,
-        IEnumerable<Transaction> oldTransactions)
+        IEnumerable<Transaction> oldTransactions, TimeManager timeManager, JsonSerializerOptions options)
     {
         List<SellsResponse.Sell> sells = await GetDigisellerSellsAsync(sellerId, productIds,
-            DateTimeOffsetHelper.FromOnly(dateStart), DateTimeOffsetHelper.FromOnly(dateFinish), sellerSecret);
+            timeManager.GetDateTimeFull(dateStart, TimeOnly.MinValue),
+            timeManager.GetDateTimeFull(dateFinish, TimeOnly.MinValue), sellerSecret, options);
 
         IEnumerable<int> oldSellIds = oldTransactions.Select(t => t.DigisellerSellId).RemoveNulls();
 
         IEnumerable<SellsResponse.Sell> newSells =
             sells.Where(s => !s.InvoiceId.HasValue || !oldSellIds.Contains(s.InvoiceId.Value));
 
-        string token = await GetTokenAsync(login, password, sellerSecret);
+        string token = await GetTokenAsync(login, password, sellerSecret, timeManager.Now(), options);
 
         List<Transaction> transactions = new();
         foreach (SellsResponse.Sell sell in newSells)
         {
-            Transaction transaction = await CreateTransactionAsync(sell, token);
+            Transaction transaction = await CreateTransactionAsync(sell, token, options);
             transactions.Add(transaction);
         }
         return transactions;
     }
 
     private static async Task<List<SellsResponse.Sell>> GetDigisellerSellsAsync(int sellerId, List<int> productIds,
-        DateTimeOffset dateStart, DateTimeOffset dateFinish, string sellerSecret)
+        DateTimeFull dateStart, DateTimeFull dateFinish, string sellerSecret, JsonSerializerOptions options)
     {
         string start = dateStart.ToString(GoogleDateTimeFormat);
         string end = dateFinish.ToString(GoogleDateTimeFormat);
@@ -78,7 +80,8 @@ public static class Utils
         List<SellsResponse.Sell> sells = new();
         do
         {
-            SellsResponse dto = await Digiseller.GetSellsAsync(sellerId, productIds, start, end, page, sellerSecret);
+            SellsResponse dto =
+                await Digiseller.GetSellsAsync(sellerId, productIds, start, end, page, sellerSecret, options);
             if (dto.Sells is not null)
             {
                 sells.AddRange(dto.Sells.RemoveNulls());
@@ -89,16 +92,17 @@ public static class Utils
         return sells;
     }
 
-    private static async Task<Transaction> CreateTransactionAsync(SellsResponse.Sell sell, string token)
+    private static async Task<Transaction> CreateTransactionAsync(SellsResponse.Sell sell, string token,
+        JsonSerializerOptions options)
     {
-        DateTimeOffset datePay = sell.DatePay.GetValue(nameof(sell.DatePay));
+        DateTimeFull datePay = sell.DatePay.GetValue(nameof(sell.DatePay));
 
         decimal amountIn = sell.AmountIn.GetValue(nameof(sell.AmountIn));
 
         string? promoCode = null;
         if (sell.InvoiceId.HasValue)
         {
-            promoCode = await GetPromoCodeAsync(sell.InvoiceId.Value, token);
+            promoCode = await GetPromoCodeAsync(sell.InvoiceId.Value, token, options);
         }
 
         MailAddress email = sell.Email.ToEmail().GetValue(nameof(sell.Email));
@@ -111,19 +115,20 @@ public static class Utils
                                                                                          sell.PayMethodInfo, null)
         };
 
-        return new Transaction(datePay.DateOnly(), sell.ProductName, amountIn, promoCode, sell.InvoiceId,
-            sell.ProductId, email, payMethod);
+        return new Transaction(datePay.DateOnly, sell.ProductName, amountIn, promoCode, sell.InvoiceId, sell.ProductId,
+            email, payMethod);
     }
 
-    private static async Task<string> GetTokenAsync(string login, string password, string sellerSecret)
+    private static async Task<string> GetTokenAsync(string login, string password, string sellerSecret,
+        DateTimeFull now, JsonSerializerOptions options)
     {
-        TokenResponse result = await Digiseller.GetTokenAsync(login, password, sellerSecret);
+        TokenResponse result = await Digiseller.GetTokenAsync(login, password, sellerSecret, now, options);
         return result.Token.GetValue(nameof(result.Token));
     }
 
-    private static async Task<string?> GetPromoCodeAsync(int invoiceId, string token)
+    private static async Task<string?> GetPromoCodeAsync(int invoiceId, string token, JsonSerializerOptions options)
     {
-        PurchaseResponse result = await Digiseller.GetPurchaseAsync(invoiceId, token);
+        PurchaseResponse result = await Digiseller.GetPurchaseAsync(invoiceId, token, options);
         PurchaseResponse.ContentInfo content = result.Content.GetValue(nameof(result.Content));
         return content.PromoCode;
     }
@@ -137,30 +142,31 @@ public static class Utils
     #region PayMaster
 
     public static async Task<List<Donation>> GetNewPayMasterPaymentsAsync(string merchantId, DateOnly start,
-        DateOnly end, string token, IEnumerable<Donation> oldPayments)
+        DateOnly end, string token, IEnumerable<Donation> oldPayments, JsonSerializerOptions options)
     {
-        List<PaymentsResult.Item> allPayments = await GetPaymentsAsync(merchantId, start, end, token);
+        List<PaymentsResult.Item> allPayments = await GetPaymentsAsync(merchantId, start, end, token, options);
         List<PaymentsResult.Item> payments = allPayments.Where(p => p.TestMode is null || !p.TestMode.Value).ToList();
 
-        IEnumerable<int?> oldPaymentIds = oldPayments.Select(p => p.PaymentId);
+        IEnumerable<string?> oldPaymentIds = oldPayments.Select(p => p.PaymentId);
 
         IEnumerable<PaymentsResult.Item> newPayments = payments.Where(p => !oldPaymentIds.Contains(p.Id));
 
         return newPayments.Select(p => new Donation(p)).ToList();
     }
 
-    internal static string? GetPayMasterHyperlink(int? paymentId)
+    internal static string? GetPayMasterHyperlink(string? paymentId)
     {
         return GetHyperlink(PayMasterPaymentUrlFormat, paymentId);
     }
 
     public static async Task<List<PaymentsResult.Item>> GetPaymentsAsync(string merchantId, DateOnly start,
-        DateOnly end, string token)
+        DateOnly end, string token, JsonSerializerOptions options)
     {
         string startFormatted = start.ToString(PayMasterDateTimeFormat);
         string endFormatted = end.ToString(PayMasterDateTimeFormat);
 
-        PaymentsResult result = await PayMaster.GetPaymentsAsync(token, merchantId, startFormatted, endFormatted);
+        PaymentsResult result =
+            await PayMaster.GetPaymentsAsync(token, merchantId, startFormatted, endFormatted, options);
         List<PaymentsResult.Item?> items = result.Items.GetValue(nameof(result.Items));
         return items.RemoveNulls().Where(p => p.Status == PayMasterStatus).ToList();
     }
@@ -168,7 +174,7 @@ public static class Utils
     public static void FindPayment(Transaction transaction, IEnumerable<PaymentsResult.Item> payments,
         IEnumerable<string> descriptionFormats)
     {
-        if (transaction.DigisellerSellId is null || transaction.PayMasterPaymentId.HasValue)
+        if (transaction.DigisellerSellId is null || transaction.PayMasterPaymentId is not null)
         {
             return;
         }
@@ -205,7 +211,7 @@ public static class Utils
             donation.Total = donation.Amount - payMasterFee;
 
             TimeSpan difference =
-                DateTimeOffsetHelper.FromOnly(donation.Date) - DateTimeOffsetHelper.FromOnly(firstThursday);
+                donation.Date.ToDateTime(TimeOnly.MinValue) - firstThursday.ToDateTime(TimeOnly.MinValue);
             donation.Week = (ushort) Math.Ceiling(difference.TotalDays / 7);
         }
     }

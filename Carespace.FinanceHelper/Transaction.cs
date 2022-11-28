@@ -54,7 +54,7 @@ public sealed class Transaction
     public string? PayMasterPaymentIdLink
     {
         get => Utils.GetPayMasterHyperlink(PayMasterPaymentId);
-        set => PayMasterPaymentId = value.ToInt();
+        set => PayMasterPaymentId = value;
     }
 
     [UsedImplicitly]
@@ -110,7 +110,7 @@ public sealed class Transaction
 
     public bool NeedPaynemt => DigisellerSellId.HasValue && PayMasterPaymentId is null;
 
-    internal int? PayMasterPaymentId;
+    internal string? PayMasterPaymentId;
 
     internal int? DigisellerSellId;
 

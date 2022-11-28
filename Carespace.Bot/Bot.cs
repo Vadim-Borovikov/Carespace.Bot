@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
@@ -10,7 +11,6 @@ using Carespace.Bot.Events;
 using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
-using Newtonsoft.Json;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -29,7 +29,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         _weeklyUpdateTimer = new Events.Timer();
 
         GoogleCredentialJson = string.IsNullOrWhiteSpace(Config.GoogleCredentialJson)
-            ? JsonConvert.SerializeObject(Config.GoogleCredential)
+            ? JsonSerializer.Serialize(Config.GoogleCredential, JsonSerializerOptionsProvider.PascalCaseOptions)
             : Config.GoogleCredentialJson;
 
         if (config.Shares is not null)
@@ -39,7 +39,8 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         else if (config.SharesJson is not null)
         {
             Dictionary<string, List<Share>>? deserialized =
-                JsonConvert.DeserializeObject<Dictionary<string, List<Share>>>(config.SharesJson);
+                JsonSerializer.Deserialize<Dictionary<string, List<Share>>>(config.SharesJson,
+                    JsonSerializerOptionsProvider.PascalCaseOptions);
             if (deserialized is not null)
             {
                 Shares = deserialized;

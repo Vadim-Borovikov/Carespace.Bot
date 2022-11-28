@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+using GryphonUtilities;
+using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;
 
@@ -9,41 +10,43 @@ public sealed class SellsResponse
 {
     public sealed class Sell
     {
+        [UsedImplicitly]
+        [JsonConverter(typeof(JsonStringEnumMemberConverter))]
         public enum PayMethod
         {
             [EnumMember(Value = "Bank Card")]
-            [JsonProperty]
             BankCard,
             [EnumMember(Value = "Faster Payments System")]
-            [JsonProperty]
             Sbp
         }
 
-        [JsonProperty]
-        public int? InvoiceId { get; set; }
+        [UsedImplicitly]
+        public int? InvoiceId;
 
-        [JsonProperty]
-        public int? ProductId { get; set; }
+        [UsedImplicitly]
+        public int? ProductId;
 
-        [JsonProperty]
-        public string? ProductName { get; set; }
+        [UsedImplicitly]
+        public string? ProductName;
 
-        [JsonProperty]
-        public DateTimeOffset? DatePay { get; set; }
+        [UsedImplicitly]
+        public DateTimeFull? DatePay;
 
-        [JsonProperty]
-        public decimal? AmountIn { get; set; }
+        [UsedImplicitly]
+        public decimal? AmountIn;
 
-        [JsonProperty("method_pay")]
-        public PayMethod? PayMethodInfo { get; set; }
+        [UsedImplicitly]
+        [JsonPropertyName("method_pay")]
+        public PayMethod? PayMethodInfo;
 
-        [JsonProperty]
-        public string? Email { get; set; }
+        [UsedImplicitly]
+        public string? Email;
     }
 
-    [JsonProperty]
-    public int? Pages { get; set; }
+    [UsedImplicitly]
+    public int? Pages;
 
-    [JsonProperty("rows")]
-    public List<Sell?>? Sells { get; set; }
+    [UsedImplicitly]
+    [JsonPropertyName("rows")]
+    public List<Sell?>? Sells;
 }

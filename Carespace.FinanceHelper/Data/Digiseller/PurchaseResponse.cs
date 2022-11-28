@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;
 
-public sealed class PurchaseResponse
+internal sealed class PurchaseResponse
 {
     public sealed class ContentInfo
     {
-        [JsonProperty]
-        public string? PromoCode { get; set; }
+        [UsedImplicitly]
+        public string? PromoCode;
     }
 
-    [JsonProperty]
-    public ContentInfo? Content { get; set; }
+    [UsedImplicitly]
+    public ContentInfo? Content;
 }

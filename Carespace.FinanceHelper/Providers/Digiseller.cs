@@ -1,20 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.Digiseller;
 using GryphonUtilities;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace Carespace.FinanceHelper.Providers;
 
 internal static class Digiseller
 {
     public static Task<SellsResponse> GetSellsAsync(int sellerId, List<int> productIds, string start, string end,
-        int page, string sellerSecret)
+        int page, string sellerSecret, JsonSerializerOptions options)
     {
         string sign =
             Hash($"{sellerId}{string.Join("", productIds)}{start}{end}{Returned}{page}{RowsPerPage}{sellerSecret}");
@@ -31,12 +29,13 @@ internal static class Digiseller
         };
 
         return RestHelper.CallPostMethodAsync<SellsRequest, SellsResponse>(ApiProvider, GetSellsMethod, obj: obj,
-            settings: Settings);
+            options: options);
     }
 
-    public static Task<TokenResponse> GetTokenAsync(string login, string password, string sellerSecret)
+    public static Task<TokenResponse> GetTokenAsync(string login, string password, string sellerSecret,
+        DateTimeFull now, JsonSerializerOptions options)
     {
-        long timestamp = DateTimeOffset.Now.ToFileTime();
+        long timestamp = now.DateTimeOffset.ToFileTime();
         string sign = Hash($"{password}{sellerSecret}{timestamp}");
         TokenRequest obj = new()
         {
@@ -46,15 +45,15 @@ internal static class Digiseller
         };
 
         return RestHelper.CallPostMethodAsync<TokenRequest, TokenResponse>(ApiProvider, GetTokenMethod, obj: obj,
-            settings: Settings);
+            options: options);
     }
 
-    public static Task<PurchaseResponse> GetPurchaseAsync(int invoiceId, string token)
+    public static Task<PurchaseResponse> GetPurchaseAsync(int invoiceId, string token, JsonSerializerOptions options)
     {
         Dictionary<string, string?> queryParameters = new() { ["token"] = token };
 
         return RestHelper.CallGetMethodAsync<PurchaseResponse>(ApiProvider, $"{GetPurchaseMethod}{invoiceId}",
-            queryParameters: queryParameters);
+            queryParameters: queryParameters, options: options);
     }
 
     private static string Hash(string input)
@@ -71,14 +70,6 @@ internal static class Digiseller
         }
         return sb.ToString();
     }
-
-    private static readonly JsonSerializerSettings Settings = new()
-    {
-        ContractResolver = new DefaultContractResolver
-        {
-            NamingStrategy = new SnakeCaseNamingStrategy()
-        }
-    };
 
     private const string ApiProvider = "https://api.digiseller.ru/";
     private const string GetSellsMethod = "api/seller-sells";

@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;
 
-public sealed class TokenResponse
+internal sealed class TokenResponse
 {
-    [JsonProperty]
-    public string? Token { get; set; }
+    [UsedImplicitly]
+    public string? Token;
 }

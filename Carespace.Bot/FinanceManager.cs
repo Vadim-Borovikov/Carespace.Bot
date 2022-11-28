@@ -107,7 +107,8 @@ internal sealed class FinanceManager
 
         List<Transaction> newSells = await FinanceHelper.Utils.GetNewDigisellerSellsAsync(_bot.Config.DigisellerLogin,
             _bot.Config.DigisellerPassword, _bot.Config.DigisellerId, productIds, dateStart, dateEnd,
-            _bot.Config.DigisellerApiGuid, oldTransactions.Instances);
+            _bot.Config.DigisellerApiGuid, oldTransactions.Instances, _bot.TimeManager,
+            _bot.JsonSerializerOptionsProvider.SnakeCaseOptions);
 
         transactions.AddRange(newSells);
 
@@ -139,7 +140,7 @@ internal sealed class FinanceManager
             dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
             List<PaymentsResult.Item> payments =
                 await FinanceHelper.Utils.GetPaymentsAsync(_bot.Config.PayMasterMerchantIdDigiseller, dateStart,
-                    dateEnd, _bot.Config.PayMasterToken);
+                    dateEnd, _bot.Config.PayMasterToken, _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
 
             foreach (Transaction transaction in needPayment)
             {
@@ -196,7 +197,8 @@ internal sealed class FinanceManager
 
         List<Donation> newDonations =
             await FinanceHelper.Utils.GetNewPayMasterPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations, dateStart,
-            dateEnd, _bot.Config.PayMasterToken, oldDonations.Instances);
+            dateEnd, _bot.Config.PayMasterToken, oldDonations.Instances,
+            _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
 
         donations.AddRange(newDonations);
 

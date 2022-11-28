@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using GryphonUtilities;
+using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.PayMaster;
 
@@ -10,50 +10,50 @@ public sealed class PaymentsResult
     {
         public sealed class AmountInfo
         {
-            [JsonProperty]
-            public decimal? Value { get; set; }
+            [UsedImplicitly]
+            public decimal? Value;
         }
 
         public sealed class Payment
         {
-            [JsonProperty]
-            public string? PaymentMethod { get; set; }
+            [UsedImplicitly]
+            public string? PaymentMethod;
 
-            [JsonProperty]
-            public string? PaymentInstrumentTitle { get; set; }
+            [UsedImplicitly]
+            public string? PaymentInstrumentTitle;
         }
 
         public sealed class InvoiceInfo
         {
-            [JsonProperty]
-            public string? Description { get; set; }
+            [UsedImplicitly]
+            public string? Description;
 
-            [JsonProperty]
-            public string? OrderNo { get; set; }
+            [UsedImplicitly]
+            public string? OrderNo;
         }
 
-        [JsonProperty]
-        public int? Id { get; set; }
+        [UsedImplicitly]
+        public string? Id;
 
-        [JsonProperty]
-        public DateTimeOffset? Created { get; set; }
+        [UsedImplicitly]
+        public DateTimeFull? Created;
 
-        [JsonProperty]
-        public Payment? PaymentData { get; set; }
+        [UsedImplicitly]
+        public Payment? PaymentData;
 
-        [JsonProperty]
-        public AmountInfo? Amount { get; set; }
+        [UsedImplicitly]
+        public AmountInfo? Amount;
 
-        [JsonProperty]
-        public InvoiceInfo? Invoice { get; set; }
+        [UsedImplicitly]
+        public InvoiceInfo? Invoice;
 
-        [JsonProperty]
-        public string? Status { get; set; }
+        [UsedImplicitly]
+        public string? Status;
 
-        [JsonProperty]
-        public bool? TestMode { get; set; }
+        [UsedImplicitly]
+        public bool? TestMode;
     }
 
-    [JsonProperty]
-    public List<Item?>? Items { get; set; }
+    [UsedImplicitly]
+    public List<Item?>? Items;
 }
