@@ -77,22 +77,20 @@ internal sealed class Manager : IDisposable
 
     public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat)
     {
-        Message statusMessage =
-            await _bot.SendTextMessageAsync(chat, "_Обновляю расписание…_", ParseMode.MarkdownV2);
-
-        await PostOrUpdateEventsAsync();
-        await PostOrUpdateScheduleAsync();
-        await CreateOrUpdateNotificationsAsync();
-
-        List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
-        foreach (int id in toRemove)
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Обновляю расписание"))
         {
-            _saveManager.Data.Messages.Remove(id);
+            await PostOrUpdateEventsAsync();
+            await PostOrUpdateScheduleAsync();
+            await CreateOrUpdateNotificationsAsync();
+
+            List<int> toRemove = _saveManager.Data.Messages.Keys.Where(IsExcess).ToList();
+            foreach (int id in toRemove)
+            {
+                _saveManager.Data.Messages.Remove(id);
+            }
+
+            _saveManager.Save();
         }
-
-        _saveManager.Save();
-
-        await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 
     public void Dispose() => DisposeEvents();
@@ -296,8 +294,9 @@ internal sealed class Manager : IDisposable
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
-        Message message = await _bot.SendTextMessageAsync(_eventsChat, text, ParseMode.MarkdownV2,
-            null, disableWebPagePreview, disableNotification, null, replyToMessageId, null, keyboardMarkup);
+        Message message = await _bot.SendTextMessageAsync(_eventsChat, text, keyboardMarkup, ParseMode.MarkdownV2,
+            disableWebPagePreview: disableWebPagePreview, disableNotification: disableNotification,
+            replyToMessageId: replyToMessageId);
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, _bot.TimeManager)
         {
             Text = text,

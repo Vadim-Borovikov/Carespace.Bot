@@ -11,9 +11,9 @@ internal sealed class ConfirmCommand : CommandBaseCustom<Bot, Config>
 
     public ConfirmCommand(Bot bot) : base(bot, CommandName, "подтвердить отправку событий") { }
 
-    public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
+    public override async Task ExecuteAsync(Message message, Chat chat, string? payload)
     {
-        await Bot.EventManager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(message.Chat);
+        await Bot.EventManager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(chat);
     }
 
     public const string CommandName = "confirm";

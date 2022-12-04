@@ -7,6 +7,7 @@ using AbstractBot.Commands;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
+using GoogleSheetsManager.Providers;
 using GryphonUtilities;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -15,20 +16,29 @@ using Calendar = Carespace.Bot.Events.Calendar;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
+public sealed class Bot : BotBaseCustom<Config>, IDisposable
 {
+    internal readonly SheetsProvider GoogleSheetsProvider;
+    internal readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters;
+
     public Bot(Config config) : base(config)
     {
-        _saveManager = new SaveManager<Data>(Config.SavePath);
-
         Calendars = new Dictionary<int, Calendar>();
 
         _weeklyUpdateTimer = new Events.Timer();
 
+        GoogleSheetsProvider = new SheetsProvider(config, config.GoogleSheetId);
+
+        AdditionalConverters = new Dictionary<Type, Func<object?, object?>>
+        {
+            { typeof(Uri), Utils.ToUri }
+        };
         AdditionalConverters[typeof(DateOnly)] = AdditionalConverters[typeof(DateOnly?)] = o => GetDateOnly(o);
         AdditionalConverters[typeof(TimeOnly)] = AdditionalConverters[typeof(TimeOnly?)] = o => GetTimeOnly(o);
         AdditionalConverters[typeof(TimeSpan)] = AdditionalConverters[typeof(TimeSpan?)] = o => GetTimeSpan(o);
-        AdditionalConverters[typeof(Uri)] = Utils.ToUri;
+
+        SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
+        EventManager = new Manager(this, saveManager);
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
@@ -41,29 +51,39 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
     }
 
-    public override void Dispose()
+    public void Dispose()
     {
         _weeklyUpdateTimer.Dispose();
-        _eventManager?.Dispose();
-        base.Dispose();
+        EventManager.Dispose();
+        GoogleSheetsProvider.Dispose();
     }
 
-    protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+    protected override Task UpdateAsync(Message message, Chat senderChat, CommandBase? command = null,
+        string? payload = null)
+    {
+        if (AbstractBot.Utils.IsGroup(message.Chat) && (message.Type != MessageType.Text)
+                                                    && (message.Type != MessageType.SuccessfulPayment))
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.UpdateAsync(message, senderChat, command, payload);
+    }
+
+    protected override async Task ProcessTextMessageAsync(Message textMessage, Chat senderChat,
         CommandBase? command = null, string? payload = null)
     {
+        bool fromPrivateChat = textMessage.Chat.Type == ChatType.Private;
         if (command is null)
         {
-            if (fromChat)
+            if (fromPrivateChat)
             {
-                return;
+                await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
             }
-
-            await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
-
             return;
         }
 
-        if (fromChat)
+        if (!fromPrivateChat)
         {
             try
             {
@@ -76,11 +96,14 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
             }
         }
 
-        User user = textMessage.From.GetValue(nameof(textMessage.From));
-        bool shouldExecute = IsAccessSuffice(user.Id, command.Access);
-        if (!shouldExecute)
+        if (senderChat.Type != ChatType.Private)
         {
-            if (!fromChat)
+            return;
+        }
+
+        if (GetMaximumAccessFor(senderChat.Id) < command.Access)
+        {
+            if (fromPrivateChat)
             {
                 await SendStickerAsync(textMessage.Chat, ForbiddenSticker);
             }
@@ -89,23 +112,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
         try
         {
-            await command.ExecuteAsync(textMessage, fromChat, payload);
+            await command.ExecuteAsync(textMessage, senderChat, payload);
         }
         catch (ApiRequestException e)
             when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
         {
         }
-    }
-
-    protected override Task UpdateAsync(Message message, bool fromChat, CommandBase? command = null,
-        string? payload = null)
-    {
-        if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
-        {
-            return Task.CompletedTask;
-        }
-
-        return base.UpdateAsync(message, fromChat, command, payload);
     }
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -140,7 +152,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
             return d;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.DateOnly;
     }
 
@@ -151,7 +163,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
             return t;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.TimeOnly;
     }
 
@@ -162,18 +174,15 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
             return t;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.DateTimeOffset.TimeOfDay;
     }
 
     public readonly IDictionary<int, Calendar> Calendars;
 
-    internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
-
-    private Manager? _eventManager;
+    internal readonly Manager EventManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly SaveManager<Data> _saveManager;
 
     private const int MessageToDeleteNotFoundCode = 400;
     private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
