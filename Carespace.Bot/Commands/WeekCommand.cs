@@ -11,8 +11,8 @@ internal sealed class WeekCommand : CommandBaseCustom<Bot, Config.Config>
 
     public WeekCommand(Bot bot) : base(bot, "week", "обновить расписание") { }
 
-    public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
+    public override Task ExecuteAsync(Message message, Chat chat, string? payload)
     {
-        return Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat, true);
+        return Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(chat, true);
     }
 }

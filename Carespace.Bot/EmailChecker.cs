@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AbstractBot;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
@@ -18,9 +19,11 @@ internal sealed class EmailChecker
 
     public async Task CheckEmailAsync(Chat chat, MailAddress email)
     {
-        Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Проверяю…_", ParseMode.MarkdownV2);
-        bool found = await CheckEmailAsync(email);
-        await _bot.FinalizeStatusMessageAsync(statusMessage);
+        bool found;
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю"))
+        {
+            found = await CheckEmailAsync(email);
+        }
         if (found)
         {
             await _bot.SendTextMessageAsync(chat, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",

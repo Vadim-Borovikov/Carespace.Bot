@@ -14,6 +14,10 @@ public class Config : ConfigGoogleSheets
 {
     [Required]
     [MinLength(1)]
+    public string GoogleSheetId { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
     public string GoogleRange { get; init; } = null!;
 
     [Required]

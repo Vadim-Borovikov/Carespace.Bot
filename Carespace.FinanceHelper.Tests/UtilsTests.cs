@@ -104,7 +104,7 @@ public class UtilsTests
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);
         Assert.IsNotNull(_config.PayMasterFeePercents);
-        Utils.CalculateShares(new[] { transaction }, _config.TaxFeePercent, _config.DigisellerFeePercent,
+        Utils.CalculateShares(transaction.Yield(), _config.TaxFeePercent, _config.DigisellerFeePercent,
             _config.PayMasterFeePercents, Shares);
         Assert.AreEqual(digisellerFee, transaction.DigisellerFee);
         Assert.AreEqual(payMasterFee, transaction.PayMasterFee);

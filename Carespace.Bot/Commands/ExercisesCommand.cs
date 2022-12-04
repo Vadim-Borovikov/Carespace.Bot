@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AbstractBot.Commands;
-using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -11,14 +10,8 @@ internal sealed class ExercisesCommand : CommandBaseCustom<Bot, Config.Config>
 {
     public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения") { }
 
-    public override async Task ExecuteAsync(Message message, bool fromChat, string? payload)
+    public override async Task ExecuteAsync(Message message, Chat chat, string? payload)
     {
-        User user = message.From.GetValue(nameof(message.From));
-        Chat chat = new()
-        {
-            Id = user.Id,
-            Type = ChatType.Private
-        };
         foreach (string text in Bot.Config.ExercisesLinks.Select(GetMessage))
         {
             await Bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);

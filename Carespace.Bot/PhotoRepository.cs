@@ -19,13 +19,13 @@ internal static class PhotoRepository
         if (success && !string.IsNullOrWhiteSpace(fileId))
         {
             InputOnlineFile photo = new(fileId);
-            return await bot.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
+            return await bot.SendPhotoAsync(chat, photo, replyMarkup, caption, parseMode);
         }
 
         await using (FileStream stream = new(photoPath, FileMode.Open))
         {
             InputOnlineFile photo = new(stream);
-            Message message = await bot.SendPhotoAsync(chat, photo, caption, parseMode, replyMarkup: replyMarkup);
+            Message message = await bot.SendPhotoAsync(chat, photo, replyMarkup, caption, parseMode);
             PhotoSize[] photoSizes = message.Photo.GetValue(nameof(message.Photo));
             fileId = photoSizes.First().FileId;
             PhotoIds.TryAdd(photoPath, fileId);

@@ -9,6 +9,7 @@ using AbstractBot.Commands;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
+using GoogleSheetsManager.Providers;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot.Exceptions;
@@ -18,20 +19,21 @@ using Calendar = Carespace.Bot.Events.Calendar;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
+public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
 {
+    public readonly IDictionary<int, Calendar> Calendars = new Dictionary<int, Calendar>();
+
+    internal readonly Dictionary<string, List<Share>> Shares = new();
+
+    internal readonly SheetsProvider GoogleSheetsProvider;
+    internal readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters;
+
+    internal readonly string PracticeIntroduction;
+    internal readonly string PracticeSchedule;
+    internal readonly Manager EventManager;
+
     public Bot(Config.Config config) : base(config)
     {
-        _saveManager = new SaveManager<Data>(Config.SavePath);
-
-        Calendars = new Dictionary<int, Calendar>();
-
-        _weeklyUpdateTimer = new Events.Timer();
-
-        GoogleCredentialJson = string.IsNullOrWhiteSpace(Config.GoogleCredentialJson)
-            ? JsonSerializer.Serialize(Config.GoogleCredential, JsonSerializerOptionsProvider.PascalCaseOptions)
-            : Config.GoogleCredentialJson;
-
         if (config.Shares is not null)
         {
             Shares = config.Shares;
@@ -50,15 +52,23 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         _logsChatId = Config.SuperAdminId.GetValue(nameof(Config.SuperAdminId));
         PracticeIntroduction = string.Join(Environment.NewLine, Config.PracticeIntroduction);
         PracticeSchedule = string.Join(Environment.NewLine, Config.PracticeSchedule);
-        _weeklyUpdateTimer = new Events.Timer();
 
+        GoogleSheetsProvider = new SheetsProvider(config, config.GoogleSheetId);
+
+        AdditionalConverters = new Dictionary<Type, Func<object?, object?>>
+        {
+            { typeof(Uri), Utils.ToUri }
+        };
         AdditionalConverters[typeof(DateOnly)] = AdditionalConverters[typeof(DateOnly?)] = o => GetDateOnly(o);
         AdditionalConverters[typeof(TimeOnly)] = AdditionalConverters[typeof(TimeOnly?)] = o => GetTimeOnly(o);
         AdditionalConverters[typeof(TimeSpan)] = AdditionalConverters[typeof(TimeSpan?)] = o => GetTimeSpan(o);
-        AdditionalConverters[typeof(Uri)] = Utils.ToUri;
-    }
 
-    internal readonly Dictionary<string, List<Share>> Shares = new();
+        SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
+        EventManager = new Manager(this, saveManager);
+
+        _financeManager = new FinanceManager(this);
+        _emailChecker = new EmailChecker(this, _financeManager);
+    }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -67,7 +77,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         Commands.Add(new ExercisesCommand(this));
         Commands.Add(new LinksCommand(this));
         Commands.Add(new FeedbackCommand(this));
-        Commands.Add(new FinanceCommand(this, FinanceManager));
+        Commands.Add(new FinanceCommand(this, _financeManager));
         Commands.Add(new WeekCommand(this));
         Commands.Add(new ConfirmCommand(this));
 
@@ -76,21 +86,34 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
         AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
     }
 
-    public override void Dispose()
+    public void Dispose()
     {
         _weeklyUpdateTimer.Dispose();
-        _eventManager?.Dispose();
-        base.Dispose();
+        EventManager.Dispose();
+        GoogleSheetsProvider.Dispose();
     }
 
-    protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+    protected override Task UpdateAsync(Message message, Chat senderChat, CommandBase? command = null,
+        string? payload = null)
+    {
+        if (AbstractBot.Utils.IsGroup(message.Chat) && (message.Type != MessageType.Text)
+                                                    && (message.Type != MessageType.SuccessfulPayment))
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.UpdateAsync(message, senderChat, command, payload);
+    }
+
+    protected override async Task ProcessTextMessageAsync(Message textMessage, Chat senderChat,
         CommandBase? command = null, string? payload = null)
     {
+        bool fromPrivateChat = textMessage.Chat.Type == ChatType.Private;
         if (command is null)
         {
-            if (fromChat)
+            if (fromPrivateChat)
             {
-                return;
+                await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
             }
 
             MailAddress? email = textMessage.Text.ToEmail();
@@ -100,12 +123,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             }
             else
             {
-                await EmailChecker.CheckEmailAsync(textMessage.Chat, email);
+                await _emailChecker.CheckEmailAsync(textMessage.Chat, email);
             }
             return;
         }
 
-        if (fromChat)
+        if (!fromPrivateChat)
         {
             try
             {
@@ -118,11 +141,14 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             }
         }
 
-        User user = textMessage.From.GetValue(nameof(textMessage.From));
-        bool shouldExecute = IsAccessSuffice(user.Id, command.Access);
-        if (!shouldExecute)
+        if (senderChat.Type != ChatType.Private)
         {
-            if (!fromChat)
+            return;
+        }
+
+        if (GetMaximumAccessFor(senderChat.Id) < command.Access)
+        {
+            if (fromPrivateChat)
             {
                 await SendStickerAsync(textMessage.Chat, ForbiddenSticker);
             }
@@ -131,23 +157,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
 
         try
         {
-            await command.ExecuteAsync(textMessage, fromChat, payload);
+            await command.ExecuteAsync(textMessage, senderChat, payload);
         }
         catch (ApiRequestException e)
             when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
         {
         }
-    }
-
-    protected override Task UpdateAsync(Message message, bool fromChat, CommandBase? command = null,
-        string? payload = null)
-    {
-        if (fromChat && (message.Type != MessageType.Text) && (message.Type != MessageType.SuccessfulPayment))
-        {
-            return Task.CompletedTask;
-        }
-
-        return base.UpdateAsync(message, fromChat, command, payload);
     }
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -182,7 +197,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             return d;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.DateOnly;
     }
 
@@ -193,7 +208,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             return t;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.TimeOnly;
     }
 
@@ -204,27 +219,14 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config.Config>
             return t;
         }
 
-        DateTimeFull? dtf = GetDateTimeFull(o);
+        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
         return dtf?.DateTimeOffset.TimeOfDay;
     }
 
-    public readonly IDictionary<int, Calendar> Calendars;
+    private readonly EmailChecker _emailChecker;
+    private readonly FinanceManager _financeManager;
 
-    internal readonly string GoogleCredentialJson;
-    internal readonly string PracticeIntroduction;
-    internal readonly string PracticeSchedule;
-
-    internal Manager EventManager => _eventManager ??= new Manager(this, _saveManager);
-
-    private FinanceManager FinanceManager => _financeManager ??= new FinanceManager(this);
-    private EmailChecker EmailChecker => _emailChecker ??= new EmailChecker(this, FinanceManager);
-
-    private Manager? _eventManager;
-    private EmailChecker? _emailChecker;
-    private FinanceManager? _financeManager;
-
-    private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly SaveManager<Data> _saveManager;
+    private readonly Events.Timer _weeklyUpdateTimer = new();
     private readonly long _logsChatId;
 
     private const int MessageToDeleteNotFoundCode = 400;
