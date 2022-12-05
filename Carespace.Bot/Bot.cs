@@ -113,17 +113,15 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
         {
             if (fromPrivateChat)
             {
-                await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
-            }
-
-            MailAddress? email = textMessage.Text.ToEmail();
-            if (email is null)
-            {
-                await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
-            }
-            else
-            {
-                await _emailChecker.CheckEmailAsync(textMessage.Chat, email);
+                MailAddress? email = textMessage.Text.ToEmail();
+                if (email is null)
+                {
+                    await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
+                }
+                else
+                {
+                    await _emailChecker.CheckEmailAsync(textMessage.Chat, email);
+                }
             }
             return;
         }
