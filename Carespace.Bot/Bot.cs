@@ -1,21 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Mail;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
-using AbstractBot.Commands;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
 using GoogleSheetsManager.Providers;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
-using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Calendar = Carespace.Bot.Events.Calendar;
+using Carespace.Bot.Email;
 
 namespace Carespace.Bot;
 
@@ -30,7 +28,6 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
 
     internal readonly string PracticeIntroduction;
     internal readonly string PracticeSchedule;
-    internal readonly Manager EventManager;
 
     public Bot(Config.Config config) : base(config)
     {
@@ -64,23 +61,25 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
         AdditionalConverters[typeof(TimeSpan)] = AdditionalConverters[typeof(TimeSpan?)] = o => GetTimeSpan(o);
 
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        EventManager = new Manager(this, saveManager);
+        _eventManager = new Manager(this, saveManager);
+        FinanceManager financeManager = new(this);
+        Checker emailChecker = new(this, financeManager);
 
-        _financeManager = new FinanceManager(this);
-        _emailChecker = new EmailChecker(this, _financeManager);
+        Operations.Add(new WeekCommand(this, _eventManager));
+        Operations.Add(new ConfirmCommand(this, _eventManager));
+        Operations.Add(new IntroCommand(this));
+        Operations.Add(new ScheduleCommand(this));
+        Operations.Add(new ExercisesCommand(this, config));
+        Operations.Add(new LinksCommand(this));
+        Operations.Add(new FeedbackCommand(this));
+        Operations.Add(new FinanceCommand(this, financeManager));
+        Operations.Add(new WeekCommand(this, _eventManager));
+        Operations.Add(new ConfirmCommand(this, _eventManager));
+        Operations.Add(new CheckOperation(this, emailChecker));
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        Commands.Add(new IntroCommand(this));
-        Commands.Add(new ScheduleCommand(this));
-        Commands.Add(new ExercisesCommand(this));
-        Commands.Add(new LinksCommand(this));
-        Commands.Add(new FeedbackCommand(this));
-        Commands.Add(new FinanceCommand(this, _financeManager));
-        Commands.Add(new WeekCommand(this));
-        Commands.Add(new ConfirmCommand(this));
-
         await base.StartAsync(cancellationToken);
 
         AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
@@ -89,78 +88,13 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
     public void Dispose()
     {
         _weeklyUpdateTimer.Dispose();
-        EventManager.Dispose();
+        _eventManager.Dispose();
         GoogleSheetsProvider.Dispose();
     }
 
-    protected override Task UpdateAsync(Message message, Chat senderChat, CommandBase? command = null,
-        string? payload = null)
+    protected override Task UpdateAsync(Message message)
     {
-        if (AbstractBot.Utils.IsGroup(message.Chat) && (message.Type != MessageType.Text)
-                                                    && (message.Type != MessageType.SuccessfulPayment))
-        {
-            return Task.CompletedTask;
-        }
-
-        return base.UpdateAsync(message, senderChat, command, payload);
-    }
-
-    protected override async Task ProcessTextMessageAsync(Message textMessage, Chat senderChat,
-        CommandBase? command = null, string? payload = null)
-    {
-        bool fromPrivateChat = textMessage.Chat.Type == ChatType.Private;
-        if (command is null)
-        {
-            if (fromPrivateChat)
-            {
-                MailAddress? email = textMessage.Text.ToEmail();
-                if (email is null)
-                {
-                    await SendStickerAsync(textMessage.Chat, DontUnderstandSticker);
-                }
-                else
-                {
-                    await _emailChecker.CheckEmailAsync(textMessage.Chat, email);
-                }
-            }
-            return;
-        }
-
-        if (!fromPrivateChat)
-        {
-            try
-            {
-                await DeleteMessageAsync(textMessage.Chat, textMessage.MessageId);
-            }
-            catch (ApiRequestException e)
-                when ((e.ErrorCode == MessageToDeleteNotFoundCode) && (e.Message == MessageToDeleteNotFoundText))
-            {
-                return;
-            }
-        }
-
-        if (senderChat.Type != ChatType.Private)
-        {
-            return;
-        }
-
-        if (GetMaximumAccessFor(senderChat.Id) < command.Access)
-        {
-            if (fromPrivateChat)
-            {
-                await SendStickerAsync(textMessage.Chat, ForbiddenSticker);
-            }
-            return;
-        }
-
-        try
-        {
-            await command.ExecuteAsync(textMessage, senderChat, payload);
-        }
-        catch (ApiRequestException e)
-            when ((e.ErrorCode == CantInitiateConversationCode) && (e.Message == CantInitiateConversationText))
-        {
-        }
+        return AbstractBot.Utils.IsGroup(message.Chat) ? Task.CompletedTask : base.UpdateAsync(message);
     }
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -170,9 +104,9 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
             Id = _logsChatId,
             Type = ChatType.Private
         };
-        await EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
-        Schedule(() => EventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, false),
-            nameof(EventManager.PostOrUpdateWeekEventsAndScheduleAsync));
+        await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
+        Schedule(() => _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, false),
+            nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
     private void Schedule(Func<Task> func, string funcName)
@@ -221,14 +155,8 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
         return dtf?.DateTimeOffset.TimeOfDay;
     }
 
-    private readonly EmailChecker _emailChecker;
-    private readonly FinanceManager _financeManager;
+    private readonly Manager _eventManager;
 
     private readonly Events.Timer _weeklyUpdateTimer = new();
     private readonly long _logsChatId;
-
-    private const int MessageToDeleteNotFoundCode = 400;
-    private const string MessageToDeleteNotFoundText = "Bad Request: message to delete not found";
-    private const int CantInitiateConversationCode = 403;
-    private const string CantInitiateConversationText = "Forbidden: bot can't initiate conversation with a user";
 }

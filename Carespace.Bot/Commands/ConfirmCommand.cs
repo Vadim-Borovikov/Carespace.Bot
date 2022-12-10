@@ -1,20 +1,27 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
+using Carespace.Bot.Events;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class ConfirmCommand : CommandBaseCustom<Bot, Config.Config>
+internal sealed class ConfirmCommand : CommandOperation
 {
-    public override BotBase.AccessType Access => BotBase.AccessType.Admins;
+    public const string CommandName = "confirm";
 
-    public ConfirmCommand(Bot bot) : base(bot, CommandName, "подтвердить отправку событий") { }
+    protected override byte MenuOrder => 8;
 
-    public override async Task ExecuteAsync(Message message, Chat chat, string? payload)
+    protected override Access AccessLevel => Access.Admins;
+
+    public ConfirmCommand(Bot bot, Manager manager) : base(bot, CommandName, "подтвердить отправку событий")
     {
-        await Bot.EventManager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(chat);
+        _manager = manager;
     }
 
-    public const string CommandName = "confirm";
+    protected override async Task ExecuteAsync(Message _, Chat chat, string? __)
+    {
+        await _manager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(chat);
+    }
+
+    private readonly Manager _manager;
 }

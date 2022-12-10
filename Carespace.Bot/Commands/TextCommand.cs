@@ -1,21 +1,23 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal abstract class TextCommand : CommandBaseCustom<Bot, Config.Config>
+internal abstract class TextCommand : CommandOperation
 {
     protected TextCommand(Bot bot, string command, string description, string text) : base(bot, command, description)
     {
+        _bot = bot;
         _text = text;
     }
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload)
+    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
     {
-        return Bot.SendTextMessageAsync(chat, _text, ParseMode.MarkdownV2);
+        return _bot.SendTextMessageAsync(chat, _text, ParseMode.MarkdownV2);
     }
 
+    private readonly Bot _bot;
     private readonly string _text;
 }

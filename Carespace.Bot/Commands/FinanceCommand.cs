@@ -1,20 +1,21 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class FinanceCommand : CommandBaseCustom<Bot, Config.Config>
+internal sealed class FinanceCommand : CommandOperation
 {
-    public override BotBase.AccessType Access => BotBase.AccessType.SuperAdmin;
+    protected override byte MenuOrder => 9;
+
+    protected override Access AccessLevel => Access.SuperAdmin;
 
     public FinanceCommand(Bot bot, FinanceManager manager) : base(bot, "finance", "обновить финансы")
     {
         _manager = manager;
     }
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload) => _manager.UpdateFinances(chat);
+    protected override Task ExecuteAsync(Message _, Chat chat, string? __) => _manager.UpdateFinances(chat);
 
     private readonly FinanceManager _manager;
 }

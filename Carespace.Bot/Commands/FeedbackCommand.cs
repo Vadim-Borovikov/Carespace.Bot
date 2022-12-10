@@ -1,15 +1,19 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class FeedbackCommand : CommandBaseCustom<Bot, Config.Config>
+internal sealed class FeedbackCommand : CommandOperation
 {
-    public FeedbackCommand(Bot bot) : base(bot, "feedback", "оставить обратную связь") { }
+    protected override byte MenuOrder => 6;
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload)
+    public FeedbackCommand(Bot bot) : base(bot, "feedback", "оставить обратную связь") => _bot = bot;
+
+    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
     {
-        return Bot.SendMessageAsync(Bot.Config.FeedbackLink, chat);
+        return _bot.SendMessageAsync(_bot.Config.FeedbackLink, chat);
     }
+
+    private readonly Bot _bot;
 }

@@ -1,18 +1,22 @@
 ﻿using System.Threading.Tasks;
-using AbstractBot;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
+using Carespace.Bot.Events;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class WeekCommand : CommandBaseCustom<Bot, Config.Config>
+internal sealed class WeekCommand : CommandOperation
 {
-    public override BotBase.AccessType Access => BotBase.AccessType.Admins;
+    protected override byte MenuOrder => 7;
 
-    public WeekCommand(Bot bot) : base(bot, "week", "обновить расписание") { }
+    protected override Access AccessLevel => Access.Admins;
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload)
+    public WeekCommand(Bot bot, Manager manager) : base(bot, "week", "обновить расписание") => _manager = manager;
+
+    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
     {
-        return Bot.EventManager.PostOrUpdateWeekEventsAndScheduleAsync(chat, true);
+        return _manager.PostOrUpdateWeekEventsAndScheduleAsync(chat, true);
     }
+
+    private readonly Manager _manager;
 }

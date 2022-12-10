@@ -1,27 +1,31 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using AbstractBot.Commands;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Commands;
 
-internal sealed class ExercisesCommand : CommandBaseCustom<Bot, Config.Config>
+internal sealed class ExercisesCommand : CommandOperation
 {
-    public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения") { }
+    protected override byte MenuOrder => 4;
 
-    public override async Task ExecuteAsync(Message message, Chat chat, string? payload)
+    public ExercisesCommand(Bot bot, Config.Config config) : base(bot, "exercises", "упражнения") => _config = config;
+
+    protected override async Task ExecuteAsync(Message _, Chat chat, string? __)
     {
-        foreach (string text in Bot.Config.ExercisesLinks.Select(GetMessage))
+        foreach (string text in _config.ExercisesLinks.Select(GetMessage))
         {
-            await Bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
+            await BotBase.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
         }
     }
 
     private string GetMessage(string link)
     {
-        return string.Format(Bot.Config.Template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
+        return string.Format(_config.Template, WordJoiner, AbstractBot.Utils.EscapeCharacters(link));
     }
 
     private const string WordJoiner = "\u2060";
+
+    private readonly Config.Config _config;
 }
