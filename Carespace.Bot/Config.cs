@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using AbstractBot;
-using GryphonUtilities;
+using AbstractBot.Configs;
+using GryphonUtilities.Extensions;
 using JetBrains.Annotations;
 
 // ReSharper disable NullableWarningSuppressionIsUsed
@@ -14,6 +14,10 @@ public class Config : ConfigGoogleSheets
     [Required]
     [MinLength(1)]
     public string GoogleSheetId { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
