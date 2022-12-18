@@ -3,28 +3,28 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AbstractBot;
+using AbstractBot.Bots;
+using AbstractBot.Extensions;
 using Carespace.Bot.Commands;
+using Carespace.Bot.Config;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
-using GoogleSheetsManager.Providers;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Calendar = Carespace.Bot.Events.Calendar;
 using Carespace.Bot.Email;
+using GryphonUtilities.Extensions;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
+public sealed class Bot : BotWithSheets<Config.Config>
 {
     public readonly IDictionary<int, Calendar> Calendars = new Dictionary<int, Calendar>();
 
     internal readonly Dictionary<string, List<Share>> Shares = new();
-
-    internal readonly SheetsProvider GoogleSheetsProvider;
-    internal readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters;
 
     internal readonly string PracticeIntroduction;
     internal readonly string PracticeSchedule;
@@ -50,20 +50,22 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
         PracticeIntroduction = string.Join(Environment.NewLine, Config.PracticeIntroduction);
         PracticeSchedule = string.Join(Environment.NewLine, Config.PracticeSchedule);
 
-        GoogleSheetsProvider = new SheetsProvider(config, config.GoogleSheetId);
-
-        AdditionalConverters = new Dictionary<Type, Func<object?, object?>>
+        Dictionary<Type, Func<object?, object?>> additionalConverters = new()
         {
-            { typeof(Uri), Utils.ToUri }
+            { typeof(Uri), o => o.ToUri() }
         };
-        AdditionalConverters[typeof(DateOnly)] = AdditionalConverters[typeof(DateOnly?)] = o => GetDateOnly(o);
-        AdditionalConverters[typeof(TimeOnly)] = AdditionalConverters[typeof(TimeOnly?)] = o => GetTimeOnly(o);
-        AdditionalConverters[typeof(TimeSpan)] = AdditionalConverters[typeof(TimeSpan?)] = o => GetTimeSpan(o);
+        additionalConverters[typeof(DateOnly)] = additionalConverters[typeof(DateOnly?)] =
+            o => o.ToDateOnly(TimeManager);
+        additionalConverters[typeof(TimeOnly)] = additionalConverters[typeof(TimeOnly?)] =
+            o => o.ToTimeOnly(TimeManager);
+        additionalConverters[typeof(TimeSpan)] = additionalConverters[typeof(TimeSpan?)] =
+            o => o.ToTimeSpan(TimeManager);
 
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        _eventManager = new Manager(this, saveManager);
-        FinanceManager financeManager = new(this);
+        _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
+        FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
         Checker emailChecker = new(this, financeManager);
+        _weeklyUpdateTimer = new Events.Timer(Logger);
 
         Operations.Add(new WeekCommand(this, _eventManager));
         Operations.Add(new ConfirmCommand(this, _eventManager));
@@ -82,19 +84,40 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
     {
         await base.StartAsync(cancellationToken);
 
-        AbstractBot.Utils.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), cancellationToken);
+        AbstractBot.Invoker.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), Logger, cancellationToken);
     }
 
-    public void Dispose()
+    internal Task SendMessageAsync(Link link, Chat chat)
     {
-        _weeklyUpdateTimer.Dispose();
-        _eventManager.Dispose();
-        GoogleSheetsProvider.Dispose();
+        if (string.IsNullOrWhiteSpace(link.PhotoPath))
+        {
+            string text = $"[{EscapeCharacters(link.Name)}]({link.Uri.AbsoluteUri})";
+            return SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
+        }
+
+        InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
+        return PhotoRepository.SendPhotoAsync(this, chat, link.PhotoPath, replyMarkup: keyboard);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (!disposing)
+        {
+            _weeklyUpdateTimer.Dispose();
+            _eventManager.Dispose();
+        }
+        base.Dispose(disposing);
     }
 
     protected override Task UpdateAsync(Message message)
     {
-        return AbstractBot.Utils.IsGroup(message.Chat) ? Task.CompletedTask : base.UpdateAsync(message);
+        return message.Chat.IsGroup() ? Task.CompletedTask : base.UpdateAsync(message);
+    }
+
+    private static InlineKeyboardMarkup GetReplyMarkup(Link link)
+    {
+        InlineKeyboardButton button = new(link.Name) { Url = link.Uri.AbsoluteUri };
+        return new InlineKeyboardMarkup(button);
     }
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
@@ -112,7 +135,7 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
     private void Schedule(Func<Task> func, string funcName)
     {
         DateTimeFull nextUpdateAt =
-            TimeManager.GetDateTimeFull(Utils.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
+            TimeManager.GetDateTimeFull(Week.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
         _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
     }
 
@@ -122,41 +145,8 @@ public sealed class Bot : BotBaseCustom<Config.Config>, IDisposable
         _weeklyUpdateTimer.DoWeekly(func, funcName);
     }
 
-    private DateOnly? GetDateOnly(object? o)
-    {
-        if (o is DateOnly d)
-        {
-            return d;
-        }
-
-        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
-        return dtf?.DateOnly;
-    }
-
-    private TimeOnly? GetTimeOnly(object? o)
-    {
-        if (o is TimeOnly t)
-        {
-            return t;
-        }
-
-        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
-        return dtf?.TimeOnly;
-    }
-
-    private TimeSpan? GetTimeSpan(object? o)
-    {
-        if (o is TimeSpan t)
-        {
-            return t;
-        }
-
-        DateTimeFull? dtf = GoogleSheetsManager.Utils.GetDateTimeFull(o, GoogleSheetsProvider.TimeManager);
-        return dtf?.DateTimeOffset.TimeOfDay;
-    }
-
     private readonly Manager _eventManager;
 
-    private readonly Events.Timer _weeklyUpdateTimer = new();
+    private readonly Events.Timer _weeklyUpdateTimer;
     private readonly long _logsChatId;
 }

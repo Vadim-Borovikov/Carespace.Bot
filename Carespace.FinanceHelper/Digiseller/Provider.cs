@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.Digiseller;
 using GryphonUtilities;
 
-namespace Carespace.FinanceHelper.Providers;
+namespace Carespace.FinanceHelper.Digiseller;
 
-internal static class Digiseller
+internal static class Provider
 {
     public static Task<SellsResponse> GetSellsAsync(int sellerId, List<int> productIds, string start, string end,
         int page, string sellerSecret, JsonSerializerOptions options)
@@ -28,8 +28,7 @@ internal static class Digiseller
             Sign = sign
         };
 
-        return RestHelper.CallPostMethodAsync<SellsRequest, SellsResponse>(ApiProvider, GetSellsMethod, obj: obj,
-            options: options);
+        return RestManager<SellsResponse>.PostAsync(ApiProvider, GetSellsMethod, obj: obj, options: options);
     }
 
     public static Task<TokenResponse> GetTokenAsync(string login, string password, string sellerSecret,
@@ -44,15 +43,14 @@ internal static class Digiseller
             Sign = sign
         };
 
-        return RestHelper.CallPostMethodAsync<TokenRequest, TokenResponse>(ApiProvider, GetTokenMethod, obj: obj,
-            options: options);
+        return RestManager<TokenResponse>.PostAsync(ApiProvider, GetTokenMethod, obj: obj, options: options);
     }
 
     public static Task<PurchaseResponse> GetPurchaseAsync(int invoiceId, string token, JsonSerializerOptions options)
     {
         Dictionary<string, string?> queryParameters = new() { ["token"] = token };
 
-        return RestHelper.CallGetMethodAsync<PurchaseResponse>(ApiProvider, $"{GetPurchaseMethod}{invoiceId}",
+        return RestManager<PurchaseResponse>.GetAsync(ApiProvider, $"{GetPurchaseMethod}{invoiceId}",
             queryParameters: queryParameters, options: options);
     }
 

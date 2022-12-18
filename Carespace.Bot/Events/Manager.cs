@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,7 +8,9 @@ using AbstractBot;
 using Carespace.Bot.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
+using GoogleSheetsManager.Documents;
 using GryphonUtilities;
+using GryphonUtilities.Extensions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -16,20 +19,12 @@ namespace Carespace.Bot.Events;
 
 internal sealed class Manager : IDisposable
 {
-    private readonly Bot _bot;
-    private readonly SaveManager<Data> _saveManager;
-    private readonly InlineKeyboardButton _discussButton;
-    private readonly InlineKeyboardMarkup _discussKeyboard;
-
-    private readonly Dictionary<int, Event> _events = new();
-
-    private readonly Chat _eventsChat;
-    private readonly Chat _discussChat;
-
-    public Manager(Bot bot, SaveManager<Data> saveManager)
+    public Manager(Bot bot, DocumentsManager documentsManager,
+        Dictionary<Type, Func<object?, object?>> additionalConverters, SaveManager<Data> saveManager)
     {
         _bot = bot;
-
+        _documentsManager = documentsManager;
+        _additionalConverters = additionalConverters;
         _eventsChat = new Chat
         {
             Id = _bot.Config.EventsChannelId,
@@ -55,7 +50,7 @@ internal sealed class Manager : IDisposable
 
     public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat, bool shouldConfirm)
     {
-        _weekStart = Utils.GetMonday(_bot.TimeManager);
+        _weekStart = Week.GetMonday(_bot.TimeManager);
         _weekEnd = _weekStart.AddDays(7);
 
         IEnumerable<Template> templates = await LoadRelevantTemplatesAsync();
@@ -157,7 +152,7 @@ internal sealed class Manager : IDisposable
                     keyboard: MessageData.KeyboardType.Full);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
-                _events[savedTemplateId] = new Event(template, data.MessageId, data.NotificationId);
+                _events[savedTemplateId] = new Event(template, data.MessageId, _bot.Logger, data.NotificationId);
             }
             else
             {
@@ -172,7 +167,7 @@ internal sealed class Manager : IDisposable
         {
             _bot.Calendars[template.Id] = new Calendar(template, _bot.TimeManager);
             int messageId = await PostEventAsync(template);
-            _events[template.Id] = new Event(template, messageId);
+            _events[template.Id] = new Event(template, messageId, _bot.Logger);
         }
 
         _saveManager.Data.Events = _events.ToDictionary(e => e.Key, e => new EventData(e.Value));
@@ -269,7 +264,7 @@ internal sealed class Manager : IDisposable
     private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
     {
         string text =
-            $"{prefix} мероприятие [{AbstractBot.Utils.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
+            $"{prefix} мероприятие [{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
 
         if (e.NotificationId.HasValue)
         {
@@ -336,8 +331,13 @@ internal sealed class Manager : IDisposable
 
     private async Task<IEnumerable<Template>> LoadRelevantTemplatesAsync()
     {
-        SheetData<Template> templates = await DataManager<Template>.LoadAsync(_bot.GoogleSheetsProvider,
-            _bot.Config.GoogleRange, additionalConverters: _bot.AdditionalConverters);
+        if (_sheet is null)
+        {
+            GoogleSheetsManager.Documents.Document document = _documentsManager.GetOrAdd(_bot.Config.GoogleSheetId);
+            _sheet = document.GetOrAddSheet(_bot.Config.GoogleTitle, _additionalConverters);
+        }
+
+        SheetData<Template> templates = await _sheet.LoadAsync<Template>(_bot.Config.GoogleRange);
         return LoadRelevantTemplates(templates.Instances);
     }
 
@@ -379,18 +379,24 @@ internal sealed class Manager : IDisposable
                     scheduleBuilder.AppendLine();
                 }
                 date = e.Template.StartDate;
-                scheduleBuilder.AppendLine($"*{Utils.ShowDate(date)}*");
+                scheduleBuilder.AppendLine($"*{ShowDate(date)}*");
             }
-            string name = AbstractBot.Utils.EscapeCharacters(e.Template.Name);
+            string name = AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name);
             Uri uri = GetChannelMessageUri(_bot.Config.EventsChannelId, e.MessageId);
-            string messageUrl = AbstractBot.Utils.EscapeCharacters(uri.AbsoluteUri);
+            string messageUrl = AbstractBot.Bots.Bot.EscapeCharacters(uri.AbsoluteUri);
             string weekly = e.Template.IsWeekly ? " 🔄" : "";
             scheduleBuilder.AppendLine($"{e.Template.StartTime:HH:mm} [{name}]({messageUrl}){weekly}");
         }
         scheduleBuilder.AppendLine();
-        string url = AbstractBot.Utils.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
+        string url = AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.EventsFormUri.AbsoluteUri);
         scheduleBuilder.Append($"Оставить заявку на добавление своего мероприятия можно здесь: {url}\\.");
         return scheduleBuilder.ToString();
+    }
+
+    private static string ShowDate(DateOnly date)
+    {
+        string day = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("dddd"));
+        return $"{day}, {date:d MMMM}";
     }
 
     private static Uri GetChannelMessageUri(long channelId, int messageId)
@@ -428,7 +434,7 @@ internal sealed class Manager : IDisposable
     {
         if ((data?.Text == text) && (data.Keyboard == keyboard))
         {
-            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, messageId, text);
+            UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, _bot.Logger, messageId, text);
             return;
         }
         InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
@@ -483,11 +489,11 @@ internal sealed class Manager : IDisposable
     {
         StringBuilder builder = new();
 
-        builder.Append($"[{WordJoiner}]({AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)})");
-        builder.AppendLine($"*{AbstractBot.Utils.EscapeCharacters(template.Name)}*");
+        builder.Append($"[{Text.WordJoiner}]({AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)})");
+        builder.AppendLine($"*{AbstractBot.Bots.Bot.EscapeCharacters(template.Name)}*");
 
         builder.AppendLine();
-        builder.AppendLine(AbstractBot.Utils.EscapeCharacters(template.Description));
+        builder.AppendLine(AbstractBot.Bots.Bot.EscapeCharacters(template.Description));
 
         builder.AppendLine();
         builder.Append("🕰️ *Когда:* ");
@@ -531,14 +537,14 @@ internal sealed class Manager : IDisposable
         if (!string.IsNullOrWhiteSpace(template.Hosts))
         {
             builder.AppendLine();
-            builder.AppendLine($"🎤 *Кто ведёт*: {AbstractBot.Utils.EscapeCharacters(template.Hosts)}\\.");
+            builder.AppendLine($"🎤 *Кто ведёт*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Hosts)}\\.");
         }
 
         builder.AppendLine();
-        builder.AppendLine($"💰 *Цена*: {AbstractBot.Utils.EscapeCharacters(template.Price)}\\.");
+        builder.AppendLine($"💰 *Цена*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Price)}\\.");
 
         builder.AppendLine();
-        builder.Append($"🗞️ *Принять участие*: {AbstractBot.Utils.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
+        builder.Append($"🗞️ *Принять участие*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
 
         return builder.ToString();
     }
@@ -547,7 +553,7 @@ internal sealed class Manager : IDisposable
     {
         return new InlineKeyboardButton("📅 В календарь")
         {
-            Url = string.Format(Utils.CalendarUriFormat, _bot.Host, template.Id)
+            Url = string.Format(CalendarUriFormat, _bot.Host, template.Id)
         };
     }
 
@@ -562,17 +568,33 @@ internal sealed class Manager : IDisposable
                && _saveManager.Data.Events.Values.All(d => (d.MessageId != id) && (d.NotificationId != id));
     }
 
-    private DateOnly _weekStart;
-    private DateOnly _weekEnd;
-    private bool _waitingForConfirmation;
+    private const string GroupUriFormat = "https://t.me/{0}";
+    private const string GroupMessageUriFormat = "{0}/{1}";
+    private const string CalendarUriFormat = "{0}/calendar/{1}";
+
+    private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+    private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
 
     private readonly Dictionary<int, Template> _templates = new();
     private readonly List<Template> _toPost = new();
 
-    private const string GroupUriFormat = "https://t.me/{0}";
-    private const string GroupMessageUriFormat = "{0}/{1}";
-    private const string WordJoiner = "\u2060";
+    private readonly Bot _bot;
+    private readonly DocumentsManager _documentsManager;
+    private readonly Dictionary<Type, Func<object?, object?>> _additionalConverters;
+    private readonly SaveManager<Data> _saveManager;
 
-    private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
-    private static readonly TimeSpan Soon = TimeSpan.FromMinutes(15);
+    private readonly Dictionary<int, Event> _events = new();
+
+    private readonly Chat _eventsChat;
+
+    private readonly InlineKeyboardButton _discussButton;
+    private readonly InlineKeyboardMarkup _discussKeyboard;
+
+    private readonly Chat _discussChat;
+
+    private Sheet? _sheet;
+
+    private DateOnly _weekStart;
+    private DateOnly _weekEnd;
+    private bool _waitingForConfirmation;
 }

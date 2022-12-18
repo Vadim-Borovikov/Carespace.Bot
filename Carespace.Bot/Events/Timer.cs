@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,7 +12,11 @@ namespace Carespace.Bot.Events;
 
 internal sealed class Timer : IDisposable
 {
-    public Timer() => _cancellationTokenSource = new CancellationTokenSource();
+    public Timer(Logger logger)
+    {
+        _logger = logger;
+        _cancellationTokenSource = new CancellationTokenSource();
+    }
 
     public void Dispose()
     {
@@ -27,7 +32,7 @@ internal sealed class Timer : IDisposable
         _doPeriodically = false;
         _funcName = funcName;
 
-        Invoker.DoAfterDelay(_ => DoAndLog(func, _at), _after, _cancellationTokenSource.Token);
+        Invoker.DoAfterDelay(_ => DoAndLog(func, _at), _after, _logger, _cancellationTokenSource.Token);
 
         Logs[_at] = ToString();
         UpdateLog();
@@ -41,7 +46,7 @@ internal sealed class Timer : IDisposable
         _doPeriodically = true;
         _funcName = funcName;
 
-        Invoker.DoPeriodically(_ => DoUpdateAndLog(func), _after, false, _cancellationTokenSource.Token);
+        Invoker.DoPeriodically(_ => DoUpdateAndLog(func), _after, false, _logger, _cancellationTokenSource.Token);
 
         Logs[_at] = ToString();
         UpdateLog();
@@ -82,12 +87,17 @@ internal sealed class Timer : IDisposable
         {
             sb.AppendLine(Logs[at]);
         }
-        Utils.LogTimers(sb.ToString());
+        LogTimers(sb.ToString());
     }
+
+    private static void LogTimers(string text) => File.WriteAllText(TimersLogPath, $"{text}");
+
+    private const string TimersLogPath = "timers.txt";
 
     private static readonly Dictionary<DateTimeFull, string> Logs = new();
 
     private readonly CancellationTokenSource _cancellationTokenSource;
+    private readonly Logger _logger;
 
     private DateTimeFull _at;
     private TimeSpan _after;

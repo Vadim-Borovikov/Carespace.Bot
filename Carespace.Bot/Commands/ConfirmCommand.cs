@@ -11,16 +11,16 @@ internal sealed class ConfirmCommand : CommandOperation
 
     protected override byte MenuOrder => 8;
 
-    protected override Access AccessLevel => Access.Admins;
+    protected override Access AccessLevel => Access.Admin;
 
     public ConfirmCommand(Bot bot, Manager manager) : base(bot, CommandName, "подтвердить отправку событий")
     {
         _manager = manager;
     }
 
-    protected override async Task ExecuteAsync(Message _, Chat chat, string? __)
+    protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
-        await _manager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(chat);
+        await _manager.ConfirmAndPostOrUpdateWeekEventsAndScheduleAsync(message.Chat);
     }
 
     private readonly Manager _manager;

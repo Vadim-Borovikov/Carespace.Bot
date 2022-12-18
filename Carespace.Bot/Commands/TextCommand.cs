@@ -13,9 +13,9 @@ internal abstract class TextCommand : CommandOperation
         _text = text;
     }
 
-    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
+    protected override Task ExecuteAsync(Message message, long _, string? __)
     {
-        return _bot.SendTextMessageAsync(chat, _text, ParseMode.MarkdownV2);
+        return _bot.SendTextMessageAsync(message.Chat, _text, ParseMode.MarkdownV2);
     }
 
     private readonly Bot _bot;

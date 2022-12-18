@@ -10,9 +10,9 @@ internal sealed class FeedbackCommand : CommandOperation
 
     public FeedbackCommand(Bot bot) : base(bot, "feedback", "оставить обратную связь") => _bot = bot;
 
-    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
+    protected override Task ExecuteAsync(Message message, long _, string? __)
     {
-        return _bot.SendMessageAsync(_bot.Config.FeedbackLink, chat);
+        return _bot.SendMessageAsync(_bot.Config.FeedbackLink, message.Chat);
     }
 
     private readonly Bot _bot;

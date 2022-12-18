@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using GryphonUtilities;
+using GryphonUtilities.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Carespace.FinanceHelper.Tests;
 
 [TestClass]
-public class UtilsTests
+public class CalculatorTests
 {
     [ClassInitialize]
     public static void ClassInitialize(TestContext _)
@@ -104,7 +104,7 @@ public class UtilsTests
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);
         Assert.IsNotNull(_config.PayMasterFeePercents);
-        Utils.CalculateShares(transaction.Yield(), _config.TaxFeePercent, _config.DigisellerFeePercent,
+        Calculator.CalculateShares(transaction.Yield(), _config.TaxFeePercent, _config.DigisellerFeePercent,
             _config.PayMasterFeePercents, Shares);
         Assert.AreEqual(digisellerFee, transaction.DigisellerFee);
         Assert.AreEqual(payMasterFee, transaction.PayMasterFee);

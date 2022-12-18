@@ -11,11 +11,11 @@ internal sealed class LinksCommand : CommandOperation
 
     public LinksCommand(Bot bot) : base(bot, "links", "полезные ссылки") => _bot = bot;
 
-    protected override async Task ExecuteAsync(Message _, Chat chat, string? __)
+    protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
         foreach (Link link in _bot.Config.Links)
         {
-            await _bot.SendMessageAsync(link, chat);
+            await _bot.SendMessageAsync(link, message.Chat);
         }
     }
 

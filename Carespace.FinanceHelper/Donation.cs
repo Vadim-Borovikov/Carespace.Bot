@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
-using GryphonUtilities;
+using GryphonUtilities.Extensions;
 using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper;
@@ -20,7 +20,7 @@ public sealed class Donation
     [SheetField("Поступление")]
     public string? PaymentIdLink
     {
-        get => Utils.GetPayMasterHyperlink(PaymentId);
+        get => PayMaster.Manager.GetHyperlink(PaymentId);
         set => PaymentId = value;
     }
 
@@ -33,10 +33,10 @@ public sealed class Donation
     public string? Name;
 
     [SheetField("Неделя")]
-    public ushort Week { get; internal set; }
+    public ushort Week;
 
     [SheetField("Итого")]
-    public decimal Total { get; internal set; }
+    public decimal Total;
 
     internal string? PaymentId;
 

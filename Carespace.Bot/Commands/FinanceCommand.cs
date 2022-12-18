@@ -15,7 +15,7 @@ internal sealed class FinanceCommand : CommandOperation
         _manager = manager;
     }
 
-    protected override Task ExecuteAsync(Message _, Chat chat, string? __) => _manager.UpdateFinances(chat);
+    protected override Task ExecuteAsync(Message message, long _, string? __) => _manager.UpdateFinances(message.Chat);
 
     private readonly FinanceManager _manager;
 }

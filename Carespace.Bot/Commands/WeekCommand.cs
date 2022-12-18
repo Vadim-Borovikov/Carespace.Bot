@@ -9,13 +9,13 @@ internal sealed class WeekCommand : CommandOperation
 {
     protected override byte MenuOrder => 7;
 
-    protected override Access AccessLevel => Access.Admins;
+    protected override Access AccessLevel => Access.Admin;
 
     public WeekCommand(Bot bot, Manager manager) : base(bot, "week", "обновить расписание") => _manager = manager;
 
-    protected override Task ExecuteAsync(Message _, Chat chat, string? __)
+    protected override Task ExecuteAsync(Message message, long _, string? __)
     {
-        return _manager.PostOrUpdateWeekEventsAndScheduleAsync(chat, true);
+        return _manager.PostOrUpdateWeekEventsAndScheduleAsync(message.Chat, true);
     }
 
     private readonly Manager _manager;

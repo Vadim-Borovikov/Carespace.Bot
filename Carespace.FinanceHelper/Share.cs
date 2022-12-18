@@ -24,7 +24,7 @@ public sealed class Share
 
     public decimal? ValueAfterLimit { get; init; }
 
-    internal decimal Calculate(decimal amount, decimal? net, decimal total, string? promo)
+    public decimal Calculate(decimal amount, decimal? net, decimal total, string? promo)
     {
         if (!string.IsNullOrWhiteSpace(Promo))
         {

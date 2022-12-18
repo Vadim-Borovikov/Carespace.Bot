@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using AbstractBot;
+using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using JetBrains.Annotations;
 
@@ -15,6 +15,10 @@ public class Config : ConfigGoogleSheets
     [Required]
     [MinLength(1)]
     public string GoogleSheetId { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -53,27 +57,47 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     [MinLength(1)]
-    public string GoogleTransactionsCustomRange { get; init; } = null!;
+    public string GoogleCustomTransactionsTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleTransactionsCustomRangeToClear { get; init; } = null!;
+    public string GoogleCustomTransactionsRange { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleTransactionsFinalRange { get; init; } = null!;
+    public string GoogleCustomTransactionsRangeToClear { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleDonationsRange { get; init; } = null!;
+    public string GoogleAllTransactionsTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleDonationsCustomRange { get; init; } = null!;
+    public string GoogleAllTransactionsFinalRange { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleDonationsCustomRangeToClear { get; init; } = null!;
+    public string GoogleAllDonationsTitle { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleAllDonationsRange { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleCustomDonationsTitle { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleCustomDonationsRange { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleCustomDonationsRangeToClear { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string GoogleDonationSumsTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]

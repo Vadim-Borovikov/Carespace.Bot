@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GryphonUtilities;
 
-namespace Carespace.FinanceHelper.Providers;
+namespace Carespace.FinanceHelper.PayMaster;
 
-internal static class PayMaster
+internal static class Provider
 {
     public static Task<PaymentsResult> GetPaymentsAsync(string token, string merchantId, string start, string end,
         JsonSerializerOptions options)
@@ -23,8 +23,8 @@ internal static class PayMaster
             ["end"] = end,
         };
 
-        return RestHelper.CallGetMethodAsync<PaymentsResult>(ApiProvider, GetPaymentsMethod, headerParameters,
-            queryParameters, options);
+        return RestManager<PaymentsResult>.GetAsync(ApiProvider, GetPaymentsMethod, headerParameters, queryParameters,
+            options);
     }
 
     private const string ApiProvider = "https://paymaster.ru";

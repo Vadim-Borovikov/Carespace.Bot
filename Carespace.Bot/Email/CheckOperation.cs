@@ -13,7 +13,7 @@ internal sealed class CheckOperation : Operation
 
     public CheckOperation(Bot bot, Checker checker) : base(bot) => _checker = checker;
 
-    protected override async Task<ExecutionResult> TryExecuteAsync(Message message, Chat sender)
+    protected override async Task<ExecutionResult> TryExecuteAsync(Message message, long senderId)
     {
         if ((message.Type != MessageType.Text) || string.IsNullOrWhiteSpace(message.Text))
         {
@@ -26,13 +26,12 @@ internal sealed class CheckOperation : Operation
             return ExecutionResult.UnsuitableOperation;
         }
 
-        if (!IsAccessSuffice(sender.Id))
+        if (!IsAccessSuffice(senderId))
         {
             return ExecutionResult.InsufficentAccess;
         }
 
-        Chat chat = BotBase.GetReplyChatFor(message, sender);
-        await _checker.CheckEmailAsync(chat, email);
+        await _checker.CheckEmailAsync(message.Chat, email);
         return ExecutionResult.Success;
     }
 

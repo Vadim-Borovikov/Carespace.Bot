@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using GoogleSheetsManager;
+using GoogleSheetsManager.Extensions;
 using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper;
@@ -44,7 +45,7 @@ public sealed class Transaction
             Uri? taxReceiptUri = string.IsNullOrWhiteSpace(_taxReceiptId)
                 ? null
                 : SelfWork.DataManager.GetReceiptUri(TaxPayerId, _taxReceiptId);
-            return taxReceiptUri is null ? null : Utils.GetHyperlink(taxReceiptUri, _taxReceiptId);
+            return taxReceiptUri?.ToHyperlink(_taxReceiptId);
         }
         set => _taxReceiptId = value;
     }
@@ -53,7 +54,7 @@ public sealed class Transaction
     [SheetField("Поступление")]
     public string? PayMasterPaymentIdLink
     {
-        get => Utils.GetPayMasterHyperlink(PayMasterPaymentId);
+        get => PayMaster.Manager.GetHyperlink(PayMasterPaymentId);
         set => PayMasterPaymentId = value;
     }
 
@@ -78,7 +79,7 @@ public sealed class Transaction
     [SheetField("Покупка")]
     public string? DigisellerSellIdLink
     {
-        get => Utils.GetHyperlink(DigisellerSellUrlFormat, DigisellerSellId);
+        get => Hyperlink.From(DigisellerSellUrlFormat, DigisellerSellId);
         set => DigisellerSellId = value.ToInt();
     }
 
@@ -86,7 +87,7 @@ public sealed class Transaction
     [SheetField("Товар")]
     public string? DigisellerProductIdLink
     {
-        get => Utils.GetHyperlink(DigisellerProductUrlFormat, DigisellerProductId);
+        get => Hyperlink.From(DigisellerProductUrlFormat, DigisellerProductId);
         set => DigisellerProductId = value.ToInt();
     }
 
@@ -94,7 +95,7 @@ public sealed class Transaction
     [SheetField("Email")]
     public string? EmailLink
     {
-        get => Utils.GetHyperlink(EmailFormat, Email?.Address);
+        get => Hyperlink.From(EmailFormat, Email?.Address);
         set => Email = value.ToEmail();
     }
 
