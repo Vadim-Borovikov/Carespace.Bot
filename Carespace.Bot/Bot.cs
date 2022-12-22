@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot.Bots;
 using AbstractBot.Extensions;
-using Carespace.Bot.Commands;
+using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Config;
 using Carespace.Bot.Events;
 using Carespace.Bot.Save;
@@ -13,8 +13,7 @@ using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Calendar = Carespace.Bot.Events.Calendar;
-using Carespace.Bot.Email;
+using Carespace.Bot.Operations;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -64,18 +63,20 @@ public sealed class Bot : BotWithSheets<Config.Config>
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
         _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
         FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
-        Checker emailChecker = new(this, financeManager);
+        EmailChecker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
 
-        Operations.Add(new WeekCommand(this, _eventManager));
-        Operations.Add(new ConfirmCommand(this, _eventManager));
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
         Operations.Add(new ExercisesCommand(this, config));
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
+
+        Operations.Add(new WeekCommand(this, _eventManager));
+        Operations.Add(new ConfirmCommand(this, _eventManager));
+
         Operations.Add(new FinanceCommand(this, financeManager));
-        Operations.Add(new CheckOperation(this, emailChecker));
+        Operations.Add(new CheckEmailOperation(this, emailChecker));
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)

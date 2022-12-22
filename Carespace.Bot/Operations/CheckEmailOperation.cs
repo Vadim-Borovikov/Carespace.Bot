@@ -5,13 +5,13 @@ using Carespace.FinanceHelper;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Email;
+namespace Carespace.Bot.Operations;
 
-internal sealed class CheckOperation : Operation
+internal sealed class CheckEmailOperation : Operation
 {
     protected override byte MenuOrder => 10;
 
-    public CheckOperation(Bot bot, Checker checker) : base(bot) => _checker = checker;
+    public CheckEmailOperation(Bot bot, EmailChecker checker) : base(bot) => _checker = checker;
 
     protected override async Task<ExecutionResult> TryExecuteAsync(Message message, long senderId)
     {
@@ -35,5 +35,5 @@ internal sealed class CheckOperation : Operation
         return ExecutionResult.Success;
     }
 
-    private readonly Checker _checker;
+    private readonly EmailChecker _checker;
 }

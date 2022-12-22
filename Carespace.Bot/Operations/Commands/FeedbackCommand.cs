@@ -2,7 +2,7 @@
 using AbstractBot.Operations;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Commands;
+namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class FeedbackCommand : CommandOperation
 {

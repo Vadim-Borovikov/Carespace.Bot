@@ -3,7 +3,7 @@ using AbstractBot.Operations;
 using Carespace.Bot.Events;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Commands;
+namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class WeekCommand : CommandOperation
 {

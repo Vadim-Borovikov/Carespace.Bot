@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AbstractBot;
-using Carespace.Bot.Commands;
+using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Save;
 using GoogleSheetsManager;
 using GoogleSheetsManager.Documents;

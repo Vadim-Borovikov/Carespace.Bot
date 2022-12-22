@@ -4,7 +4,7 @@ using AbstractBot.Operations;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Commands;
+namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class ExercisesCommand : CommandOperation
 {
