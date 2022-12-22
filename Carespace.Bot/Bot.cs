@@ -75,8 +75,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
         Operations.Add(new FinanceCommand(this, financeManager));
-        Operations.Add(new WeekCommand(this, _eventManager));
-        Operations.Add(new ConfirmCommand(this, _eventManager));
         Operations.Add(new CheckOperation(this, emailChecker));
     }
 
