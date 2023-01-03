@@ -16,6 +16,7 @@ using Telegram.Bot.Types.Enums;
 using Carespace.Bot.Operations;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types.ReplyMarkups;
+using Carespace.Bot.Email;
 
 namespace Carespace.Bot;
 
@@ -45,7 +46,12 @@ public sealed class Bot : BotWithSheets<Config.Config>
             }
         }
 
-        _logsChatId = Config.SuperAdminId.GetValue(nameof(Config.SuperAdminId));
+        long logsChatId = Config.SuperAdminId.GetValue(nameof(Config.SuperAdminId));
+        _logsChat = new Chat
+        {
+            Id = logsChatId,
+            Type = ChatType.Private
+        };
         PracticeIntroduction = string.Join(Environment.NewLine, Config.PracticeIntroduction);
         PracticeSchedule = string.Join(Environment.NewLine, Config.PracticeSchedule);
 
@@ -61,10 +67,11 @@ public sealed class Bot : BotWithSheets<Config.Config>
             o => o.ToTimeSpan(TimeManager);
 
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
+        _eventManager = new Events.Manager(this, DocumentsManager, additionalConverters, saveManager);
         FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
-        EmailChecker emailChecker = new(this, financeManager);
+        Checker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
+        Email.Manager emailManager = new(this);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
@@ -76,6 +83,7 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new ConfirmCommand(this, _eventManager));
 
         Operations.Add(new FinanceCommand(this, financeManager));
+        Operations.Add(new BookCommand(this, emailManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
     }
 
@@ -121,13 +129,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
     private async Task PostOrUpdateWeekEventsAndScheduleAsync()
     {
-        Chat logsChat = new()
-        {
-            Id = _logsChatId,
-            Type = ChatType.Private
-        };
-        await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, true);
-        Schedule(() => _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(logsChat, false),
+        await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(_logsChat, true);
+        Schedule(() => _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(_logsChat, false),
             nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
     }
 
@@ -144,8 +147,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
         _weeklyUpdateTimer.DoWeekly(func, funcName);
     }
 
-    private readonly Manager _eventManager;
+    private readonly Events.Manager _eventManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly long _logsChatId;
+    private readonly Chat _logsChat;
 }

@@ -188,4 +188,17 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     public List<string> PracticeSchedule { get; init; } = null!;
+
+    [Required]
+    public string MailPassword { get; init; } = null!;
+    [Required]
+    public string MailHost { get; init; } = null!;
+    [Required]
+    public int MailPort { get; init; }
+    [Required]
+    public string MailFromAddress { get; init; } = null!;
+    [Required]
+    public string MailFromName { get; init; } = null!;
+    [Required]
+    public Uri MailUri { get; init; } = null!;
 }
