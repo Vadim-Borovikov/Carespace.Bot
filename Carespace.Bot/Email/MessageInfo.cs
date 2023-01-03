@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net.Mail;
 using GryphonUtilities;
+using MailKit;
 using MimeKit;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -18,9 +19,10 @@ internal readonly struct MessageInfo
     public required string Subject { get; init; }
     public required IList<string> References { get; init; }
     public required string Id { get; init; }
-    public required string DefaultFirstName { get; init; }
+    public required string FirstName { get; init; }
+    public required UniqueId UniqueId { get; init; }
 
-    public static MessageInfo? From(MimeMessage message)
+    public static MessageInfo? From(MimeMessage message, UniqueId uniqueId)
     {
         if ((message.From.Count == 0) || message.From[0] is not MailboxAddress from)
         {
@@ -36,7 +38,8 @@ internal readonly struct MessageInfo
             Subject = string.IsNullOrWhiteSpace(message.Subject) ? NoSubject : message.Subject,
             References = message.References,
             Id = message.MessageId,
-            DefaultFirstName = from.Name.Split().First()
+            FirstName = from.Name.Split().First(),
+            UniqueId = uniqueId
         };
     }
 

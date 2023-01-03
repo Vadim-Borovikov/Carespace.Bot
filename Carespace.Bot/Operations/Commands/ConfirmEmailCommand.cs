@@ -18,7 +18,11 @@ internal sealed class ConfirmEmailCommand : CommandOperation
         _manager = manager;
     }
 
-    protected override Task ExecuteAsync(Message message, long _, string? __) => _manager.SendEmailAsync(message.Chat);
+    protected override async Task ExecuteAsync(Message message, long _, string? __)
+    {
+        await _manager.SendEmailAsync(message.Chat);
+        await _manager.MarkMailAsReadAsync(message.Chat);
+    }
 
     private readonly Manager _manager;
 }

@@ -29,21 +29,16 @@ internal sealed class Manager
     {
         await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю почту"))
         {
-            List<MessageInfo>? mail = await ReadMessagesAsync(_from);
-            if (mail is null)
+            await ReadMessagesAsync(_from.Address);
+            if (!Mail.Any())
             {
+                await _bot.SendTextMessageAsync(chat, "Новых писем с вложениями нет.");
                 return;
             }
 
-            Mail.Clear();
-            for (int i = 0; i < mail.Count; ++i)
-            {
-                string key = string.Format(EmailKeyTemplate, i);
-                Mail[key] = mail[i];
-            }
-
             await _bot.SendTextMessageAsync(chat, $"В почту: {_bot.Config.MailUri}", disableWebPagePreview: true);
-            foreach (string key in Mail.Keys)
+            // ReSharper disable once LoopCanBePartlyConvertedToQuery
+            foreach (string key in Mail.Keys.Reverse())
             {
                 MessageInfo info = Mail[key];
                 string text =
@@ -55,42 +50,39 @@ internal sealed class Manager
 
     public Task PrepareEmailAsync(Chat chat, string key, string? name)
     {
-        MessageInfo originalMessage = Mail[key];
-        name ??= originalMessage.DefaultFirstName;
+        _currentMessage = string.IsNullOrWhiteSpace(name) ? Mail[key] : Mail[key] with { FirstName = name };
 
-        string date = originalMessage.Sent.ToString(CultureInfo.CurrentCulture.DateTimeFormat.FullDateTimePattern);
+        string date =
+            _currentMessage.Value.Sent.ToString(CultureInfo.CurrentCulture.DateTimeFormat.FullDateTimePattern);
         BodyBuilder builder = new()
         {
-            HtmlBody = GetHtmlBody(name, date, originalMessage.Sender, originalMessage.GetHtmlBody()),
+            HtmlBody = GetHtmlBody(_currentMessage.Value.FirstName, date, _currentMessage.Value.Sender,
+                _currentMessage.Value.GetHtmlBody()),
             Attachments = { _bot.Config.MailAttachmentName }
         };
-        if (!string.IsNullOrWhiteSpace(originalMessage.TextBody))
+        if (!string.IsNullOrWhiteSpace(_currentMessage.Value.TextBody))
         {
-            builder.TextBody = GetTextBody(name, date, originalMessage.Sender, originalMessage.TextBody);
+            builder.TextBody = GetTextBody(_currentMessage.Value.FirstName, date, _currentMessage.Value.Sender,
+                _currentMessage.Value.TextBody);
         }
 
         _toSend = new MimeMessage
         {
             From = { new MailboxAddress(_from.DisplayName, _from.Address) },
-            // TODO
-            To = { new MailboxAddress("Грифон тестирует", "9ryphon@gmail.com") },
-            // To = { new MailboxAddress(originalMessage.Sender.DisplayName, originalMessage.Sender.Address) },
-            Subject = AddRe(originalMessage.Subject),
+            To = { new MailboxAddress(_currentMessage.Value.Sender.DisplayName, _currentMessage.Value.Sender.Address) },
+            Subject = AddRe(_currentMessage.Value.Subject),
             Body = builder.ToMessageBody()
         };
 
-        _toSend.References.AddRange(originalMessage.References);
-        if (!string.IsNullOrEmpty(originalMessage.Id))
+        _toSend.References.AddRange(_currentMessage.Value.References);
+        if (!string.IsNullOrEmpty(_currentMessage.Value.Id))
         {
-            _toSend.InReplyTo = originalMessage.Id;
+            _toSend.InReplyTo = _currentMessage.Value.Id;
             _toSend.References.Add(_toSend.MessageId);
         }
 
-        // TODO
         return _bot.SendTextMessageAsync(chat,
-            $"Я собираюсь послать книгу на 9ryphon@gmail.com. ОК? /{ConfirmEmailCommand.CommandName}");
-        // return _bot.SendTextMessageAsync(chat,
-        //     $"Я собираюсь послать книгу на {originalMessage.Sender.Address}. ОК? /{ConfirmEmailCommand.CommandName}");
+            $"Я собираюсь послать книгу на {_currentMessage.Value.Sender.Address}. ОК? /{ConfirmEmailCommand.CommandName}");
     }
 
     public async Task SendEmailAsync(Chat chat)
@@ -114,6 +106,33 @@ internal sealed class Manager
                 await client.ConnectAsync(_bot.Config.MailSmtpHost, _bot.Config.MailSmtpPort);
                 await client.AuthenticateAsync(_from.Address, _bot.Config.MailPassword);
                 await client.SendAsync(_toSend);
+                await client.DisconnectAsync(true);
+            }
+        }
+    }
+
+    public async Task MarkMailAsReadAsync(Chat chat)
+    {
+        if (_currentMessage is null)
+        {
+            await _bot.SendTextMessageAsync(chat, "Письмо для отметки не выбрано.");
+            return;
+        }
+
+        await using (await StatusMessage.CreateAsync(_bot, chat,
+                         $"Отмечаю письмо \"{AbstractBot.Bots.Bot.EscapeCharacters(_currentMessage.Value.Subject)}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
+        {
+            using (ImapClient client = new())
+            {
+                await client.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true);
+                await client.AuthenticateAsync(_from.Address, _bot.Config.MailPassword);
+
+                await client.Inbox.OpenAsync(FolderAccess.ReadWrite);
+
+                await client.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
+                    MessageFlags.Seen | MessageFlags.Answered, false);
+
+                await client.Inbox.CloseAsync();
                 await client.DisconnectAsync(true);
             }
         }
@@ -145,59 +164,47 @@ internal sealed class Manager
             : _bot.Config.MailReplyPrefix + subject;
     }
 
-    private async Task<List<MessageInfo>?> ReadMessagesAsync(MailAddress from)
+    private async Task ReadMessagesAsync(string userName)
     {
+        Mail.Clear();
         using (ImapClient client = new())
         {
             await client.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true);
-            await client.AuthenticateAsync(from.Address, _bot.Config.MailPassword);
+            await client.AuthenticateAsync(userName, _bot.Config.MailPassword);
 
-            // TODO
-            IMailFolder? folder = await client.GetFolderAsync(FolderName);
-            // TODO
-            if (folder is null)
-            {
-                return null;
-            }
-
-            // TODO
-            await folder.OpenAsync(FolderAccess.ReadWrite);
-
-            // TODO
-            // IList<UniqueId>? recent = await client.Inbox.SearchAsync(SearchQuery.NotSeen);
-            IList<UniqueId>? recent = await folder.SearchAsync(SearchQuery.All);
+            await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
+            IList<UniqueId>? recent = await client.Inbox.SearchAsync(SearchQuery.NotSeen);
             if (recent is null)
             {
-                return null;
+                return;
             }
-            List<MessageInfo> result = new();
             foreach (UniqueId id in recent)
             {
-                MimeMessage? message = await folder.GetMessageAsync(id);
+                MimeMessage? message = await client.Inbox.GetMessageAsync(id);
                 if (message is null || !message.Attachments.Any())
                 {
                     continue;
                 }
-                MessageInfo? info = MessageInfo.From(message);
+                MessageInfo? info = MessageInfo.From(message, id);
                 if (info is null)
                 {
                     continue;
                 }
-                // TODO
-                result.Insert(0, info.Value);
-                // result.Add(info.Value);
+
+                string key = string.Format(EmailKeyTemplate, id);
+                Mail[key] = info.Value;
             }
 
-            return result;
+            await client.Inbox.CloseAsync();
+            await client.DisconnectAsync(true);
         }
     }
 
     private const string EmailKeyTemplate = "email{0}";
-    // TODO
-    private const string FolderName = "Перенаправлено";
 
     private readonly Bot _bot;
     private readonly MailAddress _from;
 
+    private MessageInfo? _currentMessage;
     private MimeMessage? _toSend;
 }
