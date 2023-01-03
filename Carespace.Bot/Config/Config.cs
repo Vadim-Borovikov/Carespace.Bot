@@ -192,13 +192,29 @@ public class Config : ConfigGoogleSheets
     [Required]
     public string MailPassword { get; init; } = null!;
     [Required]
-    public string MailHost { get; init; } = null!;
+    public string MailImapHost { get; init; } = null!;
     [Required]
-    public int MailPort { get; init; }
+    public int MailImapPort { get; init; }
+    [Required]
+    public string MailSmtpHost { get; init; } = null!;
+    [Required]
+    public int MailSmtpPort { get; init; }
     [Required]
     public string MailFromAddress { get; init; } = null!;
     [Required]
     public string MailFromName { get; init; } = null!;
     [Required]
     public Uri MailUri { get; init; } = null!;
+    [Required]
+    public List<string> MailTextBodyFormatLines { get; init; } = null!;
+    [Required]
+    public string MailHtmlAddressFormat { get; init; } = null!;
+    [Required]
+    public List<string> MailHtmlBodyFormatLines { get; init; } = null!;
+    [Required]
+    public string MailReplyPrefix { get; init; } = null!;
+    [Required]
+    public string MailAttachmentName { get; init; } = null!;
+    [Required]
+    public List<string> MailTextFormatLines { get; init; } = null!;
 }

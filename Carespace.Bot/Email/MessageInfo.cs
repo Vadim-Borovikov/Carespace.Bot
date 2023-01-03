@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mail;
 using GryphonUtilities;
 using MimeKit;
@@ -17,6 +18,7 @@ internal readonly struct MessageInfo
     public required string Subject { get; init; }
     public required IList<string> References { get; init; }
     public required string Id { get; init; }
+    public required string DefaultFirstName { get; init; }
 
     public static MessageInfo? From(MimeMessage message)
     {
@@ -33,8 +35,19 @@ internal readonly struct MessageInfo
             Sent = DateTimeFull.CreateUtc(message.Date),
             Subject = string.IsNullOrWhiteSpace(message.Subject) ? NoSubject : message.Subject,
             References = message.References,
-            Id = message.MessageId
+            Id = message.MessageId,
+            DefaultFirstName = from.Name.Split().First()
         };
+    }
+
+    public string GetHtmlBody()
+    {
+        if (!string.IsNullOrWhiteSpace(HtmlBody))
+        {
+            return HtmlBody;
+        }
+
+        return string.IsNullOrWhiteSpace(TextBody) ? "" : $"<div>{TextBody}</div>";
     }
 
     private const string NoSubject = "(Без темы)";
