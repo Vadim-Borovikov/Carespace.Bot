@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading;
@@ -63,7 +64,10 @@ internal sealed class Manager : IDisposable
     {
         await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю почту"))
         {
-            await ReadMessagesAsync();
+            DirectoryInfo folder =
+                Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+
+            await ReadMessagesAsync(folder);
             if (!Mail.Any())
             {
                 await _bot.SendTextMessageAsync(chat, "Новых писем с вложениями нет.");
@@ -75,10 +79,12 @@ internal sealed class Manager : IDisposable
             foreach (string key in Mail.Keys.Reverse())
             {
                 MessageInfo info = Mail[key];
-                string text =
+                string caption =
                     $"`{key}`\\. {AbstractBot.Bots.Bot.EscapeCharacters(info.Sender.DisplayName)}: {AbstractBot.Bots.Bot.EscapeCharacters(info.Subject)}";
-                await _bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
+                await _bot.SendMediaGroupAsync(chat, info.Attachments, caption, ParseMode.MarkdownV2);
             }
+
+            folder.Delete(true);
         }
     }
 
@@ -181,7 +187,7 @@ internal sealed class Manager : IDisposable
             : _bot.Config.MailReplyPrefix + subject;
     }
 
-    private async Task ReadMessagesAsync()
+    private async Task ReadMessagesAsync(DirectoryInfo folder)
     {
         Mail.Clear();
         IList<UniqueId>? recent = await _imapClient.Inbox.SearchAsync(SearchQuery.NotSeen);
@@ -189,6 +195,7 @@ internal sealed class Manager : IDisposable
         {
             return;
         }
+
         foreach (UniqueId id in recent)
         {
             MimeMessage? message = await _imapClient.Inbox.GetMessageAsync(id);
@@ -196,7 +203,7 @@ internal sealed class Manager : IDisposable
             {
                 continue;
             }
-            MessageInfo? info = MessageInfo.From(message, id);
+            MessageInfo? info = await MessageInfo.FromAsync(message, folder, id);
             if (info is null)
             {
                 continue;
