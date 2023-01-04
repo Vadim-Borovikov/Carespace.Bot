@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
+using System.Threading.Tasks;
 using GryphonUtilities;
 using MailKit;
 using MimeKit;
@@ -21,12 +23,22 @@ internal readonly struct MessageInfo
     public required string Id { get; init; }
     public required string FirstName { get; init; }
     public required UniqueId UniqueId { get; init; }
+    public required IList<string> Attachments { get; init; }
 
-    public static MessageInfo? From(MimeMessage message, UniqueId uniqueId)
+    public static async Task<MessageInfo?> FromAsync(MimeMessage message, DirectoryInfo folder, UniqueId uniqueId)
     {
         if ((message.From.Count == 0) || message.From[0] is not MailboxAddress from)
         {
             return null;
+        }
+
+        folder = Directory.CreateDirectory(Path.Combine(folder.FullName, uniqueId.ToString()));
+
+        List<string> attachments = new();
+        foreach (MimePart attachment in message.Attachments.OfType<MimePart>())
+        {
+            string path = await DownloadAsync(attachment, folder);
+            attachments.Add(path);
         }
 
         return new MessageInfo
@@ -38,6 +50,7 @@ internal readonly struct MessageInfo
             Subject = string.IsNullOrWhiteSpace(message.Subject) ? NoSubject : message.Subject,
             References = message.References,
             Id = message.MessageId,
+            Attachments = attachments,
             FirstName = from.Name.Split().First(),
             UniqueId = uniqueId
         };
@@ -51,6 +64,16 @@ internal readonly struct MessageInfo
         }
 
         return string.IsNullOrWhiteSpace(TextBody) ? "" : $"<div>{TextBody}</div>";
+    }
+
+    private static async Task<string> DownloadAsync(MimePart attachment, FileSystemInfo folder)
+    {
+        string path = Path.Combine(folder.FullName, attachment.FileName);
+        await using (FileStream stream = File.Create(path))
+        {
+            await attachment.Content.DecodeToAsync(stream);
+            return path;
+        }
     }
 
     private const string NoSubject = "(Без темы)";

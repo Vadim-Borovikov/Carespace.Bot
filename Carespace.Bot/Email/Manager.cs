@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
+using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Operations.Commands;
@@ -15,21 +17,57 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Email;
 
-internal sealed class Manager
+internal sealed class Manager : IDisposable
 {
     public readonly Dictionary<string, MessageInfo> Mail = new();
 
-    public Manager(Bot bot)
+    public Manager(Bot bot, Chat logsChat)
     {
         _bot = bot;
+        _logsChat = logsChat;
         _from = new MailAddress(bot.Config.MailFromAddress, bot.Config.MailFromName);
+        _imapClient = new ImapClient();
+        _smtpClient = new MailKit.Net.Smtp.SmtpClient();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await using (await StatusMessage.CreateAsync(_bot, _logsChat, "Подключаюсь к почте",
+                         cancellationToken: cancellationToken))
+        {
+            await _imapClient.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true,
+                cancellationToken);
+            await _imapClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
+            await _imapClient.Inbox.OpenAsync(FolderAccess.ReadWrite, cancellationToken);
+
+            await _smtpClient.ConnectAsync(_bot.Config.MailSmtpHost, _bot.Config.MailSmtpPort,
+                cancellationToken: cancellationToken);
+            await _smtpClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
+        }
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _imapClient.Inbox.CloseAsync(cancellationToken: cancellationToken);
+        await _imapClient.DisconnectAsync(true, cancellationToken);
+
+        await _smtpClient.DisconnectAsync(true, cancellationToken);
+    }
+
+    public void Dispose()
+    {
+        _imapClient.Dispose();
+        _smtpClient.Dispose();
     }
 
     public async Task Check(Chat chat)
     {
         await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю почту"))
         {
-            await ReadMessagesAsync(_from.Address);
+            DirectoryInfo folder =
+                Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+
+            await ReadMessagesAsync(folder);
             if (!Mail.Any())
             {
                 await _bot.SendTextMessageAsync(chat, "Новых писем с вложениями нет.");
@@ -41,10 +79,12 @@ internal sealed class Manager
             foreach (string key in Mail.Keys.Reverse())
             {
                 MessageInfo info = Mail[key];
-                string text =
+                string caption =
                     $"`{key}`\\. {AbstractBot.Bots.Bot.EscapeCharacters(info.Sender.DisplayName)}: {AbstractBot.Bots.Bot.EscapeCharacters(info.Subject)}";
-                await _bot.SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
+                await _bot.SendMediaGroupAsync(chat, info.Attachments, caption, ParseMode.MarkdownV2);
             }
+
+            folder.Delete(true);
         }
     }
 
@@ -101,13 +141,7 @@ internal sealed class Manager
 
         await using (await StatusMessage.CreateAsync(_bot, chat, $"Посылаю книгу на {mailbox.Address}"))
         {
-            using (MailKit.Net.Smtp.SmtpClient client = new())
-            {
-                await client.ConnectAsync(_bot.Config.MailSmtpHost, _bot.Config.MailSmtpPort);
-                await client.AuthenticateAsync(_from.Address, _bot.Config.MailPassword);
-                await client.SendAsync(_toSend);
-                await client.DisconnectAsync(true);
-            }
+            await _smtpClient.SendAsync(_toSend);
         }
     }
 
@@ -122,19 +156,8 @@ internal sealed class Manager
         await using (await StatusMessage.CreateAsync(_bot, chat,
                          $"Отмечаю письмо \"{AbstractBot.Bots.Bot.EscapeCharacters(_currentMessage.Value.Subject)}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
         {
-            using (ImapClient client = new())
-            {
-                await client.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true);
-                await client.AuthenticateAsync(_from.Address, _bot.Config.MailPassword);
-
-                await client.Inbox.OpenAsync(FolderAccess.ReadWrite);
-
-                await client.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
-                    MessageFlags.Seen | MessageFlags.Answered, false);
-
-                await client.Inbox.CloseAsync();
-                await client.DisconnectAsync(true);
-            }
+            await _imapClient.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
+                MessageFlags.Seen | MessageFlags.Answered, false);
         }
     }
 
@@ -164,46 +187,40 @@ internal sealed class Manager
             : _bot.Config.MailReplyPrefix + subject;
     }
 
-    private async Task ReadMessagesAsync(string userName)
+    private async Task ReadMessagesAsync(DirectoryInfo folder)
     {
         Mail.Clear();
-        using (ImapClient client = new())
+        IList<UniqueId>? recent = await _imapClient.Inbox.SearchAsync(SearchQuery.NotSeen);
+        if (recent is null)
         {
-            await client.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true);
-            await client.AuthenticateAsync(userName, _bot.Config.MailPassword);
+            return;
+        }
 
-            await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
-            IList<UniqueId>? recent = await client.Inbox.SearchAsync(SearchQuery.NotSeen);
-            if (recent is null)
+        foreach (UniqueId id in recent)
+        {
+            MimeMessage? message = await _imapClient.Inbox.GetMessageAsync(id);
+            if (message is null || !message.Attachments.Any())
             {
-                return;
+                continue;
             }
-            foreach (UniqueId id in recent)
+            MessageInfo? info = await MessageInfo.FromAsync(message, folder, id);
+            if (info is null)
             {
-                MimeMessage? message = await client.Inbox.GetMessageAsync(id);
-                if (message is null || !message.Attachments.Any())
-                {
-                    continue;
-                }
-                MessageInfo? info = MessageInfo.From(message, id);
-                if (info is null)
-                {
-                    continue;
-                }
-
-                string key = string.Format(EmailKeyTemplate, id);
-                Mail[key] = info.Value;
+                continue;
             }
 
-            await client.Inbox.CloseAsync();
-            await client.DisconnectAsync(true);
+            string key = string.Format(EmailKeyTemplate, id);
+            Mail[key] = info.Value;
         }
     }
 
     private const string EmailKeyTemplate = "email{0}";
 
     private readonly Bot _bot;
+    private readonly Chat _logsChat;
     private readonly MailAddress _from;
+    private readonly ImapClient _imapClient;
+    private readonly MailKit.Net.Smtp.SmtpClient _smtpClient;
 
     private MessageInfo? _currentMessage;
     private MimeMessage? _toSend;
