@@ -25,8 +25,8 @@ internal sealed class PrepareEmailOperation : Operation
             return ExecutionResult.UnsuitableOperation;
         }
 
-        string[] parts = message.Text.Split();
-        if (parts.Length is 0 or > 2 || !_manager.Mail.ContainsKey(parts[0]))
+        RequestInfo? info = RequestInfo.Parse(message.Text);
+        if (info is null || !_manager.Mail.ContainsKey(info.Value.Key))
         {
             return ExecutionResult.UnsuitableOperation;
         }
@@ -36,10 +36,7 @@ internal sealed class PrepareEmailOperation : Operation
             return ExecutionResult.InsufficentAccess;
         }
 
-        string key = parts[0];
-        string? name = parts.Length == 2 ? parts[1] : null;
-
-        await _manager.PrepareEmailAsync(message.Chat, key, name);
+        await _manager.PrepareEmailAsync(message.Chat, info.Value);
         return ExecutionResult.Success;
     }
 

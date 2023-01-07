@@ -94,8 +94,15 @@ public class CalculatorTests
 
     private static Transaction CreateTransaction(decimal price, int digisellerProductId, string? promoCode = null)
     {
-        return new Transaction(Date, null, price, promoCode, 135120565, digisellerProductId, null,
-            Transaction.PayMethod.BankCard);
+        return new Transaction
+        {
+            Price = price,
+            DigisellerProductId = digisellerProductId,
+            PromoCode = promoCode,
+            Date = Date,
+            DigisellerSellId = DigisellerSellId,
+            PayMethodInfo = Transaction.PayMethod.BankCard
+        };
     }
 
     private static void TestCalculateShares(Transaction transaction, decimal shareAgent3,
@@ -118,6 +125,7 @@ public class CalculatorTests
 
     private const string Agent1 = "Agent1";
     private const string Agent2 = "Agent2";
+    private const int DigisellerSellId = 135120565;
     private static readonly DateOnly Date = new(2022, 1, 1);
 
     // ReSharper disable once NullableWarningSuppressionIsUsed

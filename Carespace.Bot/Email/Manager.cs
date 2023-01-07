@@ -82,9 +82,19 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    public Task PrepareEmailAsync(Chat chat, string key, string? name)
+    public Task PrepareEmailAsync(Chat chat, RequestInfo info)
     {
-        _currentMessage = string.IsNullOrWhiteSpace(name) ? Mail[key] : Mail[key] with { FirstName = name };
+        _currentMessage = Mail[info.Key] with { Promocode = info.Promocode };
+
+        if (!string.IsNullOrWhiteSpace(info.Name))
+        {
+            _currentMessage = _currentMessage.Value with { FirstName = info.Name };
+        }
+
+        if (info.Amount.HasValue)
+        {
+            _currentMessage = _currentMessage.Value with { Amount = info.Amount.Value };
+        }
 
         string date =
             _currentMessage.Value.Sent.ToString(CultureInfo.CurrentCulture.DateTimeFormat.FullDateTimePattern);
@@ -119,18 +129,18 @@ internal sealed class Manager : IDisposable
             $"Я собираюсь послать книгу на {_currentMessage.Value.Sender.Address}. ОК? /{ConfirmEmailCommand.CommandName}");
     }
 
-    public async Task SendEmailAsync(Chat chat)
+    public async Task<SellInfo?> SendEmailAsync(Chat chat)
     {
-        if (_toSend is null)
+        if (_currentMessage is null || _toSend is null)
         {
             await _bot.SendTextMessageAsync(chat, "Письмо не подготовлено.");
-            return;
+            return null;
         }
 
         if (_toSend?.To.FirstOrDefault() is not MailboxAddress mailbox)
         {
             await _bot.SendTextMessageAsync(chat, "У письма некорректный адресат.");
-            return;
+            return null;
         }
 
         await using (await StatusMessage.CreateAsync(_bot, chat, $"Посылаю книгу на {mailbox.Address}"))
@@ -138,6 +148,14 @@ internal sealed class Manager : IDisposable
             await ConnectAsync(ConnectTo.Smtp);
             await _smtpClient.SendAsync(_toSend);
         }
+
+        return new SellInfo
+        {
+            Date = _currentMessage.Value.Date,
+            Amount = _currentMessage.Value.Amount,
+            Email = _currentMessage.Value.Sender,
+            Promocode = _currentMessage.Value.Promocode
+        };
     }
 
     public async Task MarkMailAsReadAsync(Chat chat)
@@ -244,7 +262,8 @@ internal sealed class Manager : IDisposable
             {
                 continue;
             }
-            MessageInfo? info = await MessageInfo.FromAsync(message, folder, id);
+            MessageInfo? info =
+                await MessageInfo.FromAsync(message, folder, _bot.TimeManager, id, _bot.Config.ProductDefaultPrice);
             if (info is null)
             {
                 continue;

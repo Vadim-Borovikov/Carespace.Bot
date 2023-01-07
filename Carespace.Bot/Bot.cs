@@ -85,7 +85,7 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new BookCommand(this, _emailManager));
         Operations.Add(new PrepareEmailOperation(this, _emailManager));
-        Operations.Add(new ConfirmEmailCommand(this, _emailManager));
+        Operations.Add(new ConfirmEmailCommand(this, _emailManager, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
     }
 

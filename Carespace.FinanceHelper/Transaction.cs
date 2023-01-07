@@ -113,9 +113,7 @@ public sealed class Transaction
 
     internal string? PayMasterPaymentId;
 
-    internal int? DigisellerSellId;
-
-    public Transaction() { }
+    public int? DigisellerSellId;
 
     public static void Save(Transaction t, IDictionary<string, object?> valueSet)
     {
@@ -123,20 +121,6 @@ public sealed class Transaction
         {
             valueSet[agent] = t.Shares[agent];
         }
-    }
-
-    public Transaction(DateOnly date, string? name, decimal price, string? promoCode, int? digisellerSellId,
-        int? digisellerProductId, MailAddress? email, PayMethod? payMethod)
-    {
-        Date = date;
-        Name = name;
-        Amount = price;
-        Price = price;
-        PromoCode = promoCode;
-        DigisellerSellId = digisellerSellId;
-        DigisellerProductId = digisellerProductId;
-        PayMethodInfo = payMethod;
-        Email = email;
     }
 
     private string? _taxReceiptId;
