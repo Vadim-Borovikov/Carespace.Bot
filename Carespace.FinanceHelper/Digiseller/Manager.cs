@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Carespace.FinanceHelper.Data.Digiseller;
@@ -71,18 +70,25 @@ public static class Manager
             promoCode = await GetPromoCodeAsync(sell.InvoiceId.Value, token, options);
         }
 
-        MailAddress email = sell.Email.ToEmail().GetValue(nameof(sell.Email));
-
         Transaction.PayMethod payMethod = sell.PayMethodInfo switch
         {
             SellsResponse.Sell.PayMethod.BankCard => Transaction.PayMethod.BankCard,
             SellsResponse.Sell.PayMethod.Sbp => Transaction.PayMethod.Sbp,
-            _ => throw new ArgumentOutOfRangeException(nameof(sell.PayMethodInfo),
-                                                                                         sell.PayMethodInfo, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(sell.PayMethodInfo), sell.PayMethodInfo, null)
         };
 
-        return new Transaction(datePay.DateOnly, sell.ProductName, amountIn, promoCode, sell.InvoiceId, sell.ProductId,
-            email, payMethod);
+        return new Transaction
+        {
+            Date = datePay.DateOnly,
+            Name = sell.ProductName,
+            Amount = amountIn,
+            Price = amountIn,
+            PromoCode = promoCode,
+            DigisellerSellId = sell.InvoiceId,
+            DigisellerProductId = sell.ProductId,
+            PayMethodInfo = payMethod,
+            Email = sell.Email.ToEmail().GetValue(nameof(sell.Email))
+        };
     }
 
     private static async Task<string> GetTokenAsync(string login, string password, string sellerSecret,

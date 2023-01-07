@@ -19,6 +19,14 @@ namespace Carespace.Bot.Email;
 
 internal sealed class Manager : IDisposable
 {
+    [Flags]
+    private enum ConnectTo
+    {
+        Imap = 1,
+        Smtp,
+        All = Imap | Smtp
+    }
+
     public readonly Dictionary<string, MessageInfo> Mail = new();
 
     public Manager(Bot bot, Chat logsChat)
@@ -30,21 +38,7 @@ internal sealed class Manager : IDisposable
         _smtpClient = new MailKit.Net.Smtp.SmtpClient();
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        await using (await StatusMessage.CreateAsync(_bot, _logsChat, "Подключаюсь к почте",
-                         cancellationToken: cancellationToken))
-        {
-            await _imapClient.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true,
-                cancellationToken);
-            await _imapClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
-            await _imapClient.Inbox.OpenAsync(FolderAccess.ReadWrite, cancellationToken);
-
-            await _smtpClient.ConnectAsync(_bot.Config.MailSmtpHost, _bot.Config.MailSmtpPort,
-                cancellationToken: cancellationToken);
-            await _smtpClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
-        }
-    }
+    public Task StartAsync(CancellationToken cancellationToken) => ConnectAsync(ConnectTo.All, cancellationToken);
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -88,9 +82,19 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    public Task PrepareEmailAsync(Chat chat, string key, string? name)
+    public Task PrepareEmailAsync(Chat chat, RequestInfo info)
     {
-        _currentMessage = string.IsNullOrWhiteSpace(name) ? Mail[key] : Mail[key] with { FirstName = name };
+        _currentMessage = Mail[info.Key] with { Promocode = info.Promocode };
+
+        if (!string.IsNullOrWhiteSpace(info.Name))
+        {
+            _currentMessage = _currentMessage.Value with { FirstName = info.Name };
+        }
+
+        if (info.Amount.HasValue)
+        {
+            _currentMessage = _currentMessage.Value with { Amount = info.Amount.Value };
+        }
 
         string date =
             _currentMessage.Value.Sent.ToString(CultureInfo.CurrentCulture.DateTimeFormat.FullDateTimePattern);
@@ -125,24 +129,33 @@ internal sealed class Manager : IDisposable
             $"Я собираюсь послать книгу на {_currentMessage.Value.Sender.Address}. ОК? /{ConfirmEmailCommand.CommandName}");
     }
 
-    public async Task SendEmailAsync(Chat chat)
+    public async Task<SellInfo?> SendEmailAsync(Chat chat)
     {
-        if (_toSend is null)
+        if (_currentMessage is null || _toSend is null)
         {
             await _bot.SendTextMessageAsync(chat, "Письмо не подготовлено.");
-            return;
+            return null;
         }
 
         if (_toSend?.To.FirstOrDefault() is not MailboxAddress mailbox)
         {
             await _bot.SendTextMessageAsync(chat, "У письма некорректный адресат.");
-            return;
+            return null;
         }
 
         await using (await StatusMessage.CreateAsync(_bot, chat, $"Посылаю книгу на {mailbox.Address}"))
         {
+            await ConnectAsync(ConnectTo.Smtp);
             await _smtpClient.SendAsync(_toSend);
         }
+
+        return new SellInfo
+        {
+            Date = _currentMessage.Value.Date,
+            Amount = _currentMessage.Value.Amount,
+            Email = _currentMessage.Value.Sender,
+            Promocode = _currentMessage.Value.Promocode
+        };
     }
 
     public async Task MarkMailAsReadAsync(Chat chat)
@@ -156,8 +169,53 @@ internal sealed class Manager : IDisposable
         await using (await StatusMessage.CreateAsync(_bot, chat,
                          $"Отмечаю письмо \"{AbstractBot.Bots.Bot.EscapeCharacters(_currentMessage.Value.Subject)}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
         {
+            await ConnectAsync(ConnectTo.Imap);
             await _imapClient.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
                 MessageFlags.Seen | MessageFlags.Answered, false);
+        }
+    }
+
+    private async Task ConnectAsync(ConnectTo to, CancellationToken cancellationToken = default)
+    {
+        bool imap = ((to & ConnectTo.Imap) != 0) && (!_imapClient.IsAuthenticated || !_imapClient.Inbox.IsOpen);
+        bool smtp = ((to & ConnectTo.Smtp) != 0) && !_smtpClient.IsAuthenticated;
+        if (!imap || !smtp)
+        {
+            return;
+        }
+
+        await using (await StatusMessage.CreateAsync(_bot, _logsChat, "Подключаюсь к почте",
+                         cancellationToken: cancellationToken))
+        {
+            if (imap)
+            {
+                if (!_imapClient.IsConnected)
+                {
+                    await _imapClient.ConnectAsync(_bot.Config.MailImapHost, _bot.Config.MailImapPort, true,
+                        cancellationToken);
+                }
+                if (!_imapClient.IsAuthenticated)
+                {
+                    await _imapClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
+                }
+                if (!_imapClient.Inbox.IsOpen)
+                {
+                    await _imapClient.Inbox.OpenAsync(FolderAccess.ReadWrite, cancellationToken);
+                }
+            }
+
+            if (smtp)
+            {
+                if (!_smtpClient.IsConnected)
+                {
+                    await _smtpClient.ConnectAsync(_bot.Config.MailSmtpHost, _bot.Config.MailSmtpPort,
+                        cancellationToken: cancellationToken);
+                }
+                if (!_smtpClient.IsAuthenticated)
+                {
+                    await _smtpClient.AuthenticateAsync(_from.Address, _bot.Config.MailPassword, cancellationToken);
+                }
+            }
         }
     }
 
@@ -190,6 +248,7 @@ internal sealed class Manager : IDisposable
     private async Task ReadMessagesAsync(DirectoryInfo folder)
     {
         Mail.Clear();
+        await ConnectAsync(ConnectTo.Imap);
         IList<UniqueId>? recent = await _imapClient.Inbox.SearchAsync(SearchQuery.NotSeen);
         if (recent is null)
         {
@@ -203,7 +262,8 @@ internal sealed class Manager : IDisposable
             {
                 continue;
             }
-            MessageInfo? info = await MessageInfo.FromAsync(message, folder, id);
+            MessageInfo? info =
+                await MessageInfo.FromAsync(message, folder, _bot.TimeManager, id, _bot.Config.ProductDefaultPrice);
             if (info is null)
             {
                 continue;

@@ -13,16 +13,24 @@ internal sealed class ConfirmEmailCommand : CommandOperation
 
     protected override Access AccessLevel => Access.Admin;
 
-    public ConfirmEmailCommand(Bot bot, Manager manager) : base(bot, CommandName, "подтвердить отправку письма")
+    public ConfirmEmailCommand(Bot bot, Manager manager, FinanceManager financeManager)
+        : base(bot, CommandName, "подтвердить отправку письма")
     {
         _manager = manager;
+        _financeManager = financeManager;
     }
 
     protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
-        await _manager.SendEmailAsync(message.Chat);
+        SellInfo? info = await _manager.SendEmailAsync(message.Chat);
         await _manager.MarkMailAsReadAsync(message.Chat);
+
+        if (info.HasValue)
+        {
+            await _financeManager.AddEmailTransaction(message.Chat, info.Value);
+        }
     }
 
     private readonly Manager _manager;
+    private readonly FinanceManager _financeManager;
 }

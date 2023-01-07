@@ -48,6 +48,12 @@ public class Config : ConfigGoogleSheets
     public int ProductId { get; init; }
 
     [Required]
+    public string ProductName { get; init; } = null!;
+
+    [Required]
+    public decimal ProductDefaultPrice { get; init; }
+
+    [Required]
     [MinLength(1)]
     public string GoogleSheetIdTransactions { get; init; } = null!;
 
