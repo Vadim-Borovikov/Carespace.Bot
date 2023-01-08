@@ -20,7 +20,7 @@ namespace Carespace.Bot.Email;
 internal sealed class Manager : IDisposable
 {
     [Flags]
-    private enum ConnectTo
+    private enum Connection
     {
         Imap = 1,
         Smtp,
@@ -38,15 +38,7 @@ internal sealed class Manager : IDisposable
         _smtpClient = new MailKit.Net.Smtp.SmtpClient();
     }
 
-    public Task StartAsync(CancellationToken cancellationToken) => ConnectAsync(ConnectTo.All, cancellationToken);
-
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        await _imapClient.Inbox.CloseAsync(cancellationToken: cancellationToken);
-        await _imapClient.DisconnectAsync(true, cancellationToken);
-
-        await _smtpClient.DisconnectAsync(true, cancellationToken);
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => DisconnectAsync(Connection.All, cancellationToken);
 
     public void Dispose()
     {
@@ -54,14 +46,14 @@ internal sealed class Manager : IDisposable
         _smtpClient.Dispose();
     }
 
-    public async Task Check(Chat chat)
+    public async Task Check(Chat chat, bool disconnectWhenDone = true)
     {
         await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю почту"))
         {
             DirectoryInfo folder =
                 Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
 
-            await ReadMessagesAsync(folder);
+            await ReadMessagesAsync(folder, disconnectWhenDone);
             if (!Mail.Any())
             {
                 await _bot.SendTextMessageAsync(chat, "Новых писем с вложениями нет.");
@@ -129,7 +121,7 @@ internal sealed class Manager : IDisposable
             $"Я собираюсь послать книгу на {_currentMessage.Value.Sender.Address}. ОК? /{ConfirmEmailCommand.CommandName}");
     }
 
-    public async Task<SellInfo?> SendEmailAsync(Chat chat)
+    public async Task<SellInfo?> SendEmailAsync(Chat chat, bool disconnectWhenDone = true)
     {
         if (_currentMessage is null || _toSend is null)
         {
@@ -145,8 +137,12 @@ internal sealed class Manager : IDisposable
 
         await using (await StatusMessage.CreateAsync(_bot, chat, $"Посылаю книгу на {mailbox.Address}"))
         {
-            await ConnectAsync(ConnectTo.Smtp);
+            await ConnectAsync(Connection.Smtp);
             await _smtpClient.SendAsync(_toSend);
+            if (disconnectWhenDone)
+            {
+                await DisconnectAsync(Connection.Smtp);
+            }
         }
 
         return new SellInfo
@@ -158,7 +154,7 @@ internal sealed class Manager : IDisposable
         };
     }
 
-    public async Task MarkMailAsReadAsync(Chat chat)
+    public async Task MarkMailAsReadAsync(Chat chat, bool disconnectWhenDone = true)
     {
         if (_currentMessage is null)
         {
@@ -169,16 +165,20 @@ internal sealed class Manager : IDisposable
         await using (await StatusMessage.CreateAsync(_bot, chat,
                          $"Отмечаю письмо \"{AbstractBot.Bots.Bot.EscapeCharacters(_currentMessage.Value.Subject)}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
         {
-            await ConnectAsync(ConnectTo.Imap);
+            await ConnectAsync(Connection.Imap);
             await _imapClient.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
                 MessageFlags.Seen | MessageFlags.Answered, false);
+            if (disconnectWhenDone)
+            {
+                await DisconnectAsync(Connection.Imap);
+            }
         }
     }
 
-    private async Task ConnectAsync(ConnectTo to, CancellationToken cancellationToken = default)
+    private async Task ConnectAsync(Connection to, CancellationToken cancellationToken = default)
     {
-        bool imap = ((to & ConnectTo.Imap) != 0) && (!_imapClient.IsAuthenticated || !_imapClient.Inbox.IsOpen);
-        bool smtp = ((to & ConnectTo.Smtp) != 0) && !_smtpClient.IsAuthenticated;
+        bool imap = ((to & Connection.Imap) != 0) && (!_imapClient.IsAuthenticated || !_imapClient.Inbox.IsOpen);
+        bool smtp = ((to & Connection.Smtp) != 0) && !_smtpClient.IsAuthenticated;
         if (!imap || !smtp)
         {
             return;
@@ -219,6 +219,30 @@ internal sealed class Manager : IDisposable
         }
     }
 
+    private async Task DisconnectAsync(Connection from, CancellationToken cancellationToken = default)
+    {
+        if ((from & Connection.Imap) != 0)
+        {
+            if (_imapClient.Inbox.IsOpen)
+            {
+                await _imapClient.Inbox.CloseAsync(cancellationToken: cancellationToken);
+            }
+
+            if (_imapClient.IsAuthenticated)
+            {
+                await _imapClient.DisconnectAsync(true, cancellationToken);
+            }
+        }
+
+        if ((from & Connection.Smtp) != 0)
+        {
+            if (_smtpClient.IsAuthenticated)
+            {
+                await _smtpClient.DisconnectAsync(true, cancellationToken);
+            }
+        }
+    }
+
     private string GetTextBody(string name, string date, MailAddress to, string textBody)
     {
         return GetBody(Environment.NewLine, name, _bot.Config.MailTextBodyFormatLines, date, to.ToString(), textBody);
@@ -245,10 +269,10 @@ internal sealed class Manager : IDisposable
             : _bot.Config.MailReplyPrefix + subject;
     }
 
-    private async Task ReadMessagesAsync(DirectoryInfo folder)
+    private async Task ReadMessagesAsync(DirectoryInfo folder, bool disconnectWhenDone = true)
     {
         Mail.Clear();
-        await ConnectAsync(ConnectTo.Imap);
+        await ConnectAsync(Connection.Imap);
         IList<UniqueId>? recent = await _imapClient.Inbox.SearchAsync(SearchQuery.NotSeen);
         if (recent is null)
         {
@@ -271,6 +295,11 @@ internal sealed class Manager : IDisposable
 
             string key = string.Format(EmailKeyTemplate, id);
             Mail[key] = info.Value;
+        }
+
+        if (disconnectWhenDone)
+        {
+            await DisconnectAsync(Connection.Imap);
         }
     }
 
