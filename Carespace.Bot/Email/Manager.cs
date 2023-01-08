@@ -179,7 +179,7 @@ internal sealed class Manager : IDisposable
     {
         bool imap = ((to & Connection.Imap) != 0) && (!_imapClient.IsAuthenticated || !_imapClient.Inbox.IsOpen);
         bool smtp = ((to & Connection.Smtp) != 0) && !_smtpClient.IsAuthenticated;
-        if (!imap || !smtp)
+        if (!imap && !smtp)
         {
             return;
         }
