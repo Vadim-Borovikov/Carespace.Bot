@@ -93,8 +93,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
     {
         await base.StartAsync(cancellationToken);
 
-        await _emailManager.StartAsync(cancellationToken);
-
         AbstractBot.Invoker.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), Logger, cancellationToken);
     }
 

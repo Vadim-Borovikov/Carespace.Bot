@@ -22,7 +22,7 @@ internal sealed class ConfirmEmailCommand : CommandOperation
 
     protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
-        SellInfo? info = await _manager.SendEmailAsync(message.Chat);
+        SellInfo? info = await _manager.SendEmailAsync(message.Chat, false);
         await _manager.MarkMailAsReadAsync(message.Chat);
 
         if (info.HasValue)
