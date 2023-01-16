@@ -12,7 +12,7 @@ public sealed class MessageData
     public enum KeyboardType
     {
         None,
-        Ics,
+        Participate,
         Discuss,
         Full
     }

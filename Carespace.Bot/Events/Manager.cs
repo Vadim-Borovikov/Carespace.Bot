@@ -147,9 +147,10 @@ internal sealed class Manager : IDisposable
                 Template template = _templates[savedTemplateId];
 
                 string messageText = GetMessageText(template);
+                InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-                await EditMessageTextAsync(data.MessageId, messageText, icsButton: icsButton,
-                    keyboard: MessageData.KeyboardType.Full);
+                await EditMessageTextAsync(data.MessageId, messageText, MessageData.KeyboardType.Full,
+                    participateButton, icsButton);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
                 _events[savedTemplateId] = new Event(template, data.MessageId, _bot.Logger, data.NotificationId);
@@ -299,25 +300,29 @@ internal sealed class Manager : IDisposable
     private Task<int> PostEventAsync(Template template)
     {
         string text = GetMessageText(template);
+        InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
         InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-        return PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Ics, MessageData.KeyboardType.Full,
-            icsButton);
+        return PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Participate, MessageData.KeyboardType.Full,
+            participateButton, icsButton);
     }
 
     private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
-        MessageData.KeyboardType keyboard, InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
+        MessageData.KeyboardType keyboard, InlineKeyboardButton? participateButton = null,
+        InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
     {
-        int messageId = await SendTextMessageAsync(text, chatKeyboard, icsButton, disableWebPagePreview);
+        int messageId =
+            await SendTextMessageAsync(text, chatKeyboard, participateButton, icsButton, disableWebPagePreview);
         await _bot.ForwardMessageAsync(_discussChat, _bot.Config.EventsChannelId, messageId);
-        await EditMessageTextAsync(messageId, text, keyboard, icsButton, disableWebPagePreview);
+        await EditMessageTextAsync(messageId, text, keyboard, participateButton, icsButton, disableWebPagePreview);
         return messageId;
     }
 
     private async Task<int> SendTextMessageAsync(string text,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
+        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
+        InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
-        InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
+        InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, participateButton, icsButton);
         Message message = await _bot.SendTextMessageAsync(_eventsChat, text, keyboardMarkup, ParseMode.MarkdownV2,
             disableWebPagePreview: disableWebPagePreview, disableNotification: disableNotification,
             replyToMessageId: replyToMessageId);
@@ -420,16 +425,24 @@ internal sealed class Manager : IDisposable
         return new Uri(uriString);
     }
 
+    private static InlineKeyboardButton GetMessageParticipateButton(Template template)
+    {
+        return new InlineKeyboardButton("🚀 Принять участие") { Url = template.Uri.AbsoluteUri };
+    }
+
     private Task EditMessageTextAsync(int messageId, string text,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
+        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
+        InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
         MessageData? data = GetMessageData(messageId);
-        return EditMessageTextAsync(messageId, text, data, keyboard, icsButton, disableWebPagePreview);
+        return EditMessageTextAsync(messageId, text, data, keyboard, participateButton, icsButton,
+            disableWebPagePreview);
     }
 
     private async Task EditMessageTextAsync(int messageId, string text, MessageData? data,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None, InlineKeyboardButton? icsButton = null,
+        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
+        InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
         if ((data?.Text == text) && (data.Keyboard == keyboard))
@@ -437,7 +450,7 @@ internal sealed class Manager : IDisposable
             UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, _bot.Logger, messageId, text);
             return;
         }
-        InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, icsButton);
+        InlineKeyboardMarkup? keyboardMarkup = GetKeyboardMarkup(keyboard, participateButton, icsButton);
         Message message = await _bot.EditMessageTextAsync(_eventsChat, messageId, text, ParseMode.MarkdownV2, null,
             disableWebPagePreview, keyboardMarkup);
         if (data is null)
@@ -456,7 +469,7 @@ internal sealed class Manager : IDisposable
     }
 
     private InlineKeyboardMarkup? GetKeyboardMarkup(MessageData.KeyboardType keyboardType,
-        InlineKeyboardButton? icsButton)
+        InlineKeyboardButton? participateButton, InlineKeyboardButton? icsButton)
     {
         switch (keyboardType)
         {
@@ -464,14 +477,17 @@ internal sealed class Manager : IDisposable
             case MessageData.KeyboardType.Discuss: return _discussKeyboard;
         }
 
-        InlineKeyboardButton button = icsButton.GetValue(nameof(icsButton));
+        InlineKeyboardButton participateButtonValue = participateButton.GetValue(nameof(participateButton));
+        InlineKeyboardButton icsButtonValue = icsButton.GetValue(nameof(icsButton));
 
         switch (keyboardType)
         {
-            case MessageData.KeyboardType.Ics: return new InlineKeyboardMarkup(button);
+            case MessageData.KeyboardType.Participate: return new InlineKeyboardMarkup(participateButtonValue);
             case MessageData.KeyboardType.Full:
-                InlineKeyboardButton[] row = { button, _discussButton };
-                return new InlineKeyboardMarkup(row);
+                List<InlineKeyboardButton> row1 = participateButtonValue.WrapWithList();
+                List<InlineKeyboardButton> row2 = new() { icsButtonValue, _discussButton };
+                List<List<InlineKeyboardButton>> rows = new() { row1, row2 };
+                return new InlineKeyboardMarkup(rows);
             default: throw new ArgumentOutOfRangeException(nameof(keyboardType), keyboardType, null);
         }
     }
@@ -489,7 +505,6 @@ internal sealed class Manager : IDisposable
     {
         StringBuilder builder = new();
 
-        builder.Append($"[{Text.WordJoiner}]({AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)})");
         builder.AppendLine($"*{AbstractBot.Bots.Bot.EscapeCharacters(template.Name)}*");
 
         builder.AppendLine();
@@ -542,9 +557,6 @@ internal sealed class Manager : IDisposable
 
         builder.AppendLine();
         builder.AppendLine($"💰 *Цена*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Price)}\\.");
-
-        builder.AppendLine();
-        builder.Append($"🗞️ *Принять участие*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
 
         return builder.ToString();
     }
