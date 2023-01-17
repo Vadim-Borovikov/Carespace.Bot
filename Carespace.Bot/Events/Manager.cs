@@ -478,12 +478,12 @@ internal sealed class Manager : IDisposable
         }
 
         InlineKeyboardButton participateButtonValue = participateButton.GetValue(nameof(participateButton));
-        InlineKeyboardButton icsButtonValue = icsButton.GetValue(nameof(icsButton));
 
         switch (keyboardType)
         {
             case MessageData.KeyboardType.Participate: return new InlineKeyboardMarkup(participateButtonValue);
             case MessageData.KeyboardType.Full:
+                InlineKeyboardButton icsButtonValue = icsButton.GetValue(nameof(icsButton));
                 List<InlineKeyboardButton> row1 = participateButtonValue.WrapWithList();
                 List<InlineKeyboardButton> row2 = new() { icsButtonValue, _discussButton };
                 List<List<InlineKeyboardButton>> rows = new() { row1, row2 };
