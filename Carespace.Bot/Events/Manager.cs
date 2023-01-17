@@ -264,16 +264,18 @@ internal sealed class Manager : IDisposable
 
     private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
     {
-        string text =
-            $"{prefix} мероприятие [{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
+        string text = $"{prefix} мероприятие *{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}*\\.";
+        InlineKeyboardButton participateButton = GetMessageParticipateButton(e.Template);
 
         if (e.NotificationId.HasValue)
         {
-            await EditMessageTextAsync(e.NotificationId.Value, text);
+            await EditMessageTextAsync(e.NotificationId.Value, text, MessageData.KeyboardType.Participate,
+                participateButton);
         }
         else
         {
-            e.NotificationId = await SendTextMessageAsync(text, replyToMessageId: e.MessageId);
+            e.NotificationId = await SendTextMessageAsync(text, MessageData.KeyboardType.Participate,
+                participateButton, replyToMessageId: e.MessageId);
             _saveManager.Data.Events[e.Template.Id].NotificationId = e.NotificationId;
         }
 
