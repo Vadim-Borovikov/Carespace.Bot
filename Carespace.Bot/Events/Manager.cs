@@ -150,7 +150,7 @@ internal sealed class Manager : IDisposable
                 InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
                 await EditMessageTextAsync(data.MessageId, messageText, MessageData.KeyboardType.Full,
-                    participateButton, icsButton);
+                    participateButton, icsButton, true);
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
                 _events[savedTemplateId] = new Event(template, data.MessageId, _bot.Logger, data.NotificationId);
@@ -303,7 +303,7 @@ internal sealed class Manager : IDisposable
         InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
         InlineKeyboardButton icsButton = GetMessageIcsButton(template);
         return PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Participate, MessageData.KeyboardType.Full,
-            participateButton, icsButton);
+            participateButton, icsButton, true);
     }
 
     private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
