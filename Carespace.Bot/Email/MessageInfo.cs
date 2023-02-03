@@ -76,7 +76,8 @@ internal readonly struct MessageInfo
 
     private static async Task<string> DownloadAsync(MimePart attachment, FileSystemInfo folder)
     {
-        string path = Path.Combine(folder.FullName, attachment.FileName);
+        string name = string.Join("_", attachment.FileName.Split(Path.GetInvalidFileNameChars()));
+        string path = Path.Combine(folder.FullName, name);
         await using (FileStream stream = File.Create(path))
         {
             await attachment.Content.DecodeToAsync(stream);
