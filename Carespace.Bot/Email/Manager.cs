@@ -80,7 +80,7 @@ internal sealed class Manager : IDisposable
 
         if (!string.IsNullOrWhiteSpace(info.Name))
         {
-            _currentMessage = _currentMessage.Value with { FirstName = info.Name };
+            _currentMessage = _currentMessage.Value with { FirstName = info.Name == NoNameMarker ? null : info.Name };
         }
 
         if (info.Amount.HasValue)
@@ -243,22 +243,26 @@ internal sealed class Manager : IDisposable
         }
     }
 
-    private string GetTextBody(string name, string date, MailAddress to, string textBody)
+    private string GetTextBody(string? name, string date, MailAddress to, string textBody)
     {
         return GetBody(Environment.NewLine, name, _bot.Config.MailTextBodyFormatLines, date, to.ToString(), textBody);
     }
 
-    private string GetHtmlBody(string name, string date, MailAddress to, string textBody)
+    private string GetHtmlBody(string? name, string date, MailAddress to, string textBody)
     {
         string address = string.Format(_bot.Config.MailHtmlAddressFormat, to.DisplayName, to.Address);
         return GetBody("<br />", name, _bot.Config.MailHtmlBodyFormatLines, date, address, textBody);
     }
 
-    private string GetBody(string separator, string name, IEnumerable<string> bodyFormatLines, string date,
+    private string GetBody(string separator, string? name, IEnumerable<string> bodyFormatLines, string date,
         string address, string textBody)
     {
+        string greeting = string.IsNullOrWhiteSpace(name)
+            ? _bot.Config.MailTextGreetingNoName
+            : string.Format(_bot.Config.MailTextGreetingFormat, name);
+
         string bodyFormat = string.Join(separator, bodyFormatLines);
-        string body = string.Format(string.Join(separator, _bot.Config.MailTextFormatLines), name);
+        string body = string.Format(string.Join(separator, _bot.Config.MailTextFormatLines), greeting);
         return string.Format(bodyFormat, body, date, address, textBody);
     }
 
@@ -304,6 +308,7 @@ internal sealed class Manager : IDisposable
     }
 
     private const string EmailKeyTemplate = "email{0}";
+    private const string NoNameMarker = "-";
 
     private readonly Bot _bot;
     private readonly Chat _logsChat;

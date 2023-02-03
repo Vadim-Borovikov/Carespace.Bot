@@ -223,4 +223,8 @@ public class Config : ConfigGoogleSheets
     public string MailAttachmentName { get; init; } = null!;
     [Required]
     public List<string> MailTextFormatLines { get; init; } = null!;
+    [Required]
+    public string MailTextGreetingFormat { get; init; } = null!;
+    [Required]
+    public string MailTextGreetingNoName { get; init; } = null!;
 }

@@ -23,7 +23,7 @@ internal readonly struct MessageInfo
     public required string Subject { get; init; }
     public required IList<string> References { get; init; }
     public required string Id { get; init; }
-    public required string FirstName { get; init; }
+    public required string? FirstName { get; init; }
     public required UniqueId UniqueId { get; init; }
     public required IList<string> Attachments { get; init; }
     public required decimal Amount { get; init; }
