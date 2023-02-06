@@ -24,6 +24,8 @@ public sealed class MessageData
     public string Text { get; set; } = null!;
     [UsedImplicitly]
     public KeyboardType Keyboard { get; set; }
+    [UsedImplicitly]
+    public string? ButtonUri { get; set; }
 
     public MessageData() { }
 

@@ -331,7 +331,8 @@ internal sealed class Manager : IDisposable
         _saveManager.Data.Messages[message.MessageId] = new MessageData(message, _bot.TimeManager)
         {
             Text = text,
-            Keyboard = keyboard
+            Keyboard = keyboard,
+            ButtonUri = participateButton?.Url
         };
         return message.MessageId;
     }
@@ -447,7 +448,7 @@ internal sealed class Manager : IDisposable
         InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
-        if ((data?.Text == text) && (data.Keyboard == keyboard))
+        if ((data?.Text == text) && (data.Keyboard == keyboard) && (data.ButtonUri == participateButton?.Url))
         {
             UpdateInfo.LogRefused(_eventsChat,  UpdateInfo.Type.EditText, _bot.Logger, messageId, text);
             return;
@@ -460,13 +461,15 @@ internal sealed class Manager : IDisposable
             _saveManager.Data.Messages[messageId] = new MessageData(message, _bot.TimeManager)
             {
                 Text = text,
-                Keyboard = keyboard
+                Keyboard = keyboard,
+                ButtonUri = participateButton?.Url
             };
         }
         else
         {
             data.Text = text;
             data.Keyboard = keyboard;
+            data.ButtonUri = participateButton?.Url;
         }
     }
 
