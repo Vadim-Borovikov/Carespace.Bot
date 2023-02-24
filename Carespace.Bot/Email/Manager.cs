@@ -163,7 +163,7 @@ internal sealed class Manager : IDisposable
         }
 
         await using (await StatusMessage.CreateAsync(_bot, chat,
-                         $"Отмечаю письмо \"{AbstractBot.Bots.Bot.EscapeCharacters(_currentMessage.Value.Subject)}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
+                         $"Отмечаю письмо \"{_currentMessage.Value.Subject}\" от {_currentMessage.Value.Sender.Address} как прочитанное"))
         {
             await ConnectAsync(Connection.Imap);
             await _imapClient.Inbox.AddFlagsAsync(_currentMessage.Value.UniqueId,
