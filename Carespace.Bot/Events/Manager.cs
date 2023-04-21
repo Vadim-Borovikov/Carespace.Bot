@@ -358,17 +358,16 @@ internal sealed class Manager : IDisposable
     {
         foreach (Template t in templates)
         {
-            if (t.IsWeekly)
+            if (t.StartDate < _weekStart)
             {
-                if (t.StartDate >= _weekEnd)
+                if (t.IsWeekly)
+                {
+                    t.MoveToWeek(_weekStart);
+                }
+                else
                 {
                     continue;
                 }
-                t.MoveToWeek(_weekStart);
-            }
-            else if (t.StartDate < _weekStart)
-            {
-                continue;
             }
 
             yield return t;
@@ -491,6 +490,11 @@ internal sealed class Manager : IDisposable
                 default:
                     throw new ArgumentOutOfRangeException(nameof(template.StartDate.DayOfWeek),
                         template.StartDate.DayOfWeek, null);
+            }
+
+            if (template.StartDate > _weekEnd)
+            {
+                builder.Append($" c {template.StartDate:d MMMM}");
             }
         }
         else
