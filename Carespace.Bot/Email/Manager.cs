@@ -221,25 +221,19 @@ internal sealed class Manager : IDisposable
 
     private async Task DisconnectAsync(Connection from, CancellationToken cancellationToken = default)
     {
-        if ((from & Connection.Imap) != 0)
+        if (((from & Connection.Imap) != 0) && _imapClient.IsConnected)
         {
             if (_imapClient.Inbox.IsOpen)
             {
                 await _imapClient.Inbox.CloseAsync(cancellationToken: cancellationToken);
             }
 
-            if (_imapClient.IsAuthenticated)
-            {
-                await _imapClient.DisconnectAsync(true, cancellationToken);
-            }
+            await _imapClient.DisconnectAsync(true, cancellationToken);
         }
 
-        if ((from & Connection.Smtp) != 0)
+        if (((from & Connection.Smtp) != 0) && _smtpClient.IsConnected)
         {
-            if (_smtpClient.IsAuthenticated)
-            {
-                await _smtpClient.DisconnectAsync(true, cancellationToken);
-            }
+            await _smtpClient.DisconnectAsync(true, cancellationToken);
         }
     }
 
