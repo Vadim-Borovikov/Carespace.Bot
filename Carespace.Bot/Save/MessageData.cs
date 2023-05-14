@@ -31,6 +31,7 @@ public sealed class MessageData
 
     internal MessageData(Message message, TimeManager timeManager)
     {
-        Date = timeManager.GetDateTimeFull(message.Date).DateOnly;
+        DateTimeFull utc = timeManager.GetDateTimeFull(message.Date);
+        Date = timeManager.Convert(utc).DateOnly;
     }
 }
