@@ -67,11 +67,10 @@ public sealed class Bot : BotWithSheets<Config.Config>
             o => o.ToTimeSpan(TimeManager);
 
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        _eventManager = new Events.Manager(this, DocumentsManager, additionalConverters, saveManager);
+        _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
         FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
         Checker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
-        _emailManager = new Email.Manager(this, _logsChat);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
@@ -83,9 +82,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new ConfirmCommand(this, _eventManager));
 
         Operations.Add(new FinanceCommand(this, financeManager));
-        Operations.Add(new BookCommand(this, _emailManager));
-        Operations.Add(new PrepareEmailOperation(this, _emailManager));
-        Operations.Add(new ConfirmEmailCommand(this, _emailManager, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
     }
 
@@ -95,8 +91,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
         AbstractBot.Invoker.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), Logger, cancellationToken);
     }
-
-    public override Task StopAsync(CancellationToken cancellationToken) => _emailManager.StopAsync(cancellationToken);
 
     internal Task SendMessageAsync(Link link, Chat chat)
     {
@@ -116,7 +110,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
         {
             _weeklyUpdateTimer.Dispose();
             _eventManager.Dispose();
-            _emailManager.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -152,8 +145,7 @@ public sealed class Bot : BotWithSheets<Config.Config>
         _weeklyUpdateTimer.DoWeekly(func, funcName);
     }
 
-    private readonly Events.Manager _eventManager;
-    private readonly Email.Manager _emailManager;
+    private readonly Manager _eventManager;
 
     private readonly Events.Timer _weeklyUpdateTimer;
     private readonly Chat _logsChat;

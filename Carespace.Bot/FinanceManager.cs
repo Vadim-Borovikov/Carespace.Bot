@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
-using Carespace.Bot.Email;
 using Carespace.FinanceHelper;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager;
@@ -56,42 +55,6 @@ internal sealed class FinanceManager
         await UpdateDonationsAsync(chat);
 
         await _bot.SendTextMessageAsync(chat, "…донатики обновлены.");
-    }
-
-    public async Task AddEmailTransaction(Chat chat, SellInfo info)
-    {
-        SheetData<Transaction> transactions;
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из таблицы"))
-        {
-            transactions = await _allTransactions.LoadAsync<Transaction>(_bot.Config.GoogleAllTransactionsFinalRange);
-        }
-
-        Transaction newTransaction = new()
-        {
-            Name = _bot.Config.ProductName,
-            Date = info.Date,
-            Amount = info.Amount,
-            PromoCode = info.Promocode,
-            DigisellerProductId = _bot.Config.ProductId,
-            Email = info.Email
-        };
-        transactions.Instances.Add(newTransaction);
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Считаю доли"))
-        {
-            Calculator.CalculateShares(transactions.Instances, _bot.Config.TaxFeePercent,
-                _bot.Config.DigisellerFeePercent, _bot.Config.PayMasterFeePercents, _bot.Shares);
-        }
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Заношу покупки в таблицу"))
-        {
-            SheetData<Transaction> data =
-                new(transactions.Instances.OrderBy(t => t.Date).ToList(), transactions.Titles);
-            await _allTransactions.SaveAsync(_bot.Config.GoogleAllTransactionsFinalRange, data, AdditionalSavers);
-
-            await _customTransactions.ClearAsync(_bot.Config.GoogleCustomTransactionsRangeToClear);
-        }
     }
 
     public async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(Chat? chat, int? productIdForMails = null)
