@@ -9,12 +9,12 @@ namespace Carespace.Bot.Save;
 
 public sealed class MessageData
 {
+    [Flags]
     public enum KeyboardType
     {
-        None,
-        Participate,
-        Discuss,
-        Full
+        Participate = 1 << 0,
+        Ics = 1 << 1,
+        Discuss = 1 << 2
     }
 
     [UsedImplicitly]

@@ -194,4 +194,6 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     public List<string> PracticeSchedule { get; init; } = null!;
+
+    public bool ParticipateButton { get; init; }
 }

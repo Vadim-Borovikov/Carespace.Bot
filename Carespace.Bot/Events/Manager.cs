@@ -45,7 +45,6 @@ internal sealed class Manager : IDisposable
         {
             Url = uri.AbsoluteUri
         };
-        _discussKeyboard = new InlineKeyboardMarkup(_discussButton);
     }
 
     public async Task PostOrUpdateWeekEventsAndScheduleAsync(Chat chat, bool shouldConfirm)
@@ -147,10 +146,20 @@ internal sealed class Manager : IDisposable
                 Template template = _templates[savedTemplateId];
 
                 string messageText = GetMessageText(template);
-                InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
+
                 InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-                await EditMessageTextAsync(data.MessageId, messageText, MessageData.KeyboardType.Full,
-                    participateButton, icsButton, true);
+
+                MessageData.KeyboardType full = MessageData.KeyboardType.Ics | MessageData.KeyboardType.Discuss;
+                InlineKeyboardButton? participateButton = null;
+                if (_bot.Config.ParticipateButton)
+                {
+                    full |= MessageData.KeyboardType.Participate;
+                    participateButton = GetMessageParticipateButton(template);
+                }
+
+                await EditMessageTextAsync(data.MessageId, messageText, full, participateButton, icsButton,
+                    _bot.Config.ParticipateButton);
+
                 _bot.Calendars[savedTemplateId] = new Calendar(template, _bot.TimeManager);
 
                 _events[savedTemplateId] = new Event(template, data.MessageId, _bot.Logger, data.NotificationId);
@@ -191,7 +200,7 @@ internal sealed class Manager : IDisposable
         }
 
         int? oldScheduleId = _saveManager.Data.ScheduleId;
-        _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.None,
+        _saveManager.Data.ScheduleId = await PostForwardAndAddButtonAsync(text, 0,
             MessageData.KeyboardType.Discuss, disableWebPagePreview: true);
         if (oldScheduleId.HasValue)
         {
@@ -264,18 +273,27 @@ internal sealed class Manager : IDisposable
 
     private async Task CreateOrUpdateNotificationAsync(Event e, string prefix)
     {
-        string text = $"{prefix} мероприятие *{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}*\\.";
-        InlineKeyboardButton participateButton = GetMessageParticipateButton(e.Template);
+        string text = _bot.Config.ParticipateButton
+            ? $"{prefix} мероприятие *{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}*\\."
+            : $"{prefix} мероприятие [{AbstractBot.Bots.Bot.EscapeCharacters(e.Template.Name)}]({e.Template.Uri})\\.";
+
+        InlineKeyboardButton? participateButton = null;
+        MessageData.KeyboardType keyboard = 0;
+
+        if (_bot.Config.ParticipateButton)
+        {
+            participateButton = GetMessageParticipateButton(e.Template);
+            keyboard = MessageData.KeyboardType.Participate;
+        }
 
         if (e.NotificationId.HasValue)
         {
-            await EditMessageTextAsync(e.NotificationId.Value, text, MessageData.KeyboardType.Participate,
-                participateButton);
+            await EditMessageTextAsync(e.NotificationId.Value, text, keyboard, participateButton);
         }
         else
         {
-            e.NotificationId = await SendTextMessageAsync(text, MessageData.KeyboardType.Participate,
-                participateButton, replyToMessageId: e.MessageId);
+            e.NotificationId =
+                await SendTextMessageAsync(text, keyboard, participateButton, replyToMessageId: e.MessageId);
             _saveManager.Data.Events[e.Template.Id].NotificationId = e.NotificationId;
         }
 
@@ -302,10 +320,22 @@ internal sealed class Manager : IDisposable
     private Task<int> PostEventAsync(Template template)
     {
         string text = GetMessageText(template);
-        InlineKeyboardButton participateButton = GetMessageParticipateButton(template);
+
         InlineKeyboardButton icsButton = GetMessageIcsButton(template);
-        return PostForwardAndAddButtonAsync(text, MessageData.KeyboardType.Participate, MessageData.KeyboardType.Full,
-            participateButton, icsButton, true);
+
+        MessageData.KeyboardType chat = MessageData.KeyboardType.Ics;
+        MessageData.KeyboardType full = MessageData.KeyboardType.Ics | MessageData.KeyboardType.Discuss;
+
+        InlineKeyboardButton? participateButton = null;
+        if (_bot.Config.ParticipateButton)
+        {
+            chat |= MessageData.KeyboardType.Participate;
+            full |= MessageData.KeyboardType.Participate;
+            participateButton = GetMessageParticipateButton(template);
+        }
+
+        return PostForwardAndAddButtonAsync(text, chat, full, participateButton, icsButton,
+            _bot.Config.ParticipateButton);
     }
 
     private async Task<int> PostForwardAndAddButtonAsync(string text, MessageData.KeyboardType chatKeyboard,
@@ -319,8 +349,7 @@ internal sealed class Manager : IDisposable
         return messageId;
     }
 
-    private async Task<int> SendTextMessageAsync(string text,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
+    private async Task<int> SendTextMessageAsync(string text, MessageData.KeyboardType keyboard = 0,
         InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false, bool disableNotification = false, int replyToMessageId = 0)
     {
@@ -432,8 +461,7 @@ internal sealed class Manager : IDisposable
         return new InlineKeyboardButton("🚀 Принять участие") { Url = template.Uri.AbsoluteUri };
     }
 
-    private Task EditMessageTextAsync(int messageId, string text,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
+    private Task EditMessageTextAsync(int messageId, string text, MessageData.KeyboardType keyboard = 0,
         InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
         bool disableWebPagePreview = false)
     {
@@ -443,9 +471,8 @@ internal sealed class Manager : IDisposable
     }
 
     private async Task EditMessageTextAsync(int messageId, string text, MessageData? data,
-        MessageData.KeyboardType keyboard = MessageData.KeyboardType.None,
-        InlineKeyboardButton? participateButton = null, InlineKeyboardButton? icsButton = null,
-        bool disableWebPagePreview = false)
+        MessageData.KeyboardType keyboard = 0, InlineKeyboardButton? participateButton = null,
+        InlineKeyboardButton? icsButton = null, bool disableWebPagePreview = false)
     {
         if ((data?.Text == text) && (data.Keyboard == keyboard) && (data.ButtonUri == participateButton?.Url))
         {
@@ -475,25 +502,37 @@ internal sealed class Manager : IDisposable
     private InlineKeyboardMarkup? GetKeyboardMarkup(MessageData.KeyboardType keyboardType,
         InlineKeyboardButton? participateButton, InlineKeyboardButton? icsButton)
     {
-        switch (keyboardType)
+        if (keyboardType == 0)
         {
-            case MessageData.KeyboardType.None:    return null;
-            case MessageData.KeyboardType.Discuss: return _discussKeyboard;
+            return null;
         }
 
-        InlineKeyboardButton participateButtonValue = participateButton.GetValue(nameof(participateButton));
+        List<List<InlineKeyboardButton>> rows = new();
 
-        switch (keyboardType)
+        if ((keyboardType & MessageData.KeyboardType.Participate) != 0)
         {
-            case MessageData.KeyboardType.Participate: return new InlineKeyboardMarkup(participateButtonValue);
-            case MessageData.KeyboardType.Full:
-                InlineKeyboardButton icsButtonValue = icsButton.GetValue(nameof(icsButton));
-                List<InlineKeyboardButton> row1 = participateButtonValue.WrapWithList();
-                List<InlineKeyboardButton> row2 = new() { icsButtonValue, _discussButton };
-                List<List<InlineKeyboardButton>> rows = new() { row1, row2 };
-                return new InlineKeyboardMarkup(rows);
-            default: throw new ArgumentOutOfRangeException(nameof(keyboardType), keyboardType, null);
+            InlineKeyboardButton participateButtonValue = participateButton.GetValue(nameof(participateButton));
+            List<InlineKeyboardButton> participateRow = participateButtonValue.WrapWithList();
+            rows.Add(participateRow);
         }
+
+        List<InlineKeyboardButton> otherButtonsRow = new();
+        if ((keyboardType & MessageData.KeyboardType.Ics) != 0)
+        {
+            InlineKeyboardButton icsButtonValue = icsButton.GetValue(nameof(icsButton));
+            otherButtonsRow.Add(icsButtonValue);
+        }
+        if ((keyboardType & MessageData.KeyboardType.Discuss) != 0)
+        {
+            otherButtonsRow.Add(_discussButton);
+        }
+
+        if (otherButtonsRow.Count > 0)
+        {
+            rows.Add(otherButtonsRow);
+        }
+
+        return new InlineKeyboardMarkup(rows);
     }
 
     private async Task DeleteMessageAsync(int messageId, DateOnly? weekStart = null)
@@ -509,6 +548,10 @@ internal sealed class Manager : IDisposable
     {
         StringBuilder builder = new();
 
+        if (!_bot.Config.ParticipateButton)
+        {
+            builder.Append($"[{Text.WordJoiner}]({AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)})");
+        }
         builder.AppendLine($"*{AbstractBot.Bots.Bot.EscapeCharacters(template.Name)}*");
 
         builder.AppendLine();
@@ -567,6 +610,13 @@ internal sealed class Manager : IDisposable
         builder.AppendLine();
         builder.AppendLine($"💰 *Цена*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Price)}\\.");
 
+        if (!_bot.Config.ParticipateButton)
+        {
+            builder.AppendLine();
+            builder.Append(
+                $"🗞️ *Принять участие*: {AbstractBot.Bots.Bot.EscapeCharacters(template.Uri.AbsoluteUri)}\\.");
+        }
+
         return builder.ToString();
     }
 
@@ -609,7 +659,6 @@ internal sealed class Manager : IDisposable
     private readonly Chat _eventsChat;
 
     private readonly InlineKeyboardButton _discussButton;
-    private readonly InlineKeyboardMarkup _discussKeyboard;
 
     private readonly Chat _discussChat;
 
