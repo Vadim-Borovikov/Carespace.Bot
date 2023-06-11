@@ -6,7 +6,7 @@ namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class FinanceCommand : CommandOperation
 {
-    protected override byte MenuOrder => 9;
+    protected override byte MenuOrder => 11;
 
     protected override Access AccessLevel => Access.SuperAdmin;
 

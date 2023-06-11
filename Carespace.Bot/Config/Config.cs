@@ -196,4 +196,6 @@ public class Config : ConfigGoogleSheets
     public List<string> PracticeSchedule { get; init; } = null!;
 
     public bool ParticipateButton { get; init; }
+
+    public ushort InitialStrikesForSpammers { get; init; }
 }

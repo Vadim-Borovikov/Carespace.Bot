@@ -10,7 +10,7 @@ namespace Carespace.Bot.Operations;
 
 internal sealed class CheckEmailOperation : Operation
 {
-    protected override byte MenuOrder => 13;
+    protected override byte MenuOrder => 12;
 
     public CheckEmailOperation(Bot bot, Checker checker) : base(bot) => _checker = checker;
 

@@ -12,5 +12,8 @@ public sealed class Data
     public Dictionary<int, EventData> Events { get; set; } = new();
 
     [UsedImplicitly]
+    public Dictionary<long, ushort> Strikes { get; set; } = new();
+
+    [UsedImplicitly]
     public Dictionary<int, MessageData> Messages { get; set; } = new();
 }

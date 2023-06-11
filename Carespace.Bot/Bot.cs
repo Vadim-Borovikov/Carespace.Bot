@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot.Bots;
-using AbstractBot.Extensions;
 using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Config;
 using Carespace.Bot.Events;
@@ -17,6 +16,7 @@ using Carespace.Bot.Operations;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types.ReplyMarkups;
 using Carespace.Bot.Email;
+using Telegram.Bot;
 
 namespace Carespace.Bot;
 
@@ -72,6 +72,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Checker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
 
+        AntiSpam.Manager antiSpamManager = new(this, saveManager);
+
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
         Operations.Add(new ExercisesCommand(this, config));
@@ -83,11 +85,28 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
         Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
+
+        StrikeCommand strikeCommand = new(this, antiSpamManager);
+        DestroyCommand destroyCommand = new(this, antiSpamManager);
+        Operations.Add(strikeCommand);
+        Operations.Add(destroyCommand);
+
+        _restrictCommands = new List<BotCommand>
+        {
+            strikeCommand.Command,
+            destroyCommand.Command
+        };
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
         await base.StartAsync(cancellationToken);
+
+        await Client.DeleteMyCommandsAsync(BotCommandScope.ChatAdministrators(Config.DiscussGroupId),
+            cancellationToken: cancellationToken);
+
+        await Client.SetMyCommandsAsync(_restrictCommands,
+            BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
 
         AbstractBot.Invoker.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), Logger, cancellationToken);
     }
@@ -112,11 +131,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
             _eventManager.Dispose();
         }
         base.Dispose(disposing);
-    }
-
-    protected override Task UpdateAsync(Message message)
-    {
-        return message.Chat.IsGroup() ? Task.CompletedTask : base.UpdateAsync(message);
     }
 
     private static InlineKeyboardMarkup GetReplyMarkup(Link link)
@@ -146,6 +160,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
     }
 
     private readonly Manager _eventManager;
+
+    private readonly List<BotCommand> _restrictCommands;
 
     private readonly Events.Timer _weeklyUpdateTimer;
     private readonly Chat _logsChat;
