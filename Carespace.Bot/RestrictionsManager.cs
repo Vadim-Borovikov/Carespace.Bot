@@ -31,7 +31,7 @@ internal sealed class RestrictionsManager
         };
     }
 
-    public Task Strike(TelegramUser user, TelegramUser admin) => Restrict(0, user, admin);
+    public Task Strike(TelegramUser user, TelegramUser admin) => Restrict(1, user, admin);
     public Task Destroy(TelegramUser user, TelegramUser admin)
     {
         return Restrict(_bot.Config.InitialStrikesForSpammers, user, admin);
@@ -44,7 +44,7 @@ internal sealed class RestrictionsManager
         if (_saveManager.Data.Strikes.ContainsKey(user.Id))
         {
             _saveManager.Data.Strikes[user.Id] =
-                (byte)Math.Max(_saveManager.Data.Strikes[user.Id] + 1, initialStrikes);
+                (byte) Math.Max(_saveManager.Data.Strikes[user.Id] + 1, initialStrikes);
         }
         else
         {
@@ -55,7 +55,7 @@ internal sealed class RestrictionsManager
 
         ushort strikes = _saveManager.Data.Strikes[user.Id];
         string guidelines = AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri);
-        if (strikes == 0)
+        if (strikes == 1)
         {
             string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionWarningMessageFormatLines,
                 admin.ShortDescriptor, user.ShortDescriptor, guidelines);
@@ -63,7 +63,7 @@ internal sealed class RestrictionsManager
         }
         else
         {
-            TimeSpan period = TimeSpan.FromDays(Math.Pow(2, strikes - 1));
+            TimeSpan period = TimeSpan.FromDays(Math.Pow(2, strikes - 2));
             DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
             uint days = (uint) period.TotalDays;
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, until);
