@@ -54,10 +54,11 @@ internal sealed class Manager
         _saveManager.Save();
 
         ushort strikes = _saveManager.Data.Strikes[user.Id];
+        string guidelines = AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri);
         if (strikes == 0)
         {
             await _bot.SendTextMessageAsync(Chat,
-                $"*Админ {admin.ShortDescriptor} предупреждает пользователя {user.ShortDescriptor} пользоваться чатом аккуратнее\\.{Environment.NewLine}Следующая мера — read only на 1 день\\.*",
+                $"*Админ {admin.ShortDescriptor} предупреждает пользователя {user.ShortDescriptor} пользоваться чатом аккуратнее\\.{Environment.NewLine}Следующая мера — read only на 1 день\\.{Environment.NewLine}Пост о принципах чата: {guidelines}\\.*",
                 ParseMode.MarkdownV2);
         }
         else
@@ -66,7 +67,7 @@ internal sealed class Manager
             DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, until);
             await _bot.SendTextMessageAsync(Chat,
-                $"*Админ {admin.ShortDescriptor} поставил read only пользователю {user.ShortDescriptor}\\. Дней: {period.TotalDays:G}\\.{Environment.NewLine}В следующий раз срок будет увеличен вдвое\\.*",
+                $"*Админ {admin.ShortDescriptor} поставил read only пользователю {user.ShortDescriptor}\\. Дней: {period.TotalDays:G}\\.{Environment.NewLine}В следующий раз срок будет увеличен вдвое\\.{Environment.NewLine}Пост о принципах чата: {guidelines}\\.*",
                 ParseMode.MarkdownV2);
         }
     }

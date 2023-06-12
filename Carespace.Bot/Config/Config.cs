@@ -197,5 +197,8 @@ public class Config : ConfigGoogleSheets
 
     public bool ParticipateButton { get; init; }
 
+    [Required]
+    public Uri ChatGuidelinesUri { get; init; } = null!;
+
     public ushort InitialStrikesForSpammers { get; init; }
 }
