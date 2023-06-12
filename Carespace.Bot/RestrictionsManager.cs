@@ -9,11 +9,11 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot;
 
-internal sealed class AntiSpamManager
+internal sealed class RestrictionsManager
 {
     public readonly Chat Chat;
 
-    public AntiSpamManager(Bot bot, SaveManager<Data> saveManager)
+    public RestrictionsManager(Bot bot, SaveManager<Data> saveManager)
     {
         _bot = bot;
         _saveManager = saveManager;

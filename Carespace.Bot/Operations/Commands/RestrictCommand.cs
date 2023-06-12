@@ -12,7 +12,7 @@ internal abstract class RestrictCommand : CommandOperation
 
     protected override bool EnabledInGroups => true;
 
-    protected RestrictCommand(Bot bot, AntiSpamManager antiSpam, string command, string description)
+    protected RestrictCommand(Bot bot, RestrictionsManager antiSpam, string command, string description)
         : base(bot, command, description)
     {
         AntiSpam = antiSpam;
@@ -48,5 +48,5 @@ internal abstract class RestrictCommand : CommandOperation
 
     protected abstract Task ExecuteAsync(TelegramUser user, TelegramUser admin);
 
-    protected readonly AntiSpamManager AntiSpam;
+    protected readonly RestrictionsManager AntiSpam;
 }

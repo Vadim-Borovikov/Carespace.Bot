@@ -71,7 +71,7 @@ public sealed class Bot : BotWithSheets<Config.Config>
         EmailChecker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
 
-        AntiSpamManager antiSpamManager = new(this, saveManager);
+        RestrictionsManager antiSpam = new(this, saveManager);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
@@ -85,8 +85,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
 
-        StrikeCommand strikeCommand = new(this, antiSpamManager);
-        DestroyCommand destroyCommand = new(this, antiSpamManager);
+        StrikeCommand strikeCommand = new(this, antiSpam);
+        DestroyCommand destroyCommand = new(this, antiSpam);
         Operations.Add(strikeCommand);
         Operations.Add(destroyCommand);
 

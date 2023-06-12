@@ -7,7 +7,7 @@ internal sealed class StrikeCommand : RestrictCommand
 {
     protected override byte MenuOrder => 9;
 
-    public StrikeCommand(Bot bot, AntiSpamManager antiSpam) : base(bot, antiSpam, "strike",
+    public StrikeCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "strike",
         "предупредить автора или ограничить его права")
     {
     }

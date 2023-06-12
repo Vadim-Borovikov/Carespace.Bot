@@ -7,7 +7,7 @@ internal sealed class DestroyCommand : RestrictCommand
 {
     protected override byte MenuOrder => 10;
 
-    public DestroyCommand(Bot bot, AntiSpamManager antiSpam) : base(bot, antiSpam, "destroy",
+    public DestroyCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "destroy",
         "сразу и сильно ограничить права автора")
     {
     }
