@@ -66,7 +66,7 @@ internal sealed class RestrictionsManager
             TimeSpan period = TimeSpan.FromDays(Math.Pow(2, strikes - 2));
             DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
             uint days = (uint) period.TotalDays;
-            await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, until);
+            await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
             string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
                 admin.ShortDescriptor, user.ShortDescriptor, days, guidelines);
             await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
