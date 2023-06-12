@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AbstractBot" Version="68.1.0" />
+    <PackageReference Include="AbstractBot" Version="69.0.0" />
     <PackageReference Include="Ical.Net" Version="4.2.0" />
   </ItemGroup>
 

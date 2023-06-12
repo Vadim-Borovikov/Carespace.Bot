@@ -25,12 +25,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
     internal readonly Dictionary<string, List<Share>> Shares = new();
 
-    internal readonly string PracticeIntroduction;
-    internal readonly string PracticeSchedule;
-
-    internal readonly string RestrictionWarningMessageFormat;
-    internal readonly string RestrictionMessageFormat;
-
     public Bot(Config.Config config) : base(config)
     {
         if (config.Shares is not null)
@@ -54,11 +48,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
             Id = logsChatId,
             Type = ChatType.Private
         };
-        PracticeIntroduction = string.Join(Environment.NewLine, Config.PracticeIntroduction);
-        PracticeSchedule = string.Join(Environment.NewLine, Config.PracticeSchedule);
-
-        RestrictionWarningMessageFormat = string.Join(Environment.NewLine, Config.RestrictionWarningMessageFormat);
-        RestrictionMessageFormat = string.Join(Environment.NewLine, Config.RestrictionMessageFormat);
 
         Dictionary<Type, Func<object?, object?>> additionalConverters = new()
         {

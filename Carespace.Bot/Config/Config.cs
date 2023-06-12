@@ -167,7 +167,7 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     [MinLength(1)]
-    public List<string> ExercisesLinks { get; init; } = null!;
+    public List<Uri> ExerciseUris { get; init; } = null!;
 
     [Required]
     public long DiscussGroupId { get; init; }
@@ -190,10 +190,10 @@ public class Config : ConfigGoogleSheets
     public string? SharesJson { get; init; }
 
     [Required]
-    public List<string> PracticeIntroduction { get; init; } = null!;
+    public List<string?> PracticeIntroductionLines { get; init; } = null!;
 
     [Required]
-    public List<string> PracticeSchedule { get; init; } = null!;
+    public List<string?> PracticeScheduleLines { get; init; } = null!;
 
     public bool ParticipateButton { get; init; }
 
@@ -203,9 +203,9 @@ public class Config : ConfigGoogleSheets
     public ushort InitialStrikesForSpammers { get; init; }
 
     [Required]
-    public List<string> RestrictionWarningMessageFormat { get; init; } = null!;
+    public List<string?> RestrictionWarningMessageFormatLines { get; init; } = null!;
 
 
     [Required]
-    public List<string> RestrictionMessageFormat { get; init; } = null!;
+    public List<string?> RestrictionMessageFormatLines { get; init; } = null!;
 }

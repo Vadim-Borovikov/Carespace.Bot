@@ -57,8 +57,8 @@ internal sealed class RestrictionsManager
         string guidelines = AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri);
         if (strikes == 0)
         {
-            string message = string.Format(_bot.RestrictionWarningMessageFormat, admin.ShortDescriptor,
-                user.ShortDescriptor, guidelines);
+            string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionWarningMessageFormatLines,
+                admin.ShortDescriptor, user.ShortDescriptor, guidelines);
             await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
         }
         else
@@ -67,8 +67,8 @@ internal sealed class RestrictionsManager
             DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
             uint days = (uint) period.TotalDays;
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, until);
-            string message = string.Format(_bot.RestrictionMessageFormat, admin.ShortDescriptor, user.ShortDescriptor,
-                days, guidelines);
+            string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
+                admin.ShortDescriptor, user.ShortDescriptor, days, guidelines);
             await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
         }
     }

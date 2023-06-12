@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AbstractBot.Operations;
 using Telegram.Bot.Types;
@@ -14,15 +15,16 @@ internal sealed class ExercisesCommand : CommandOperation
 
     protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
-        foreach (string text in _config.ExercisesLinks.Select(GetMessage))
+        foreach (string text in _config.ExerciseUris.Select(GetMessage))
         {
             await Bot.SendTextMessageAsync(message.Chat, text, ParseMode.MarkdownV2);
         }
     }
 
-    private string GetMessage(string link)
+    private string GetMessage(Uri uri)
     {
-        return string.Format(_config.Template, Text.WordJoiner, AbstractBot.Bots.Bot.EscapeCharacters(link));
+        return string.Format(_config.Template, Text.WordJoiner,
+            AbstractBot.Bots.Bot.EscapeCharacters(uri.AbsoluteUri));
     }
 
     private readonly Config.Config _config;
