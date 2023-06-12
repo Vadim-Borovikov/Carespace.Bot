@@ -196,4 +196,16 @@ public class Config : ConfigGoogleSheets
     public List<string> PracticeSchedule { get; init; } = null!;
 
     public bool ParticipateButton { get; init; }
+
+    [Required]
+    public Uri ChatGuidelinesUri { get; init; } = null!;
+
+    public ushort InitialStrikesForSpammers { get; init; }
+
+    [Required]
+    public List<string> RestrictionWarningMessageFormat { get; init; } = null!;
+
+
+    [Required]
+    public List<string> RestrictionMessageFormat { get; init; } = null!;
 }

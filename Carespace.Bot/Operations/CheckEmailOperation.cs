@@ -1,7 +1,6 @@
 ﻿using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot.Operations;
-using Carespace.Bot.Email;
 using Carespace.FinanceHelper;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -10,9 +9,9 @@ namespace Carespace.Bot.Operations;
 
 internal sealed class CheckEmailOperation : Operation
 {
-    protected override byte MenuOrder => 13;
+    protected override byte MenuOrder => 12;
 
-    public CheckEmailOperation(Bot bot, Checker checker) : base(bot) => _checker = checker;
+    public CheckEmailOperation(Bot bot, EmailChecker checker) : base(bot) => _checker = checker;
 
     protected override async Task<ExecutionResult> TryExecuteAsync(Message message, long senderId)
     {
@@ -36,5 +35,5 @@ internal sealed class CheckEmailOperation : Operation
         return ExecutionResult.Success;
     }
 
-    private readonly Checker _checker;
+    private readonly EmailChecker _checker;
 }
