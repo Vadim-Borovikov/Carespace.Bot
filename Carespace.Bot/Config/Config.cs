@@ -201,4 +201,11 @@ public class Config : ConfigGoogleSheets
     public Uri ChatGuidelinesUri { get; init; } = null!;
 
     public ushort InitialStrikesForSpammers { get; init; }
+
+    [Required]
+    public List<string> RestrictionWarningMessageFormat { get; init; } = null!;
+
+
+    [Required]
+    public List<string> RestrictionMessageFormat { get; init; } = null!;
 }
