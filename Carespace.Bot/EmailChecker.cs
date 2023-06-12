@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.Email;
+namespace Carespace.Bot;
 
-internal sealed class Checker
+internal sealed class EmailChecker
 {
-    public Checker(Bot bot, FinanceManager financeManager)
+    public EmailChecker(Bot bot, FinanceManager financeManager)
     {
         _bot = bot;
         _financeManager = financeManager;

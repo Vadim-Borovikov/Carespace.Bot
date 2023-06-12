@@ -15,7 +15,6 @@ using Telegram.Bot.Types.Enums;
 using Carespace.Bot.Operations;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types.ReplyMarkups;
-using Carespace.Bot.Email;
 using Telegram.Bot;
 
 namespace Carespace.Bot;
@@ -69,10 +68,10 @@ public sealed class Bot : BotWithSheets<Config.Config>
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
         _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
         FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
-        Checker emailChecker = new(this, financeManager);
+        EmailChecker emailChecker = new(this, financeManager);
         _weeklyUpdateTimer = new Events.Timer(Logger);
 
-        AntiSpam.Manager antiSpamManager = new(this, saveManager);
+        AntiSpamManager antiSpamManager = new(this, saveManager);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));

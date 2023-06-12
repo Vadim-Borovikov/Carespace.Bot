@@ -7,13 +7,13 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-namespace Carespace.Bot.AntiSpam;
+namespace Carespace.Bot;
 
-internal sealed class Manager
+internal sealed class AntiSpamManager
 {
     public readonly Chat Chat;
 
-    public Manager(Bot bot, SaveManager<Data> saveManager)
+    public AntiSpamManager(Bot bot, SaveManager<Data> saveManager)
     {
         _bot = bot;
         _saveManager = saveManager;
@@ -44,7 +44,7 @@ internal sealed class Manager
         if (_saveManager.Data.Strikes.ContainsKey(user.Id))
         {
             _saveManager.Data.Strikes[user.Id] =
-                (byte) Math.Max(_saveManager.Data.Strikes[user.Id] + 1, initialStrikes);
+                (byte)Math.Max(_saveManager.Data.Strikes[user.Id] + 1, initialStrikes);
         }
         else
         {

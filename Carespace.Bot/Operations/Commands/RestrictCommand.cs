@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Operations;
-using Carespace.Bot.AntiSpam;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types;
 
@@ -13,10 +12,10 @@ internal abstract class RestrictCommand : CommandOperation
 
     protected override bool EnabledInGroups => true;
 
-    protected RestrictCommand(Bot bot, Manager manager, string command, string description)
+    protected RestrictCommand(Bot bot, AntiSpamManager antiSpam, string command, string description)
         : base(bot, command, description)
     {
-        Manager = manager;
+        AntiSpam = antiSpam;
     }
 
     protected override bool IsInvokingBy(Message message, out string? payload)
@@ -32,7 +31,7 @@ internal abstract class RestrictCommand : CommandOperation
             return false;
         }
 
-        if (message.Chat.Id != Manager.Chat.Id)
+        if (message.Chat.Id != AntiSpam.Chat.Id)
         {
             return false;
         }
@@ -49,5 +48,5 @@ internal abstract class RestrictCommand : CommandOperation
 
     protected abstract Task ExecuteAsync(TelegramUser user, TelegramUser admin);
 
-    protected readonly Manager Manager;
+    protected readonly AntiSpamManager AntiSpam;
 }
