@@ -27,7 +27,13 @@ internal sealed class RestrictionsManager
 
         _permissions = new ChatPermissions
         {
-            CanSendMessages = false
+            CanSendMessages = false,
+            CanSendAudios = false,
+            CanSendDocuments = false,
+            CanSendPhotos = false,
+            CanSendVideos = false,
+            CanSendVideoNotes = false,
+            CanSendVoiceNotes = false
         };
     }
 
