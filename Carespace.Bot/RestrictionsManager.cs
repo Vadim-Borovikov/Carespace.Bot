@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Save;
@@ -44,46 +43,67 @@ internal sealed class RestrictionsManager
         return Restrict(_bot.Config.InitialStrikesForSpammers, user, admin);
     }
 
-    private async Task Restrict(ushort initialStrikes, TelegramUser user, TelegramUser admin)
+    private async Task Restrict(byte initialStrikes, TelegramUser user, TelegramUser admin)
     {
-        _saveManager.Load();
+        byte strikes = UpdateStrikes(initialStrikes, user.Id);
 
-        if (_saveManager.Data.Strikes.ContainsKey(user.Id))
+        string restrictionPart;
+        if (strikes > 1)
         {
-            _saveManager.Data.Strikes[user.Id] =
-                (byte) Math.Max(_saveManager.Data.Strikes[user.Id] + 1, initialStrikes);
+            uint days = GetDaysFor(strikes);
+            DateTime until = _bot.TimeManager.Now().UtcDateTime.AddDays(days);
+
+            await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
+
+            string daysPart = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
+                _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
+
+            restrictionPart = string.Format(_bot.Config.RestrictionPartFormat, user.ShortDescriptor, daysPart);
         }
         else
         {
-            _saveManager.Data.Strikes[user.Id] = initialStrikes;
+            restrictionPart = string.Format(_bot.Config.RestrictionWarningPartFormat, user.ShortDescriptor);
         }
+
+        ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
+        string comingNext = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, nextDays,
+            _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
+
+        string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
+            AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
+            AbstractBot.Bots.Bot.EscapeCharacters(restrictionPart),
+            AbstractBot.Bots.Bot.EscapeCharacters(comingNext),
+            AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri));
+        await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
+    }
+
+    private byte UpdateStrikes(byte initialStrikes, long userId)
+    {
+        _saveManager.Load();
+
+        _saveManager.Data.Strikes[userId] = _saveManager.Data.Strikes.ContainsKey(userId)
+            ? Math.Max(initialStrikes, GetNextStrikes(_saveManager.Data.Strikes[userId]))
+            : initialStrikes;
 
         _saveManager.Save();
 
-        ushort strikes = _saveManager.Data.Strikes[user.Id];
+        return _saveManager.Data.Strikes[userId];
+    }
 
-        List<string?> formatLines = _bot.Config.RestrictionWarningMessageFormatLines;
-        uint days = 1;
-        if (strikes > 1)
+    private byte GetNextStrikes(byte strikes)
+    {
+        byte nextStrikes = (byte) (strikes + 1);
+        return GetDaysFor(nextStrikes) == GetDaysFor(strikes) ? strikes : nextStrikes;
+    }
+
+    private ushort GetDaysFor(byte strikes)
+    {
+        return strikes switch
         {
-            formatLines = _bot.Config.RestrictionMessageFormatLines;
-
-            TimeSpan period = TimeSpan.FromDays(Math.Pow(2, strikes - 2));
-            DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
-            days = (uint) period.TotalDays;
-
-            await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
-        }
-
-        string daysPart = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
-            _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
-
-        string message = GryphonUtilities.Text.FormatLines(formatLines,
-            AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
-            AbstractBot.Bots.Bot.EscapeCharacters(user.ShortDescriptor),
-            AbstractBot.Bots.Bot.EscapeCharacters(daysPart),
-            AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri));
-        await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
+            0 => throw new ArgumentOutOfRangeException(),
+            1 => 0,
+            _ => Math.Min(_bot.Config.RestrictionsMaxDays, (ushort) Math.Pow(2, strikes - 2))
+        };
     }
 
     private readonly Bot _bot;

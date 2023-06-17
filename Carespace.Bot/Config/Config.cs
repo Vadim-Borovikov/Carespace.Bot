@@ -200,7 +200,9 @@ public class Config : ConfigGoogleSheets
     [Required]
     public Uri ChatGuidelinesUri { get; init; } = null!;
 
-    public ushort InitialStrikesForSpammers { get; init; }
+    public byte InitialStrikesForSpammers { get; init; }
+
+    public ushort RestrictionsMaxDays { get; init; }
 
     [Required]
     [MinLength(1)]
@@ -219,8 +221,12 @@ public class Config : ConfigGoogleSheets
     public string DaysFormAlot { get; init; } = null!;
 
     [Required]
-    public List<string?> RestrictionWarningMessageFormatLines { get; init; } = null!;
+    [MinLength(1)]
+    public string RestrictionWarningPartFormat { get; init; } = null!;
 
+    [Required]
+    [MinLength(1)]
+    public string RestrictionPartFormat { get; init; } = null!;
 
     [Required]
     public List<string?> RestrictionMessageFormatLines { get; init; } = null!;
