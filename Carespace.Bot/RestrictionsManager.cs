@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.Bot.Save;
@@ -60,25 +61,29 @@ internal sealed class RestrictionsManager
         _saveManager.Save();
 
         ushort strikes = _saveManager.Data.Strikes[user.Id];
-        string guidelines = AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri);
-        if (strikes == 1)
+
+        List<string?> formatLines = _bot.Config.RestrictionWarningMessageFormatLines;
+        uint days = 1;
+        if (strikes > 1)
         {
-            string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionWarningMessageFormatLines,
-                AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
-                AbstractBot.Bots.Bot.EscapeCharacters(user.ShortDescriptor), guidelines);
-            await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
-        }
-        else
-        {
+            formatLines = _bot.Config.RestrictionMessageFormatLines;
+
             TimeSpan period = TimeSpan.FromDays(Math.Pow(2, strikes - 2));
             DateTime until = _bot.TimeManager.Now().UtcDateTime.Add(period);
-            uint days = (uint) period.TotalDays;
+            days = (uint) period.TotalDays;
+
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
-            string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
-                AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
-                AbstractBot.Bots.Bot.EscapeCharacters(user.ShortDescriptor), days, guidelines);
-            await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
         }
+
+        string daysPart = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
+            _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
+
+        string message = GryphonUtilities.Text.FormatLines(formatLines,
+            AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
+            AbstractBot.Bots.Bot.EscapeCharacters(user.ShortDescriptor),
+            AbstractBot.Bots.Bot.EscapeCharacters(daysPart),
+            AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri));
+        await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
     }
 
     private readonly Bot _bot;

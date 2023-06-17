@@ -203,6 +203,22 @@ public class Config : ConfigGoogleSheets
     public ushort InitialStrikesForSpammers { get; init; }
 
     [Required]
+    [MinLength(1)]
+    public string DaysFormat { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string DaysForm1 { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string DaysForm24 { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string DaysFormAlot { get; init; } = null!;
+
+    [Required]
     public List<string?> RestrictionWarningMessageFormatLines { get; init; } = null!;
 
 
