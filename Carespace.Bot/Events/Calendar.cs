@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Text;
+using System.Web;
 using GryphonUtilities;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
 using Ical.Net.Serialization;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace Carespace.Bot.Events;
 
@@ -73,19 +75,22 @@ public sealed class Calendar
 
     private string AsGoogleLink(string details, string rule)
     {
-        Dictionary<string, string> queryString = new()
-        {
-            ["action"] = "TEMPLATE" ,
-            ["text"] = _template.Name,
-            ["dates"] = $"{_template.GetStart(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}/{_template.GetEnd(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}",
-            ["details"] = details
-        };
+        NameValueCollection query = HttpUtility.ParseQueryString("");
+        query["action"] = "TEMPLATE";
+        query["text"] = _template.Name;
+        query["dates"] =
+            $"{_template.GetStart(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}/{_template.GetEnd(_timeManager).UtcDateTime:yyyyMMddTHHmmssZ}";
+        query["details"] = details;
         if (_template.IsWeekly)
         {
-            queryString["recur"] = $"RRULE:{rule}";
+            query["recur"] = $"RRULE:{rule}";
         }
 
-        return QueryHelpers.AddQueryString(GoogleUri, queryString);
+        UriBuilder uriBuilder = new(GoogleUri)
+        {
+            Query = query.ToString()
+        };
+        return uriBuilder.ToString();
     }
 
     private const string GoogleUri = "https://www.google.com/calendar/render";
