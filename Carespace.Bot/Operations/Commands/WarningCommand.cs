@@ -3,11 +3,11 @@ using AbstractBot;
 
 namespace Carespace.Bot.Operations.Commands;
 
-internal sealed class StrikeCommand : RestrictCommand
+internal sealed class WarningCommand : RestrictCommand
 {
     protected override byte MenuOrder => 9;
 
-    public StrikeCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "strike",
+    public WarningCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "warning",
         "предупредить автора или ограничить его права")
     {
     }

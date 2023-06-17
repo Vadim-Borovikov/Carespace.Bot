@@ -3,11 +3,11 @@ using AbstractBot;
 
 namespace Carespace.Bot.Operations.Commands;
 
-internal sealed class DestroyCommand : RestrictCommand
+internal sealed class SpamCommand : RestrictCommand
 {
     protected override byte MenuOrder => 10;
 
-    public DestroyCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "destroy",
+    public SpamCommand(Bot bot, RestrictionsManager antiSpam) : base(bot, antiSpam, "spam",
         "сразу и сильно ограничить права автора")
     {
     }

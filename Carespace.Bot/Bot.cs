@@ -80,15 +80,15 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
 
-        StrikeCommand strikeCommand = new(this, antiSpam);
-        DestroyCommand destroyCommand = new(this, antiSpam);
-        Operations.Add(strikeCommand);
-        Operations.Add(destroyCommand);
+        WarningCommand warningCommand = new(this, antiSpam);
+        SpamCommand spamCommand = new(this, antiSpam);
+        Operations.Add(warningCommand);
+        Operations.Add(spamCommand);
 
         _restrictCommands = new List<BotCommand>
         {
-            strikeCommand.Command,
-            destroyCommand.Command
+            warningCommand.Command,
+            spamCommand.Command
         };
     }
 
