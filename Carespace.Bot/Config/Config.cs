@@ -14,28 +14,7 @@ public class Config : ConfigGoogleSheets
 {
     [Required]
     [MinLength(1)]
-    public string GoogleSheetId { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleTitle { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleRange { get; init; } = null!;
-
-    [Required]
-    public Uri EventsFormUri { get; init; } = null!;
-
-    [Required]
-    public TimeOnly EventsUpdateAt { get; init; }
-
-    [Required]
-    [MinLength(1)]
     public string SavePath { get; init; } = null!;
-
-    [Required]
-    public long EventsChannelId { get; init; }
 
     [Required]
     [MinLength(1)]
@@ -194,8 +173,6 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     public List<string?> PracticeScheduleLines { get; init; } = null!;
-
-    public bool ParticipateButton { get; init; }
 
     [Required]
     public Uri ChatGuidelinesUri { get; init; } = null!;

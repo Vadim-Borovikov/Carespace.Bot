@@ -6,14 +6,12 @@ using System.Threading.Tasks;
 using AbstractBot.Bots;
 using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Config;
-using Carespace.Bot.Events;
 using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Carespace.Bot.Operations;
-using GryphonUtilities.Extensions;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
 
@@ -21,8 +19,6 @@ namespace Carespace.Bot;
 
 public sealed class Bot : BotWithSheets<Config.Config>
 {
-    public readonly IDictionary<int, Calendar> Calendars = new Dictionary<int, Calendar>();
-
     internal readonly Dictionary<string, List<Share>> Shares = new();
 
     public Bot(Config.Config config) : base(config)
@@ -42,13 +38,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
             }
         }
 
-        long logsChatId = Config.SuperAdminId.GetValue(nameof(Config.SuperAdminId));
-        _logsChat = new Chat
-        {
-            Id = logsChatId,
-            Type = ChatType.Private
-        };
-
         Dictionary<Type, Func<object?, object?>> additionalConverters = new()
         {
             { typeof(Uri), o => o.ToUri() }
@@ -61,10 +50,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
             o => o.ToTimeSpan(TimeManager);
 
         SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        _eventManager = new Manager(this, DocumentsManager, additionalConverters, saveManager);
         FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
         EmailChecker emailChecker = new(this, financeManager);
-        _weeklyUpdateTimer = new Events.Timer(Logger);
 
         RestrictionsManager antiSpam = new(this, saveManager);
 
@@ -73,9 +60,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
         Operations.Add(new ExercisesCommand(this, config));
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
-
-        Operations.Add(new WeekCommand(this, _eventManager));
-        Operations.Add(new ConfirmCommand(this, _eventManager));
 
         Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
@@ -101,8 +85,6 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
         await Client.SetMyCommandsAsync(_restrictCommands,
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
-
-        AbstractBot.Invoker.FireAndForget(_ => PostOrUpdateWeekEventsAndScheduleAsync(), Logger, cancellationToken);
     }
 
     internal Task SendMessageAsync(Link link, Chat chat)
@@ -117,46 +99,11 @@ public sealed class Bot : BotWithSheets<Config.Config>
         return PhotoRepository.SendPhotoAsync(this, chat, link.PhotoPath, replyMarkup: keyboard);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (!disposing)
-        {
-            _weeklyUpdateTimer.Dispose();
-            _eventManager.Dispose();
-        }
-        base.Dispose(disposing);
-    }
-
     private static InlineKeyboardMarkup GetReplyMarkup(Link link)
     {
         InlineKeyboardButton button = new(link.Name) { Url = link.Uri.AbsoluteUri };
         return new InlineKeyboardMarkup(button);
     }
 
-    private async Task PostOrUpdateWeekEventsAndScheduleAsync()
-    {
-        await _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(_logsChat, true);
-        Schedule(() => _eventManager.PostOrUpdateWeekEventsAndScheduleAsync(_logsChat, false),
-            nameof(_eventManager.PostOrUpdateWeekEventsAndScheduleAsync));
-    }
-
-    private void Schedule(Func<Task> func, string funcName)
-    {
-        DateTimeFull nextUpdateAt =
-            TimeManager.GetDateTimeFull(Week.GetMonday(TimeManager).AddDays(7), Config.EventsUpdateAt);
-        _weeklyUpdateTimer.DoOnce(nextUpdateAt, () => DoAndScheduleWeeklyAsync(func, funcName), funcName);
-    }
-
-    private async Task DoAndScheduleWeeklyAsync(Func<Task> func, string funcName)
-    {
-        await func();
-        _weeklyUpdateTimer.DoWeekly(func, funcName);
-    }
-
-    private readonly Manager _eventManager;
-
     private readonly List<BotCommand> _restrictCommands;
-
-    private readonly Events.Timer _weeklyUpdateTimer;
-    private readonly Chat _logsChat;
 }
