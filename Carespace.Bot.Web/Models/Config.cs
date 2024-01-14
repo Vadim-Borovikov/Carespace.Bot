@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 namespace Carespace.Bot.Web.Models;
 
 [PublicAPI]
-public sealed class Config : Carespace.Bot.Config.Config
+public sealed class Config : Configs.Config
 {
     [Required]
     [MinLength(1)]

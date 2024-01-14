@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 
 // ReSharper disable NullableWarningSuppressionIsUsed
 
-namespace Carespace.Bot.Config;
+namespace Carespace.Bot.Configs;
 
 [PublicAPI]
 public sealed class Link

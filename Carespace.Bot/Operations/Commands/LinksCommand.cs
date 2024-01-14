@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AbstractBot.Operations;
-using Carespace.Bot.Config;
+using Carespace.Bot.Configs;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Operations.Commands;

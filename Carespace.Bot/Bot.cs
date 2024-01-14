@@ -4,8 +4,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot.Bots;
+using Carespace.Bot.Configs;
 using Carespace.Bot.Operations.Commands;
-using Carespace.Bot.Config;
 using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using GryphonUtilities;
@@ -17,11 +17,11 @@ using Telegram.Bot;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotWithSheets<Config.Config>
+public sealed class Bot : BotWithSheets<Config>
 {
     internal readonly Dictionary<string, List<Share>> Shares = new();
 
-    public Bot(Config.Config config) : base(config)
+    public Bot(Config config) : base(config)
     {
         if (config.Shares is not null)
         {

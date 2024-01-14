@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AbstractBot.Operations;
+using Carespace.Bot.Configs;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -11,7 +12,7 @@ internal sealed class ExercisesCommand : CommandOperation
 {
     protected override byte MenuOrder => 4;
 
-    public ExercisesCommand(Bot bot, Config.Config config) : base(bot, "exercises", "упражнения") => _config = config;
+    public ExercisesCommand(Bot bot, Config config) : base(bot, "exercises", "упражнения") => _config = config;
 
     protected override async Task ExecuteAsync(Message message, long _, string? __)
     {
@@ -27,5 +28,5 @@ internal sealed class ExercisesCommand : CommandOperation
             AbstractBot.Bots.Bot.EscapeCharacters(uri.AbsoluteUri));
     }
 
-    private readonly Config.Config _config;
+    private readonly Config _config;
 }

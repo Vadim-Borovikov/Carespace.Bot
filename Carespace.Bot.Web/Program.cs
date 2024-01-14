@@ -21,7 +21,7 @@ internal static class Program
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            Models.Config? config = Configure(builder);
+            Config? config = Configure(builder);
             if (config is null)
             {
                 throw new NullReferenceException("Can't load config.");
@@ -56,17 +56,17 @@ internal static class Program
         }
     }
 
-    private static Models.Config? Configure(WebApplicationBuilder builder)
+    private static Config? Configure(WebApplicationBuilder builder)
     {
         ConfigurationManager configuration = builder.Configuration;
-        Models.Config? config = configuration.Get<Models.Config>();
+        Config? config = configuration.Get<Config>();
         if (config is null)
         {
             return null;
         }
 
-        builder.Services.AddOptions<Models.Config>().Bind(configuration).ValidateDataAnnotations();
-        builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<Models.Config>>().Value);
+        builder.Services.AddOptions<Config>().Bind(configuration).ValidateDataAnnotations();
+        builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<Config>>().Value);
 
         CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(config.CultureInfoName);
 
