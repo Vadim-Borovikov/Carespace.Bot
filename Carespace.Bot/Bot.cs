@@ -61,7 +61,6 @@ public sealed class Bot : BotWithSheets<Config>
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
 
-        Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
 
         WarningCommand warningCommand = new(this, antiSpam);

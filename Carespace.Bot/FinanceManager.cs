@@ -37,15 +37,6 @@ internal sealed class FinanceManager
             transactions.GetOrAddSheet(_bot.Config.GoogleCustomTransactionsTitle, additionalConverters);
     }
 
-    public async Task UpdateFinances(Chat chat)
-    {
-        await _bot.SendTextMessageAsync(chat, "Обновляю покупки…");
-
-        await LoadGoogleTransactionsAsync(chat);
-
-        await _bot.SendTextMessageAsync(chat, "…покупки обновлены.");
-    }
-
     public async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(Chat? chat, int? productIdForMails = null)
     {
         List<Transaction> transactions = new();
