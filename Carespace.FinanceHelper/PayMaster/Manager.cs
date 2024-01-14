@@ -12,19 +12,6 @@ public static class Manager
 {
     public static string PaymentUrlFormat = "";
 
-    public static async Task<List<Donation>> GetNewPaymentsAsync(string merchantId, DateOnly start, DateOnly end,
-        string token, IEnumerable<Donation> oldPayments, JsonSerializerOptions options)
-    {
-        List<PaymentsResult.Item> allPayments = await GetPaymentsAsync(merchantId, start, end, token, options);
-        List<PaymentsResult.Item> payments = allPayments.Where(p => p.TestMode is null || !p.TestMode.Value).ToList();
-
-        IEnumerable<string?> oldPaymentIds = oldPayments.Select(p => p.PaymentId);
-
-        IEnumerable<PaymentsResult.Item> newPayments = payments.Where(p => !oldPaymentIds.Contains(p.Id));
-
-        return newPayments.Select(p => new Donation(p)).ToList();
-    }
-
     public static async Task<List<PaymentsResult.Item>> GetPaymentsAsync(string merchantId, DateOnly start,
         DateOnly end, string token, JsonSerializerOptions options)
     {

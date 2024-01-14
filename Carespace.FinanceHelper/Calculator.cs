@@ -6,25 +6,6 @@ namespace Carespace.FinanceHelper;
 
 public static class Calculator
 {
-    public static void CalculateTotalsAndWeeks(IEnumerable<Donation> donations,
-        Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents, DateOnly firstThursday)
-    {
-        foreach (Donation donation in donations)
-        {
-            decimal payMasterFee = 0;
-            if (donation.PayMethodInfo.HasValue)
-            {
-                decimal percent = payMasterFeePercents[donation.PayMethodInfo.Value];
-                payMasterFee = Round(donation.Amount * percent);
-            }
-            donation.Total = donation.Amount - payMasterFee;
-
-            TimeSpan difference =
-                donation.Date.ToDateTime(TimeOnly.MinValue) - firstThursday.ToDateTime(TimeOnly.MinValue);
-            donation.Week = (ushort) Math.Ceiling(difference.TotalDays / 7);
-        }
-    }
-
     public static void CalculateShares(IEnumerable<Transaction> transactions, decimal taxFeePercent,
         decimal digisellerFeePercent, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
         Dictionary<string, List<Share>> shares)

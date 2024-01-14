@@ -35,11 +35,6 @@ internal sealed class FinanceManager
         _allTransactions = transactions.GetOrAddSheet(_bot.Config.GoogleAllTransactionsTitle, additionalConverters);
         _customTransactions =
             transactions.GetOrAddSheet(_bot.Config.GoogleCustomTransactionsTitle, additionalConverters);
-
-        GoogleSheetsManager.Documents.Document donations = manager.GetOrAdd(bot.Config.GoogleSheetIdDonations);
-        _allDonations = donations.GetOrAddSheet(_bot.Config.GoogleAllDonationsTitle, additionalConverters);
-        _customDonations = donations.GetOrAddSheet(_bot.Config.GoogleCustomDonationsTitle, additionalConverters);
-        _donationSums = donations.GetOrAddSheet(_bot.Config.GoogleDonationSumsTitle, additionalConverters);
     }
 
     public async Task UpdateFinances(Chat chat)
@@ -49,12 +44,6 @@ internal sealed class FinanceManager
         await LoadGoogleTransactionsAsync(chat);
 
         await _bot.SendTextMessageAsync(chat, "…покупки обновлены.");
-
-        await _bot.SendTextMessageAsync(chat, "Обновляю донатики…");
-
-        await UpdateDonationsAsync(chat);
-
-        await _bot.SendTextMessageAsync(chat, "…донатики обновлены.");
     }
 
     public async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(Chat? chat, int? productIdForMails = null)
@@ -157,56 +146,6 @@ internal sealed class FinanceManager
             : transactions.Where(t => t.DigisellerProductId == productIdForMails).Select(t => t.Email).RemoveNulls();
     }
 
-    private async Task UpdateDonationsAsync(Chat chat)
-    {
-        List<Donation> donations = new();
-
-        SheetData<Donation> oldDonations;
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю донаты из таблицы"))
-        {
-            oldDonations = await _allDonations.LoadAsync<Donation>(_bot.Config.GoogleAllDonationsRange);
-            donations.AddRange(oldDonations.Instances);
-
-            SheetData<Donation> newCustomDonations =
-                await _customDonations.LoadAsync<Donation>(_bot.Config.GoogleCustomDonationsRange);
-            donations.AddRange(newCustomDonations.Instances);
-        }
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю платежи"))
-        {
-            DateOnly dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
-            DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
-
-            List<Donation> newDonations =
-                await FinanceHelper.PayMaster.Manager.GetNewPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations,
-                    dateStart, dateEnd, _bot.Config.PayMasterToken, oldDonations.Instances,
-                    _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
-
-            donations.AddRange(newDonations);
-        }
-
-        DateOnly firstThursday = Week.GetNextThursday(donations.Min(d => d.Date));
-
-        Calculator.CalculateTotalsAndWeeks(donations, _bot.Config.PayMasterFeePercents, firstThursday);
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Заношу донаты в таблицу"))
-        {
-            SheetData<Donation> data = new(donations.OrderByDescending(d => d.Date).ToList(), oldDonations.Titles);
-            await _allDonations.SaveAsync(_bot.Config.GoogleAllDonationsRange, data);
-            await _customDonations.ClearAsync(_bot.Config.GoogleCustomDonationsRangeToClear);
-        }
-
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Считаю и заношу недельные суммы"))
-        {
-            List<DonationsSum> sums = donations.GroupBy(d => d.Week)
-                                               .Select(g => new DonationsSum(firstThursday, g.Key, g.Sum(d => d.Total)))
-                                               .ToList();
-            List<string> titles = await _donationSums.LoadTitlesAsync(_bot.Config.GoogleDonationSumsRange);
-            SheetData<DonationsSum> sumsData = new(sums.OrderByDescending(s => s.Date).ToList(), titles);
-            await _donationSums.SaveAsync(_bot.Config.GoogleDonationSumsRange, sumsData);
-        }
-    }
-
     private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers =
         WrapExtensions.WrapWithList(Transaction.Save);
 
@@ -214,8 +153,4 @@ internal sealed class FinanceManager
 
     private readonly Sheet _allTransactions;
     private readonly Sheet _customTransactions;
-
-    private readonly Sheet _allDonations;
-    private readonly Sheet _customDonations;
-    private readonly Sheet _donationSums;
 }

@@ -32,10 +32,6 @@ public class Config : ConfigGoogleSheets
 
     [Required]
     [MinLength(1)]
-    public string GoogleSheetIdDonations { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
     public string GoogleCustomTransactionsTitle { get; init; } = null!;
 
     [Required]
@@ -53,34 +49,6 @@ public class Config : ConfigGoogleSheets
     [Required]
     [MinLength(1)]
     public string GoogleAllTransactionsFinalRange { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleAllDonationsTitle { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleAllDonationsRange { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleCustomDonationsTitle { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleCustomDonationsRange { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleCustomDonationsRangeToClear { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleDonationSumsTitle { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string GoogleDonationSumsRange { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -125,10 +93,6 @@ public class Config : ConfigGoogleSheets
     [Required]
     [MinLength(1)]
     public string PayMasterMerchantIdDigiseller { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string PayMasterMerchantIdDonations { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
