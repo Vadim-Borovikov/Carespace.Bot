@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using AbstractBot;
 using Carespace.FinanceHelper;
 using Carespace.FinanceHelper.Data.PayMaster;
-using GoogleSheetsManager;
 using GoogleSheetsManager.Documents;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types;
@@ -15,7 +14,7 @@ namespace Carespace.Bot;
 
 internal sealed class FinanceManager
 {
-    public FinanceManager(Bot bot, DocumentsManager manager,
+    public FinanceManager(Bot bot, Manager documentsManager,
         Dictionary<Type, Func<object?, object?>> additionalConverters)
     {
         _bot = bot;
@@ -31,7 +30,7 @@ internal sealed class FinanceManager
         additionalConverters[typeof(Transaction.PayMethod)] = additionalConverters[typeof(Transaction.PayMethod?)] =
             o => o.ToPayMathod();
 
-        GoogleSheetsManager.Documents.Document transactions = manager.GetOrAdd(bot.Config.GoogleSheetIdTransactions);
+        GoogleSheetsManager.Documents.Document transactions = documentsManager.GetOrAdd(bot.Config.GoogleSheetIdTransactions);
         _allTransactions = transactions.GetOrAddSheet(_bot.Config.GoogleAllTransactionsTitle, additionalConverters);
         _customTransactions =
             transactions.GetOrAddSheet(_bot.Config.GoogleCustomTransactionsTitle, additionalConverters);
@@ -45,13 +44,13 @@ internal sealed class FinanceManager
             ? null
             : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из таблицы");
 
-        SheetData<Transaction> oldTransactions =
+        List<Transaction> oldTransactions =
             await _allTransactions.LoadAsync<Transaction>(_bot.Config.GoogleAllTransactionsFinalRange);
-        transactions.AddRange(oldTransactions.Instances);
+        transactions.AddRange(oldTransactions);
 
-        SheetData<Transaction> newCustomTransactions =
+        List<Transaction> newCustomTransactions =
             await _customTransactions.LoadAsync<Transaction>(_bot.Config.GoogleCustomTransactionsRange);
-        transactions.AddRange(newCustomTransactions.Instances);
+        transactions.AddRange(newCustomTransactions);
 
         if (statusMessage is not null)
         {
@@ -63,14 +62,14 @@ internal sealed class FinanceManager
             : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из Digiseller");
 
         DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
-        DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
+        DateOnly dateEnd = _bot.Clock.Now().DateOnly.AddDays(1);
 
         List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
 
         List<Transaction> newSells =
             await FinanceHelper.Digiseller.Manager.GetNewSellsAsync(_bot.Config.DigisellerLogin,
                 _bot.Config.DigisellerPassword, _bot.Config.DigisellerId, productIds, dateStart, dateEnd,
-                _bot.Config.DigisellerApiGuid, oldTransactions.Instances, _bot.TimeManager,
+                _bot.Config.DigisellerApiGuid, oldTransactions, _bot.Clock,
                 _bot.JsonSerializerOptionsProvider.SnakeCaseOptions);
 
         transactions.AddRange(newSells);
@@ -122,8 +121,9 @@ internal sealed class FinanceManager
             ? null
             : await StatusMessage.CreateAsync(_bot, chat, "Заношу покупки в таблицу");
 
-        SheetData<Transaction> data = new(transactions.OrderBy(t => t.Date).ToList(), oldTransactions.Titles);
-        await _allTransactions.SaveAsync(_bot.Config.GoogleAllTransactionsFinalRange, data, AdditionalSavers);
+        List<Transaction> data = transactions.OrderBy(t => t.Date).ToList();
+        await _allTransactions.SaveAsync(_bot.Config.GoogleAllTransactionsFinalRange, data,
+            additionalSavers: AdditionalSavers);
 
         await _customTransactions.ClearAsync(_bot.Config.GoogleCustomTransactionsRangeToClear);
 
@@ -134,7 +134,7 @@ internal sealed class FinanceManager
 
         return productIdForMails is null
             ? Enumerable.Empty<MailAddress>()
-            : transactions.Where(t => t.DigisellerProductId == productIdForMails).Select(t => t.Email).RemoveNulls();
+            : transactions.Where(t => t.DigisellerProductId == productIdForMails).Select(t => t.Email).SkipNulls();
     }
 
     private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers =

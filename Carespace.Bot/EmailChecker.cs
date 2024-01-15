@@ -27,7 +27,7 @@ internal sealed class EmailChecker
         if (found)
         {
             await _bot.SendTextMessageAsync(chat, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
-                ParseMode.MarkdownV2);
+                parseMode: ParseMode.MarkdownV2);
         }
         else
         {

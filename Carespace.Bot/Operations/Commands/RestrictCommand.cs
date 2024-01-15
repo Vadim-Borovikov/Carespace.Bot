@@ -1,14 +1,15 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using AbstractBot;
-using AbstractBot.Operations;
-using GryphonUtilities.Extensions;
+using AbstractBot.Operations.Commands;
+using Carespace.Bot.Operations.Infos;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Operations.Commands;
 
-internal abstract class RestrictCommand : CommandOperation
+internal abstract class RestrictCommand : Command<RestrictCommandInfo>
 {
-    protected override Access AccessLevel => Access.Admin;
+    public override Enum AccessRequired => Carespace.Bot.Bot.AccessType.Admin;
 
     protected override bool EnabledInGroups => true;
 
@@ -18,32 +19,16 @@ internal abstract class RestrictCommand : CommandOperation
         AntiSpam = antiSpam;
     }
 
-    protected override bool IsInvokingBy(Message message, out string? payload)
+    protected override bool IsInvokingBy(Message message, User sender, out RestrictCommandInfo? data)
     {
-        bool result = base.IsInvokingBy(message, out payload);
-        if (!result)
-        {
-            return false;
-        }
-
-        if (message.ReplyToMessage is null)
-        {
-            return false;
-        }
-
-        if (message.Chat.Id != AntiSpam.Chat.Id)
-        {
-            return false;
-        }
-
-        return true;
+        return base.IsInvokingBy(message, sender, out data)
+               && message.ReplyToMessage is not null
+               && (message.Chat.Id == AntiSpam.Chat.Id);
     }
 
-    protected override Task ExecuteAsync(Message message, long _, string? __)
+    protected override Task ExecuteAsync(RestrictCommandInfo data, Message message, User sender)
     {
-        TelegramUser user = new(message.ReplyToMessage.GetValue().From.GetValue());
-        TelegramUser admin = new(message.From.GetValue());
-        return ExecuteAsync(user, admin);
+        return ExecuteAsync(data.User, data.Admin);
     }
 
     protected abstract Task ExecuteAsync(TelegramUser user, TelegramUser admin);

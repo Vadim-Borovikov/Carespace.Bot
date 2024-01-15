@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Extensions;
 using Carespace.Bot.Save;
 using GryphonUtilities;
 using Telegram.Bot;
@@ -51,11 +52,11 @@ internal sealed class RestrictionsManager
         if (strikes > 1)
         {
             uint days = GetDaysFor(strikes);
-            DateTime until = _bot.TimeManager.Now().UtcDateTime.AddDays(days);
+            DateTime until = _bot.Clock.Now().UtcDateTime.AddDays(days);
 
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
 
-            string daysPart = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
+            string daysPart = GryphonUtilities.Helpers.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
                 _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
 
             restrictionPart = string.Format(_bot.Config.RestrictionPartFormat, user.ShortDescriptor, daysPart);
@@ -66,28 +67,28 @@ internal sealed class RestrictionsManager
         }
 
         ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
-        string comingNext = GryphonUtilities.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, nextDays,
+        string comingNext = GryphonUtilities.Helpers.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, nextDays,
             _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
 
-        string message = GryphonUtilities.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
-            AbstractBot.Bots.Bot.EscapeCharacters(admin.ShortDescriptor),
-            AbstractBot.Bots.Bot.EscapeCharacters(restrictionPart),
-            AbstractBot.Bots.Bot.EscapeCharacters(comingNext),
-            AbstractBot.Bots.Bot.EscapeCharacters(_bot.Config.ChatGuidelinesUri.AbsoluteUri));
-        await _bot.SendTextMessageAsync(Chat, message, ParseMode.MarkdownV2);
+        string message = GryphonUtilities.Helpers.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
+            admin.ShortDescriptor.Escape(),
+            restrictionPart.Escape(),
+            comingNext.Escape(),
+            _bot.Config.ChatGuidelinesUri.AbsoluteUri.Escape());
+        await _bot.SendTextMessageAsync(Chat, message, parseMode: ParseMode.MarkdownV2);
     }
 
     private byte UpdateStrikes(byte initialStrikes, long userId)
     {
         _saveManager.Load();
 
-        _saveManager.Data.Strikes[userId] = _saveManager.Data.Strikes.ContainsKey(userId)
-            ? Math.Max(initialStrikes, GetNextStrikes(_saveManager.Data.Strikes[userId]))
+        _saveManager.SaveData.Strikes[userId] = _saveManager.SaveData.Strikes.ContainsKey(userId)
+            ? Math.Max(initialStrikes, GetNextStrikes(_saveManager.SaveData.Strikes[userId]))
             : initialStrikes;
 
         _saveManager.Save();
 
-        return _saveManager.Data.Strikes[userId];
+        return _saveManager.SaveData.Strikes[userId];
     }
 
     private byte GetNextStrikes(byte strikes)

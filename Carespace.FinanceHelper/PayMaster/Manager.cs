@@ -20,8 +20,8 @@ public static class Manager
 
         PaymentsResult result =
             await Provider.GetPaymentsAsync(token, merchantId, startFormatted, endFormatted, options);
-        List<PaymentsResult.Item?> items = result.Items.GetValue(nameof(result.Items));
-        return items.RemoveNulls().Where(p => p.Status == Status).ToList();
+        List<PaymentsResult.Item?> items = result.Items.Denull(nameof(result.Items));
+        return items.SkipNulls().Where(p => p.Status == Status).ToList();
     }
 
     public static void FindPayment(Transaction transaction, IEnumerable<PaymentsResult.Item> payments,

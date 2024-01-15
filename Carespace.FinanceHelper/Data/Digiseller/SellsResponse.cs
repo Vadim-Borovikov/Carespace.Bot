@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-using GryphonUtilities;
+using GryphonUtilities.Time;
 using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.Digiseller;

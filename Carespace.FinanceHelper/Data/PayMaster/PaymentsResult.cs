@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using GryphonUtilities;
+using GryphonUtilities.Time;
 using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper.Data.PayMaster;

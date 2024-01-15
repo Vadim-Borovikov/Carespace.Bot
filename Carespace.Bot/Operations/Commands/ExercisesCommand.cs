@@ -1,32 +1,37 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AbstractBot.Operations;
+using AbstractBot.Configs;
+using AbstractBot.Extensions;
+using AbstractBot.Operations.Commands;
 using Carespace.Bot.Configs;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Operations.Commands;
 
-internal sealed class ExercisesCommand : CommandOperation
+internal sealed class ExercisesCommand : CommandSimple
 {
-    protected override byte MenuOrder => 4;
+    protected override byte Order => 4;
 
-    public ExercisesCommand(Bot bot, Config config) : base(bot, "exercises", "упражнения") => _config = config;
-
-    protected override async Task ExecuteAsync(Message message, long _, string? __)
+    public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения")
     {
-        foreach (string text in _config.ExerciseUris.Select(GetMessage))
+        _messages = bot.Config.ExerciseUris.Select(u => GetMessage(u, bot.Config.InstantViewFormat)).ToList();
+    }
+
+    protected override async Task ExecuteAsync(Message message, User sender)
+    {
+        foreach (string text in _messages)
         {
-            await Bot.SendTextMessageAsync(message.Chat, text, ParseMode.MarkdownV2);
+            await Bot.SendTextMessageAsync(message.Chat, text, parseMode: ParseMode.MarkdownV2);
         }
     }
 
-    private string GetMessage(Uri uri)
+    private static MessageTemplate GetMessage(Uri uri, MessageTemplate format)
     {
-        return string.Format(_config.Template, Text.WordJoiner,
-            AbstractBot.Bots.Bot.EscapeCharacters(uri.AbsoluteUri));
+        return format.Format(Text.WordJoiner, uri.AbsoluteUri.Escape());
     }
 
-    private readonly Config _config;
+    private readonly List<string> _messages;
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using JetBrains.Annotations;
@@ -10,15 +11,11 @@ using JetBrains.Annotations;
 namespace Carespace.Bot.Configs;
 
 [PublicAPI]
-public class Config : ConfigGoogleSheets
+public class Config : ConfigWithSheets<Texts>
 {
     [Required]
     [MinLength(1)]
-    public string SavePath { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string Template { get; init; } = null!;
+    public string InstantViewFormat { get; init; } = null!;
 
     [Required]
     public Link FeedbackLink { get; init; } = null!;
@@ -125,6 +122,18 @@ public class Config : ConfigGoogleSheets
     public Dictionary<string, List<Share>>? Shares { get; init; }
 
     public string? SharesJson { get; init; }
+
+    public Dictionary<string, List<Share>>? GetShares(JsonSerializerOptions options)
+    {
+        if (Shares is not null)
+        {
+            return Shares;
+        }
+
+        return SharesJson is null
+            ? null
+            : JsonSerializer.Deserialize<Dictionary<string, List<Share>>>(SharesJson, options);
+    }
 
     [Required]
     public List<string?> PracticeIntroductionLines { get; init; } = null!;

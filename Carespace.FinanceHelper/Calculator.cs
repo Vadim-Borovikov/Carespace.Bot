@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using GryphonUtilities.Extensions;
 
 namespace Carespace.FinanceHelper;
 
@@ -39,7 +38,7 @@ public static class Calculator
                     amount -= digisellerFee;
 
                     // PayMaster
-                    Transaction.PayMethod method = transaction.PayMethodInfo.GetValue();
+                    Transaction.PayMethod method = transaction.PayMethodInfo!.Value;
                     decimal percent = payMasterFeePercents[method];
                     decimal payMasterFee = Round(price * percent);
                     transaction.PayMasterFee = payMasterFee;
