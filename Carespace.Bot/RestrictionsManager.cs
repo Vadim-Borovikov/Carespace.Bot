@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Configs;
 using AbstractBot.Extensions;
 using Carespace.Bot.Save;
 using GryphonUtilities;
@@ -56,26 +57,23 @@ internal sealed class RestrictionsManager
 
             await _bot.Client.RestrictChatMemberAsync(Chat, user.Id, _permissions, false, until);
 
-            string daysPart = GryphonUtilities.Helpers.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, days,
-                _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
+            string daysPart = _bot.Config.Texts.Day.FormatWithNumeric(_bot.Config.Texts.DaysFormat, days);
 
-            restrictionPart = string.Format(_bot.Config.RestrictionPartFormat, user.ShortDescriptor, daysPart);
+            restrictionPart = string.Format(_bot.Config.Texts.RestrictionPartFormat, user.ShortDescriptor, daysPart);
         }
         else
         {
-            restrictionPart = string.Format(_bot.Config.RestrictionWarningPartFormat, user.ShortDescriptor);
+            restrictionPart = string.Format(_bot.Config.Texts.RestrictionWarningPartFormat, user.ShortDescriptor);
         }
 
         ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
-        string comingNext = GryphonUtilities.Helpers.Text.FormatNumericWithNoun(_bot.Config.DaysFormat, nextDays,
-            _bot.Config.DaysForm1, _bot.Config.DaysForm24, _bot.Config.DaysFormAlot);
+        string comingNext = _bot.Config.Texts.Day.FormatWithNumeric(_bot.Config.Texts.DaysFormat, nextDays);
 
-        string message = GryphonUtilities.Helpers.Text.FormatLines(_bot.Config.RestrictionMessageFormatLines,
-            admin.ShortDescriptor.Escape(),
-            restrictionPart.Escape(),
-            comingNext.Escape(),
-            _bot.Config.ChatGuidelinesUri.AbsoluteUri.Escape());
-        await _bot.SendTextMessageAsync(Chat, message, parseMode: ParseMode.MarkdownV2);
+        MessageTemplate messageTemplate =
+               _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor.Escape(),
+                   restrictionPart.Escape(), comingNext.Escape(),
+                    _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri.Escape());
+        await messageTemplate.SendAsync(_bot, Chat);
     }
 
     private byte UpdateStrikes(byte initialStrikes, long userId)

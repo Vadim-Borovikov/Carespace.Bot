@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AbstractBot.Configs;
 using AbstractBot.Extensions;
 using AbstractBot.Operations.Commands;
-using Carespace.Bot.Configs;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -15,9 +13,9 @@ internal sealed class ExercisesCommand : CommandSimple
 {
     protected override byte Order => 4;
 
-    public ExercisesCommand(Bot bot) : base(bot, "exercises", "упражнения")
+    public ExercisesCommand(Bot bot) : base(bot, "exercises", bot.Config.Texts.ExercisesCommandDescription)
     {
-        _messages = bot.Config.ExerciseUris.Select(u => GetMessage(u, bot.Config.InstantViewFormat)).ToList();
+        _messages = bot.Config.Texts.ExerciseUris.Select(u => GetMessage(u, bot.Config.InstantViewFormat)).ToList();
     }
 
     protected override async Task ExecuteAsync(Message message, User sender)
@@ -28,9 +26,9 @@ internal sealed class ExercisesCommand : CommandSimple
         }
     }
 
-    private static MessageTemplate GetMessage(Uri uri, MessageTemplate format)
+    private static string GetMessage(Uri uri, string format)
     {
-        return format.Format(Text.WordJoiner, uri.AbsoluteUri.Escape());
+        return string.Format(format, Text.WordJoiner, uri.AbsoluteUri.Escape());
     }
 
     private readonly List<string> _messages;

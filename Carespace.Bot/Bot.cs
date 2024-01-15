@@ -1,20 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot.Bots;
-using AbstractBot.Configs;
-using AbstractBot.Extensions;
 using AbstractBot.Operations.Data;
 using Carespace.Bot.Configs;
 using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Carespace.Bot.Operations;
-using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
 using JetBrains.Annotations;
 

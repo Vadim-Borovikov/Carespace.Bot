@@ -7,6 +7,5 @@ internal sealed class IntroCommand : CommandText
     protected override byte Order => 2;
 
     public IntroCommand(Bot bot)
-        : base(bot, "intro", "о практикуме", GryphonUtilities.Helpers.Text.JoinLines(bot.Config.PracticeIntroductionLines))
-    { }
+        : base(bot, "intro", bot.Config.Texts.IntroCommandDescription, bot.Config.Texts.PracticeIntroduction) { }
 }

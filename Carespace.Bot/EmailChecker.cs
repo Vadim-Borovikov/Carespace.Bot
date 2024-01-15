@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using AbstractBot.Configs;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot;
 
@@ -20,19 +20,16 @@ internal sealed class EmailChecker
     public async Task CheckEmailAsync(Chat chat, MailAddress email)
     {
         bool found;
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Проверяю"))
+        await using (await StatusMessage.CreateAsync(_bot, chat, _bot.Config.Texts.CheckingEmail))
         {
             found = await CheckEmailAsync(email);
         }
-        if (found)
-        {
-            await _bot.SendTextMessageAsync(chat, $"Email найден\\! Твой промокод: `{_bot.Config.BookPromo}`",
-                parseMode: ParseMode.MarkdownV2);
-        }
-        else
-        {
-            await _bot.SendTextMessageAsync(chat, "Email не найден! Напиши @Netris");
-        }
+
+        MessageTemplate formatted = found
+            ? _bot.Config.Texts.EmailFoundFormat.Format(_bot.Config.BookPromo)
+            : _bot.Config.Texts.EmailNotFoundFormat.Format(_bot.Config.Texts.EmailNotFoundHelp);
+
+        await formatted.SendAsync(_bot, chat);
     }
 
     private async Task<bool> CheckEmailAsync(MailAddress email)

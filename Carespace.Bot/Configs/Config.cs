@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
@@ -16,9 +15,6 @@ public class Config : ConfigWithSheets<Texts>
     [Required]
     [MinLength(1)]
     public string InstantViewFormat { get; init; } = null!;
-
-    [Required]
-    public Link FeedbackLink { get; init; } = null!;
 
     [Required]
     public int ProductId { get; init; }
@@ -96,14 +92,6 @@ public class Config : ConfigWithSheets<Texts>
     public List<string> PayMasterPurposesFormats { get; init; } = null!;
 
     [Required]
-    [MinLength(1)]
-    public List<Link> Links { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public List<Uri> ExerciseUris { get; init; } = null!;
-
-    [Required]
     public long DiscussGroupId { get; init; }
 
     [Required]
@@ -135,43 +123,7 @@ public class Config : ConfigWithSheets<Texts>
             : JsonSerializer.Deserialize<Dictionary<string, List<Share>>>(SharesJson, options);
     }
 
-    [Required]
-    public List<string?> PracticeIntroductionLines { get; init; } = null!;
-
-    [Required]
-    public List<string?> PracticeScheduleLines { get; init; } = null!;
-
-    [Required]
-    public Uri ChatGuidelinesUri { get; init; } = null!;
-
     public byte InitialStrikesForSpammers { get; init; }
 
     public ushort RestrictionsMaxDays { get; init; }
-
-    [Required]
-    [MinLength(1)]
-    public string DaysFormat { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string DaysForm1 { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string DaysForm24 { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string DaysFormAlot { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string RestrictionWarningPartFormat { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string RestrictionPartFormat { get; init; } = null!;
-
-    [Required]
-    public List<string?> RestrictionMessageFormatLines { get; init; } = null!;
 }

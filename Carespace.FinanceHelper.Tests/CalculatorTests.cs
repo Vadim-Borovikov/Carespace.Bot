@@ -18,8 +18,7 @@ public class CalculatorTests
                                             // Create appsettings.json for private settings
                                             .AddJsonFile("appsettings.json")
                                             .Build()
-                                            .Get<Config>()
-                                            .Denull();
+                                            .Get<Config>()!;
 
         Assert.IsNotNull(_config.TaxFeePercent);
         Assert.IsNotNull(_config.DigisellerFeePercent);

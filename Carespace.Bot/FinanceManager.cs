@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager.Documents;
@@ -42,7 +43,7 @@ internal sealed class FinanceManager
 
         StatusMessage? statusMessage = chat is null
             ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из таблицы");
+            : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Загружаю покупки из таблицы"));
 
         List<Transaction> oldTransactions =
             await _allTransactions.LoadAsync<Transaction>(_bot.Config.GoogleAllTransactionsFinalRange);
@@ -59,7 +60,7 @@ internal sealed class FinanceManager
 
         statusMessage = chat is null
             ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из Digiseller");
+            : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Загружаю покупки из Digiseller"));
 
         DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
         DateOnly dateEnd = _bot.Clock.Now().DateOnly.AddDays(1);
@@ -81,7 +82,7 @@ internal sealed class FinanceManager
 
         statusMessage = chat is null
             ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Считаю доли");
+            : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Считаю доли"));
 
         Calculator.CalculateShares(transactions, _bot.Config.TaxFeePercent, _bot.Config.DigisellerFeePercent,
             _bot.Config.PayMasterFeePercents, _bot.Shares);
@@ -96,7 +97,7 @@ internal sealed class FinanceManager
         {
             statusMessage = chat is null
                 ? null
-                : await StatusMessage.CreateAsync(_bot, chat, "Загружаю платежи");
+                : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Загружаю платежи"));
 
             dateStart = needPayment.Select(o => o.Date).Min();
             dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
@@ -119,7 +120,7 @@ internal sealed class FinanceManager
 
         statusMessage = chat is null
             ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Заношу покупки в таблицу");
+            : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Заношу покупки в таблицу"));
 
         List<Transaction> data = transactions.OrderBy(t => t.Date).ToList();
         await _allTransactions.SaveAsync(_bot.Config.GoogleAllTransactionsFinalRange, data,

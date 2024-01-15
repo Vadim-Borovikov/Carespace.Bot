@@ -9,11 +9,11 @@ internal sealed class LinksCommand : CommandSimple
 {
     protected override byte Order => 5;
 
-    public LinksCommand(Bot bot) : base(bot, "links", "полезные ссылки") => _bot = bot;
+    public LinksCommand(Bot bot) : base(bot, "links", bot.Config.Texts.LinksCommandDescription) => _bot = bot;
 
     protected override async Task ExecuteAsync(Message message, User sender)
     {
-        foreach (Link link in _bot.Config.Links)
+        foreach (Link link in _bot.Config.Texts.Links)
         {
             await link.SendAsync(_bot, message.Chat);
         }

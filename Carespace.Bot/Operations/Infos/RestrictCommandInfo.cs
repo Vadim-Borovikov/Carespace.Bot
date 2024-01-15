@@ -9,7 +9,7 @@ internal sealed class RestrictCommandInfo : ICommandData<RestrictCommandInfo>
     public readonly TelegramUser User;
     public readonly TelegramUser Admin;
 
-    public RestrictCommandInfo(TelegramUser user, TelegramUser admin)
+    private RestrictCommandInfo(TelegramUser user, TelegramUser admin)
     {
         User = user;
         Admin = admin;
