@@ -96,6 +96,7 @@ public class CalculatorTests
         return new Transaction
         {
             Price = price,
+            Amount = price,
             DigisellerProductId = digisellerProductId,
             PromoCode = promoCode,
             Date = Date,
