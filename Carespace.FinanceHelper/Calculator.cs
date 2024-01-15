@@ -5,46 +5,12 @@ namespace Carespace.FinanceHelper;
 
 public static class Calculator
 {
-    public static void CalculateShares(IEnumerable<Transaction> transactions, decimal taxFeePercent,
-        decimal digisellerFeePercent, Dictionary<Transaction.PayMethod, decimal> payMasterFeePercents,
-        Dictionary<string, List<Share>> shares)
+    public static void CalculateShares(IEnumerable<Transaction> transactions, Dictionary<string, List<Share>> shares)
     {
         Dictionary<string, decimal> totals = new();
-        DateOnly doomday = new(2022, 2, 24);
         foreach (Transaction transaction in transactions)
         {
             decimal amount = transaction.Amount;
-
-            decimal? net = null;
-            if (transaction.Price.HasValue)
-            {
-                decimal price = transaction.Price.Value;
-
-                // Tax
-                if (transaction.Date <= doomday)
-                {
-                    decimal tax = Round(price * taxFeePercent);
-                    transaction.Tax = tax;
-                    amount -= transaction.Tax.Value;
-                }
-
-                net = amount;
-
-                if (transaction.DigisellerSellId.HasValue)
-                {
-                    // Digiseller
-                    decimal digisellerFee = Round(price * digisellerFeePercent);
-                    transaction.DigisellerFee = digisellerFee;
-                    amount -= digisellerFee;
-
-                    // PayMaster
-                    Transaction.PayMethod method = transaction.PayMethodInfo!.Value;
-                    decimal percent = payMasterFeePercents[method];
-                    decimal payMasterFee = Round(price * percent);
-                    transaction.PayMasterFee = payMasterFee;
-                    amount -= payMasterFee;
-                }
-            }
 
             string product = transaction.DigisellerProductId?.ToString() ?? NoProductSharesKey;
             foreach (Share share in shares[product])
@@ -59,7 +25,7 @@ public static class Calculator
                     totals.Add(share.Agent, 0);
                 }
 
-                decimal value = Round(share.Calculate(amount, net, totals[share.Agent], transaction.PromoCode));
+                decimal value = Round(share.Calculate(amount, totals[share.Agent], transaction.PromoCode));
 
                 transaction.Shares[share.Agent] += value;
                 totals[share.Agent] += value;

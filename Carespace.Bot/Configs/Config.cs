@@ -48,50 +48,6 @@ public class Config : ConfigWithSheets<Texts>
     public string DigisellerProductUrlFormat { get; init; } = null!;
 
     [Required]
-    [MinLength(1)]
-    public string DigisellerSellUrlFormat { get; init; } = null!;
-
-    [Required]
-    public int DigisellerId { get; init; }
-
-    [Required]
-    [MinLength(1)]
-    public string DigisellerApiGuid { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string DigisellerLogin { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string DigisellerPassword { get; init; } = null!;
-
-    [Required]
-    public decimal DigisellerFeePercent { get; init; }
-
-    [Required]
-    public long TaxPayerId { get; init; }
-
-    [Required]
-    public decimal TaxFeePercent { get; init; }
-
-    [Required]
-    [MinLength(1)]
-    public string PayMasterPaymentUrlFormat { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string PayMasterToken { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string PayMasterMerchantIdDigiseller { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public List<string> PayMasterPurposesFormats { get; init; } = null!;
-
-    [Required]
     public long DiscussGroupId { get; init; }
 
     [Required]
@@ -101,10 +57,6 @@ public class Config : ConfigWithSheets<Texts>
     [Required]
     [MinLength(1)]
     public string BookPromo { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public Dictionary<Transaction.PayMethod, decimal> PayMasterFeePercents { get; init; } = null!;
 
     [MinLength(1)]
     public Dictionary<string, List<Share>>? Shares { get; init; }

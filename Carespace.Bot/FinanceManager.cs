@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Configs;
 using Carespace.FinanceHelper;
-using Carespace.FinanceHelper.Data.PayMaster;
 using GoogleSheetsManager.Documents;
 using GryphonUtilities.Extensions;
 using Telegram.Bot.Types;
@@ -20,21 +19,20 @@ internal sealed class FinanceManager
     {
         _bot = bot;
 
-        FinanceHelper.PayMaster.Manager.PaymentUrlFormat = _bot.Config.PayMasterPaymentUrlFormat;
-
-        Transaction.DigisellerSellUrlFormat = _bot.Config.DigisellerSellUrlFormat;
         Transaction.DigisellerProductUrlFormat = _bot.Config.DigisellerProductUrlFormat;
 
-        Transaction.TaxPayerId = _bot.Config.TaxPayerId;
-
         additionalConverters = new Dictionary<Type, Func<object?, object?>>(additionalConverters);
-        additionalConverters[typeof(Transaction.PayMethod)] = additionalConverters[typeof(Transaction.PayMethod?)] =
-            o => o.ToPayMathod();
 
         GoogleSheetsManager.Documents.Document transactions = documentsManager.GetOrAdd(bot.Config.GoogleSheetIdTransactions);
         _allTransactions = transactions.GetOrAddSheet(_bot.Config.GoogleAllTransactionsTitle, additionalConverters);
         _customTransactions =
             transactions.GetOrAddSheet(_bot.Config.GoogleCustomTransactionsTitle, additionalConverters);
+    }
+
+    public Task ProcessSubmissionAsync(string name, MailAddress email, string telegram, List<string> items,
+        List<Uri> slips)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(Chat? chat, int? productIdForMails = null)
@@ -60,62 +58,13 @@ internal sealed class FinanceManager
 
         statusMessage = chat is null
             ? null
-            : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Загружаю покупки из Digiseller"));
-
-        DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
-        DateOnly dateEnd = _bot.Clock.Now().DateOnly.AddDays(1);
-
-        List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
-
-        List<Transaction> newSells =
-            await FinanceHelper.Digiseller.Manager.GetNewSellsAsync(_bot.Config.DigisellerLogin,
-                _bot.Config.DigisellerPassword, _bot.Config.DigisellerId, productIds, dateStart, dateEnd,
-                _bot.Config.DigisellerApiGuid, oldTransactions, _bot.Clock,
-                _bot.JsonSerializerOptionsProvider.SnakeCaseOptions);
-
-        transactions.AddRange(newSells);
-
-        if (statusMessage is not null)
-        {
-            await statusMessage.DisposeAsync();
-        }
-
-        statusMessage = chat is null
-            ? null
             : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Считаю доли"));
 
-        Calculator.CalculateShares(transactions, _bot.Config.TaxFeePercent, _bot.Config.DigisellerFeePercent,
-            _bot.Config.PayMasterFeePercents, _bot.Shares);
+        Calculator.CalculateShares(transactions, _bot.Shares);
 
         if (statusMessage is not null)
         {
             await statusMessage.DisposeAsync();
-        }
-
-        List<Transaction> needPayment = transactions.Where(t => t.NeedPaynemt).ToList();
-        if (needPayment.Any())
-        {
-            statusMessage = chat is null
-                ? null
-                : await StatusMessage.CreateAsync(_bot, chat, new MessageTemplate("Загружаю платежи"));
-
-            dateStart = needPayment.Select(o => o.Date).Min();
-            dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
-            List<PaymentsResult.Item> payments =
-                await FinanceHelper.PayMaster.Manager.GetPaymentsAsync(_bot.Config.PayMasterMerchantIdDigiseller,
-                    dateStart, dateEnd, _bot.Config.PayMasterToken,
-                    _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
-
-            foreach (Transaction transaction in needPayment)
-            {
-                FinanceHelper.PayMaster.Manager.FindPayment(transaction, payments,
-                    _bot.Config.PayMasterPurposesFormats);
-            }
-
-            if (statusMessage is not null)
-            {
-                await statusMessage.DisposeAsync();
-            }
         }
 
         statusMessage = chat is null

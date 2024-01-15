@@ -24,7 +24,7 @@ public sealed class Share
 
     public decimal? ValueAfterLimit { get; init; }
 
-    public decimal Calculate(decimal amount, decimal? net, decimal total, string? promo)
+    public decimal Calculate(decimal amount, decimal total, string? promo)
     {
         if (!string.IsNullOrWhiteSpace(Promo))
         {
@@ -34,11 +34,7 @@ public sealed class Share
             }
             if (PromoForNet is null || PromoForNet.Value)
             {
-                if (net is null)
-                {
-                    return 0;
-                }
-                amount = net.Value;
+                return 0;
             }
         }
 
