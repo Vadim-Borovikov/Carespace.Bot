@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
-using AbstractBot.Configs;
+using AbstractBot.Configs.MessageTemplates;
 using Carespace.Bot.Operations;
 using Carespace.FinanceHelper;
 using GoogleSheetsManager.Documents;
@@ -38,19 +38,33 @@ internal sealed class FinanceManager
     public async Task ProcessSubmissionAsync(string name, MailAddress email, string telegram, IList<byte> productIds,
         IReadOnlyList<Uri> slips)
     {
-        List<MessageTemplate> productLines =
+        List<MessageTemplateText> productLines =
             productIds.Select(p => _bot.Config.Texts.ListItemFormat.Format(_bot.Config.Products[p].Name)).ToList();
-        MessageTemplate productMessages = MessageTemplate.JoinTexts(productLines)!;
+        MessageTemplateText productMessages = MessageTemplateText.JoinTexts(productLines);
 
-        MessageTemplate comfirmation = _bot.Config.Texts.PaymentConfirmationFormat.Format(productMessages);
+        MessageTemplateText comfirmation = _bot.Config.Texts.PaymentConfirmationFormat.Format(productMessages);
 
-        KeyboardProvider keyboard = CreateConfirmationKeyboard(name, email, telegram, productIds, slips);
-
-        await comfirmation.SendAsync(_bot, _itemVendorChat, keyboard);
+        comfirmation.KeyboardProvider = CreateConfirmationKeyboard(name, email, telegram, productIds, slips);
+        await comfirmation.SendAsync(_bot, _itemVendorChat);
     }
 
-    public async Task AddTransactionsAsync(Chat chat, List<Transaction> transactions)
+    public async Task AddTransactionsAsync(Chat chat, DateOnly date, List<byte> productIds, MailAddress email)
     {
+        List<Transaction> transactions = new();
+        foreach (byte id in productIds)
+        {
+            Product product = _bot.Config.Products[id];
+            Transaction t = new()
+            {
+                Name = product.Name,
+                Date = date,
+                Amount = product.Price,
+                ProductId = id,
+                Email = email
+            };
+            transactions.Add(t);
+        }
+
         Calculator.CalculateShares(transactions, _bot.Config.Products);
 
         await using (await StatusMessage.CreateAsync(_bot, chat, _bot.Config.Texts.AddingPurchases))
@@ -58,6 +72,36 @@ internal sealed class FinanceManager
             transactions = transactions.OrderBy(t => t.Date).ToList();
             await _transactions.AddAsync(_bot.Config.GoogleRange, transactions, additionalSavers: AdditionalSavers);
         }
+    }
+
+    public async Task GenerateClientMessagesAsync(Chat chat, string name, string telegram, List<byte> productIds)
+    {
+        MessageTemplateText namePart = _bot.Config.Texts.CopyableFormat.Format(name);
+        MessageTemplateText telegramPart = GetUsernamePresentation(telegram);
+        MessageTemplateText formatted = _bot.Config.Texts.MessageForClientFormat.Format(namePart, telegramPart);
+        await formatted.SendAsync(_bot, chat);
+
+        foreach (byte id in productIds)
+        {
+            await _bot.Config.Texts.ProductMessages[id].SendAsync(_bot, chat);
+        }
+
+        await _bot.Config.Texts.ThankYou.SendAsync(_bot, chat);
+    }
+
+    private MessageTemplateText GetUsernamePresentation(string telegram)
+    {
+        if (telegram.StartsWith("@", StringComparison.Ordinal))
+        {
+            telegram = TelegramPrefix + telegram[1..];
+        }
+        if (telegram.StartsWith($"{TelegramPrefix}", StringComparison.Ordinal)
+            || Protocols.Any(p => telegram.StartsWith($"{TelegramPrefix}{p}", StringComparison.Ordinal)))
+        {
+            return new MessageTemplateText(telegram);
+        }
+
+        return _bot.Config.Texts.CopyableFormat.Format(telegram);
     }
 
     public async Task<IEnumerable<MailAddress>> LoadEmailsWithAsync(byte productIdForMails)
@@ -123,6 +167,12 @@ internal sealed class FinanceManager
     private readonly Bot _bot;
     private readonly Chat _itemVendorChat;
     private readonly Sheet _transactions;
+
+    private const string TelegramPrefix = "t.me/";
+    private static readonly string[] Protocols = {
+        "http://",
+        "https://"
+    };
 
     public const string QuerySeparator = "_";
     public const string BytesSeparator = ";";

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using AbstractBot.Configs;
+using AbstractBot.Configs.MessageTemplates;
 using Telegram.Bot.Types;
 
 namespace Carespace.Bot;
@@ -25,7 +25,7 @@ internal sealed class EmailChecker
             found = await CheckEmailAsync(email);
         }
 
-        MessageTemplate formatted = found
+        MessageTemplateText formatted = found
             ? _bot.Config.Texts.EmailFoundFormat.Format(_bot.Config.BookPromo)
             : _bot.Config.Texts.EmailNotFoundFormat.Format(_bot.Config.Texts.EmailNotFoundHelp);
 

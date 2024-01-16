@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AbstractBot;
-using AbstractBot.Configs;
+using AbstractBot.Configs.MessageTemplates;
 using AbstractBot.Extensions;
 using Carespace.Bot.Save;
 using GryphonUtilities;
@@ -69,7 +69,7 @@ internal sealed class RestrictionsManager
         ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
         string comingNext = _bot.Config.Texts.Day.FormatWithNumeric(_bot.Config.Texts.DaysFormat, nextDays);
 
-        MessageTemplate messageTemplate =
+        MessageTemplateText messageTemplate =
                _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor.Escape(),
                    restrictionPart.Escape(), comingNext.Escape(),
                     _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri.Escape());

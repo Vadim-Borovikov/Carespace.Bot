@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AbstractBot.Configs;
+using AbstractBot.Configs.MessageTemplates;
 
 namespace Carespace.Bot.Configs;
 
@@ -28,7 +29,7 @@ public class Texts : AbstractBot.Configs.Texts
     [MinLength(1)]
     public string IntroCommandDescription { get; init; } = null!;
     [Required]
-    public MessageTemplate PracticeIntroduction { get; init; } = null!;
+    public MessageTemplateText PracticeIntroduction { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -41,7 +42,7 @@ public class Texts : AbstractBot.Configs.Texts
     [MinLength(1)]
     public string ScheduleCommandDescription { get; init; } = null!;
     [Required]
-    public MessageTemplate PracticeSchedule { get; init; } = null!;
+    public MessageTemplateText PracticeSchedule { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -70,22 +71,22 @@ public class Texts : AbstractBot.Configs.Texts
     public string RestrictionPartFormat { get; init; } = null!;
 
     [Required]
-    public MessageTemplate RestrictionMessageFormat { get; init; } = null!;
+    public MessageTemplateText RestrictionMessageFormat { get; init; } = null!;
 
     [Required]
-    public MessageTemplate CheckingEmail { get; init; } = null!;
+    public MessageTemplateText CheckingEmail { get; init; } = null!;
     [Required]
-    public MessageTemplate EmailFoundFormat { get; init; } = null!;
+    public MessageTemplateText EmailFoundFormat { get; init; } = null!;
     [Required]
-    public MessageTemplate EmailNotFoundFormat { get; init; } = null!;
+    public MessageTemplateText EmailNotFoundFormat { get; init; } = null!;
     [Required]
-    public MessageTemplate EmailNotFoundHelp { get; init; } = null!;
+    public MessageTemplateText EmailNotFoundHelp { get; init; } = null!;
 
     [Required]
-    public MessageTemplate PaymentConfirmationFormat { get; init; } = null!;
+    public MessageTemplateText PaymentConfirmationFormat { get; init; } = null!;
 
     [Required]
-    public MessageTemplate ListItemFormat { get; init; } = null!;
+    public MessageTemplateText ListItemFormat { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -102,5 +103,17 @@ public class Texts : AbstractBot.Configs.Texts
     public string PaymentConfirmationButton { get; init; } = null!;
 
     [Required]
-    public MessageTemplate AddingPurchases { get; init; } = null!;
+    public MessageTemplateText AddingPurchases { get; init; } = null!;
+
+    [Required]
+    public MessageTemplateText MessageForClientFormat { get; init; } = null!;
+    [Required]
+    public MessageTemplateText CopyableFormat { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public Dictionary<byte, MessageTemplateFile> ProductMessages { get; init; } = null!;
+
+    [Required]
+    public MessageTemplateText ThankYou { get; init; } = null!;
 }

@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using AbstractBot.Operations;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Carespace.Bot.Operations.Info;
-using Carespace.FinanceHelper;
 
 namespace Carespace.Bot.Operations;
 
@@ -33,24 +31,12 @@ internal sealed class AcceptPurchase : Operation<PurchaseInfo>
         return data is not null;
     }
 
-    protected override Task ExecuteAsync(PurchaseInfo data, Message message, User sender)
+    protected override async Task ExecuteAsync(PurchaseInfo data, Message message, User sender)
     {
         DateOnly date = _bot.Clock.GetDateTimeFull(message.Date).DateOnly;
-        List<Transaction> transactions = new();
-        foreach (byte id in data.ProductIds)
-        {
-            Product product = _bot.Config.Products[id];
-            Transaction t = new()
-            {
-                Name = product.Name,
-                Date = date,
-                Amount = product.Price,
-                ProductId = id,
-                Email = data.Email
-            };
-            transactions.Add(t);
-        }
-        return _manager.AddTransactionsAsync(message.Chat, transactions);
+        await _manager.AddTransactionsAsync(message.Chat, date, data.ProductIds, data.Email);
+
+        await _manager.GenerateClientMessagesAsync(message.Chat, data.Name, data.Telegram, data.ProductIds);
     }
 
     private readonly Bot _bot;
