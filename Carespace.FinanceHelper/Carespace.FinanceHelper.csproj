@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GoogleSheetsManager" Version="34.0.0-a02" />
+    <PackageReference Include="GoogleSheetsManager" Version="34.0.0-a03" />
     <PackageReference Include="Macross.Json.Extensions" Version="3.0.0" />
     <PackageReference Include="SelfWork" Version="5.0.1" />
   </ItemGroup>

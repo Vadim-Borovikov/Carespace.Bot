@@ -12,6 +12,7 @@ using Carespace.Bot.Operations;
 using Telegram.Bot;
 using JetBrains.Annotations;
 using System.Net.Mail;
+using System.Linq;
 
 namespace Carespace.Bot;
 
@@ -22,7 +23,8 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
     {
         [UsedImplicitly]
         Default = 1,
-        Admin = 2
+        Admin = 2,
+        Finance = 4
     }
 
     public Bot(Config config) : base(config)
@@ -44,6 +46,7 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         Operations.Add(new FeedbackCommand(this));
 
         Operations.Add(new CheckEmailOperation(this, emailChecker));
+        Operations.Add(new AcceptPurchase(this, _financeManager));
 
         WarningCommand warningCommand = new(this, antiSpam);
         SpamCommand spamCommand = new(this, antiSpam);
@@ -71,8 +74,8 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
     public Task OnSubmissionReceivedAsync(string name, MailAddress email, string telegram, List<string> items,
         List<Uri> slips)
     {
-        return Task.CompletedTask;
-        // return _financeManager.ProcessSubmissionAsync(name, email, telegram, items, slips);
+        List<byte> productIds = Config.Products.Where(p => items.Contains(p.Value.Name)).Select(p => p.Key).ToList();
+        return _financeManager.ProcessSubmissionAsync(name, email, telegram, productIds, slips);
     }
 
     private readonly List<BotCommand> _restrictCommands;

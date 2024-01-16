@@ -2,7 +2,7 @@
 using AbstractBot.Operations.Data;
 using Telegram.Bot.Types;
 
-namespace Carespace.Bot.Operations.Infos;
+namespace Carespace.Bot.Operations.Info;
 
 internal sealed class RestrictCommandInfo : ICommandData<RestrictCommandInfo>
 {

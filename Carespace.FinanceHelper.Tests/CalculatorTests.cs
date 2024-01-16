@@ -24,58 +24,58 @@ public class CalculatorTests
     [TestMethod]
     public void TestCalculateSharesNoPromo()
     {
-        Transaction t = CreateTransaction(100, 1);
+        Transaction t = CreateTransaction(1);
         TestCalculateShares(t, 50, 50);
     }
 
     [TestMethod]
     public void TestCalculateSharesAppearingShare()
     {
-        Transaction t1 = CreateTransaction(100, 2);
+        Transaction t1 = CreateTransaction(2);
         TestCalculateShares(t1, 100, 0);
-        Transaction t2 = CreateTransaction(100, 2, "Promo2");
+        Transaction t2 = CreateTransaction(2, "Promo2");
         TestCalculateShares(t2, 50, 50);
     }
 
     [TestMethod]
     public void TestCalculateSharesDisappearingShare()
     {
-        Transaction t1 = CreateTransaction(100, 3);
+        Transaction t1 = CreateTransaction(3);
         TestCalculateShares(t1, 50, 50);
-        Transaction t2 = CreateTransaction(100, 3, "Promo3");
+        Transaction t2 = CreateTransaction(3, "Promo3");
         TestCalculateShares(t2, 100, 0m);
     }
 
     [TestMethod]
     public void TestCalculateSharesIncreasingShare()
     {
-        Transaction t1 = CreateTransaction(100, 4);
+        Transaction t1 = CreateTransaction(4);
         TestCalculateShares(t1, 50, 50);
-        Transaction t2 = CreateTransaction(100, 4, "Promo4");
+        Transaction t2 = CreateTransaction(4, "Promo4");
         TestCalculateShares(t2, 75, 25);
     }
 
     [TestMethod]
     public void TestCalculateSharesDecreasingShare()
     {
-        Transaction t1 = CreateTransaction(100, 5);
+        Transaction t1 = CreateTransaction(5);
         TestCalculateShares(t1, 50, 50);
-        Transaction t2 = CreateTransaction(100, 5, "Promo5");
+        Transaction t2 = CreateTransaction(5, "Promo5");
         TestCalculateShares(t2, 25, 75);
     }
 
     [TestMethod]
     public void TestCalculateSharesBook()
     {
-        Transaction t = CreateTransaction(380, 6);
+        Transaction t = CreateTransaction(6);
         TestCalculateShares(t, 253.33m, 126.67m);
     }
 
-    private static Transaction CreateTransaction(decimal amount, byte productId, string? promoCode = null)
+    private static Transaction CreateTransaction(byte productId, string? promoCode = null)
     {
         return new Transaction
         {
-            Amount = amount,
+            Amount = _config.Products[productId].Price,
             ProductId = productId,
             PromoCode = promoCode,
             Date = Date

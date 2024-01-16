@@ -80,4 +80,27 @@ public class Texts : AbstractBot.Configs.Texts
     public MessageTemplate EmailNotFoundFormat { get; init; } = null!;
     [Required]
     public MessageTemplate EmailNotFoundHelp { get; init; } = null!;
+
+    [Required]
+    public MessageTemplate PaymentConfirmationFormat { get; init; } = null!;
+
+    [Required]
+    public MessageTemplate ListItemFormat { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string ProductSoldNoteFormat { get; init; } = null!;
+
+    [Required]
+    [MinLength(1)]
+    public string PaymentSlipButtonCaption { get; init; } = null!;
+    [Required]
+    [MinLength(1)]
+    public string PaymentSlipButtonFormat { get; init; } = null!;
+    [Required]
+    [MinLength(1)]
+    public string PaymentConfirmationButton { get; init; } = null!;
+
+    [Required]
+    public MessageTemplate AddingPurchases { get; init; } = null!;
 }

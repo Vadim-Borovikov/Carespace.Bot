@@ -24,11 +24,11 @@ public class Config : ConfigWithSheets<Texts>
 
     [Required]
     [MinLength(1)]
-    public string GoogleAllTransactionsTitle { get; init; } = null!;
+    public string GoogleTitle { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
-    public string GoogleAllTransactionsFinalRange { get; init; } = null!;
+    public string GoogleRange { get; init; } = null!;
 
     [Required]
     public long DiscussGroupId { get; init; }
@@ -48,4 +48,7 @@ public class Config : ConfigWithSheets<Texts>
     public byte InitialStrikesForSpammers { get; init; }
 
     public ushort RestrictionsMaxDays { get; init; }
+
+    [Required]
+    public long ItemVendorId { get; init; }
 }
