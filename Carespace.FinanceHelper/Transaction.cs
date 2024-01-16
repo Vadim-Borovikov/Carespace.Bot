@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
 using GoogleSheetsManager;
-using GoogleSheetsManager.Extensions;
 using JetBrains.Annotations;
 
 namespace Carespace.FinanceHelper;
@@ -13,7 +12,6 @@ public sealed class Transaction
     public readonly Dictionary<string, decimal> Shares = new();
 
     // Common URL formats
-    public static string DigisellerProductUrlFormat = "";
     private const string EmailFormat = "mailto:{0}";
 
     [Required]
@@ -35,11 +33,7 @@ public sealed class Transaction
 
     [UsedImplicitly]
     [SheetField("Товар")]
-    public string? DigisellerProductIdLink
-    {
-        get => Hyperlink.From(DigisellerProductUrlFormat, DigisellerProductId);
-        set => DigisellerProductId = value.ToInt();
-    }
+    public byte ProductId;
 
     [UsedImplicitly]
     [SheetField("Email")]
@@ -48,8 +42,6 @@ public sealed class Transaction
         get => Hyperlink.From(EmailFormat, Email?.Address);
         set => Email = value.ToEmail();
     }
-
-    public int? DigisellerProductId;
 
     public MailAddress? Email;
 

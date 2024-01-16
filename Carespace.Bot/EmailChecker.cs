@@ -34,8 +34,7 @@ internal sealed class EmailChecker
 
     private async Task<bool> CheckEmailAsync(MailAddress email)
     {
-        IEnumerable<MailAddress> mailAddresses =
-            await _financeManager.LoadGoogleTransactionsAsync(null, _bot.Config.ProductId);
+        IEnumerable<MailAddress> mailAddresses = await _financeManager.LoadEmailsWithAsync(_bot.Config.ProductId);
         return mailAddresses.Select(m => m.Address)
                             .Contains(email.Address, StringComparer.InvariantCultureIgnoreCase);
     }

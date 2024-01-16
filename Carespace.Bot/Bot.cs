@@ -7,11 +7,11 @@ using AbstractBot.Operations.Data;
 using Carespace.Bot.Configs;
 using Carespace.Bot.Operations.Commands;
 using Carespace.Bot.Save;
-using Carespace.FinanceHelper;
 using Telegram.Bot.Types;
 using Carespace.Bot.Operations;
 using Telegram.Bot;
 using JetBrains.Annotations;
+using System.Net.Mail;
 
 namespace Carespace.Bot;
 
@@ -25,20 +25,15 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         Admin = 2
     }
 
-    internal readonly Dictionary<string, List<Share>> Shares;
-
     public Bot(Config config) : base(config)
     {
-        Shares =
-            config.GetShares(JsonSerializerOptionsProvider.PascalCaseOptions) ?? new Dictionary<string, List<Share>>();
-
         Dictionary<Type, Func<object?, object?>> additionalConverters = new()
         {
             { typeof(Uri), o => o.ToUri() }
         };
 
-        FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
-        EmailChecker emailChecker = new(this, financeManager);
+        _financeManager = new FinanceManager(this, DocumentsManager, additionalConverters);
+        EmailChecker emailChecker = new(this, _financeManager);
 
         RestrictionsManager antiSpam = new(this, SaveManager);
 
@@ -73,5 +68,13 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
     }
 
+    public Task OnSubmissionReceivedAsync(string name, MailAddress email, string telegram, List<string> items,
+        List<Uri> slips)
+    {
+        return Task.CompletedTask;
+        // return _financeManager.ProcessSubmissionAsync(name, email, telegram, items, slips);
+    }
+
     private readonly List<BotCommand> _restrictCommands;
+    private readonly FinanceManager _financeManager;
 }

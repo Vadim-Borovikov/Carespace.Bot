@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using GryphonUtilities.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,13 +18,7 @@ public class CalculatorTests
                                             .Build()
                                             .Get<Config>()!;
 
-        Assert.IsNotNull(_config.Shares);
-
-        Shares.Clear();
-        foreach (string p in _config.Shares.Keys)
-        {
-            Shares[p] = _config.Shares[p].ToList();
-        }
+        Assert.IsNotNull(_config.Products);
     }
 
     [TestMethod]
@@ -75,38 +67,29 @@ public class CalculatorTests
     [TestMethod]
     public void TestCalculateSharesBook()
     {
-        Transaction t = CreateTransaction(380, 2957145);
+        Transaction t = CreateTransaction(380, 6);
         TestCalculateShares(t, 253.33m, 126.67m);
     }
 
-    [TestMethod]
-    public void TestCalculateSharesTicket()
-    {
-        Transaction t1 = CreateTransaction(100, 3166947);
-        TestCalculateShares(t1, 89, 11);
-        Transaction t2 = CreateTransaction(100, 3166947, "OldFriend");
-        TestCalculateShares(t2, 100, 0m);
-    }
-
-    private static Transaction CreateTransaction(decimal amount, int digisellerProductId, string? promoCode = null)
+    private static Transaction CreateTransaction(decimal amount, byte productId, string? promoCode = null)
     {
         return new Transaction
         {
             Amount = amount,
-            DigisellerProductId = digisellerProductId,
+            ProductId = productId,
             PromoCode = promoCode,
             Date = Date
         };
     }
 
-    private static void TestCalculateShares(Transaction transaction, decimal shareAgent3, decimal shareAgent4)
+    private static void TestCalculateShares(Transaction transaction, decimal shareAgent1, decimal shareAgent2)
     {
-        Calculator.CalculateShares(transaction.Yield(), Shares);
+        Calculator.CalculateShares(transaction.Yield(), _config.Products);
         Assert.AreEqual(2, transaction.Shares.Count);
         Assert.IsTrue(transaction.Shares.ContainsKey(Agent1));
         Assert.IsTrue(transaction.Shares.ContainsKey(Agent2));
-        Assert.AreEqual(shareAgent3, transaction.Shares[Agent1]);
-        Assert.AreEqual(shareAgent4, transaction.Shares[Agent2]);
+        Assert.AreEqual(shareAgent1, transaction.Shares[Agent1]);
+        Assert.AreEqual(shareAgent2, transaction.Shares[Agent2]);
     }
 
     private const string Agent1 = "Agent1";
@@ -116,5 +99,4 @@ public class CalculatorTests
     // ReSharper disable once NullableWarningSuppressionIsUsed
     //   _config initializes in ClassInitialize
     private static Config _config = null!;
-    private static readonly Dictionary<string, List<Share>> Shares = new();
 }
