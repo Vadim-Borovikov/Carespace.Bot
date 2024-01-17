@@ -361,8 +361,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-/Carespace.Bot.Web/appsettings.Development.json
+/Carespace.Bot.Web/appsettings.*.json
 /Carespace.Bot.Web/save.json
 /Carespace.Bot.Web/timers.txt
 /NuGet.Config
-/Carespace.Bot.Web/NNO-teoriya-i-praktika.zip
+/Carespace.Bot.Web/Files

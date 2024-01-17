@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AbstractBot" Version="70.1.2" />
+    <PackageReference Include="AbstractBot" Version="75.0.0" />
     <PackageReference Include="Ical.Net" Version="4.2.0" />
   </ItemGroup>
 

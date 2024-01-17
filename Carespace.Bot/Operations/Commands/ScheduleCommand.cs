@@ -1,10 +1,11 @@
-﻿namespace Carespace.Bot.Operations.Commands;
+﻿using AbstractBot.Operations.Commands;
 
-internal sealed class ScheduleCommand : TextCommand
+namespace Carespace.Bot.Operations.Commands;
+
+internal sealed class ScheduleCommand : CommandText
 {
-    protected override byte MenuOrder => 3;
+    protected override byte Order => 3;
 
     public ScheduleCommand(Bot bot)
-        : base(bot, "schedule", "расписание", GryphonUtilities.Text.JoinLines(bot.Config.PracticeScheduleLines))
-    { }
+        : base(bot, "schedule", bot.Config.Texts.ScheduleCommandDescription, bot.Config.Texts.PracticeSchedule) { }
 }

@@ -4,218 +4,193 @@ using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AbstractBot;
+using AbstractBot.Configs.MessageTemplates;
+using Carespace.Bot.Operations;
 using Carespace.FinanceHelper;
-using Carespace.FinanceHelper.Data.PayMaster;
-using GoogleSheetsManager;
 using GoogleSheetsManager.Documents;
+using GryphonUtilities;
 using GryphonUtilities.Extensions;
+using RestSharp;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Carespace.Bot;
 
 internal sealed class FinanceManager
 {
-    public FinanceManager(Bot bot, DocumentsManager manager,
+    public FinanceManager(Bot bot, Manager documentsManager,
         Dictionary<Type, Func<object?, object?>> additionalConverters)
     {
         _bot = bot;
 
-        FinanceHelper.PayMaster.Manager.PaymentUrlFormat = _bot.Config.PayMasterPaymentUrlFormat;
-
-        Transaction.DigisellerSellUrlFormat = _bot.Config.DigisellerSellUrlFormat;
-        Transaction.DigisellerProductUrlFormat = _bot.Config.DigisellerProductUrlFormat;
-
-        Transaction.TaxPayerId = _bot.Config.TaxPayerId;
+        _itemVendorChat = new Chat
+        {
+            Id = bot.Config.ItemVendorId,
+            Type = ChatType.Private
+        };
 
         additionalConverters = new Dictionary<Type, Func<object?, object?>>(additionalConverters);
-        additionalConverters[typeof(Transaction.PayMethod)] = additionalConverters[typeof(Transaction.PayMethod?)] =
-            o => o.ToPayMathod();
 
-        GoogleSheetsManager.Documents.Document transactions = manager.GetOrAdd(bot.Config.GoogleSheetIdTransactions);
-        _allTransactions = transactions.GetOrAddSheet(_bot.Config.GoogleAllTransactionsTitle, additionalConverters);
-        _customTransactions =
-            transactions.GetOrAddSheet(_bot.Config.GoogleCustomTransactionsTitle, additionalConverters);
-
-        GoogleSheetsManager.Documents.Document donations = manager.GetOrAdd(bot.Config.GoogleSheetIdDonations);
-        _allDonations = donations.GetOrAddSheet(_bot.Config.GoogleAllDonationsTitle, additionalConverters);
-        _customDonations = donations.GetOrAddSheet(_bot.Config.GoogleCustomDonationsTitle, additionalConverters);
-        _donationSums = donations.GetOrAddSheet(_bot.Config.GoogleDonationSumsTitle, additionalConverters);
+        GoogleSheetsManager.Documents.Document transactions =
+            documentsManager.GetOrAdd(bot.Config.GoogleSheetIdTransactions);
+        _transactions = transactions.GetOrAddSheet(_bot.Config.GoogleTitle, additionalConverters);
     }
 
-    public async Task UpdateFinances(Chat chat)
+    public async Task ProcessSubmissionAsync(string name, MailAddress email, string telegram, IList<byte> productIds,
+        IReadOnlyList<Uri> slips)
     {
-        await _bot.SendTextMessageAsync(chat, "Обновляю покупки…");
+        List<MessageTemplateText> productLines =
+            productIds.Select(p => _bot.Config.Texts.ListItemFormat.Format(_bot.Config.Products[p].Name)).ToList();
+        MessageTemplateText productMessages = MessageTemplateText.JoinTexts(productLines);
 
-        await LoadGoogleTransactionsAsync(chat);
+        MessageTemplateText comfirmation = _bot.Config.Texts.PaymentConfirmationFormat.Format(productMessages);
 
-        await _bot.SendTextMessageAsync(chat, "…покупки обновлены.");
-
-        await _bot.SendTextMessageAsync(chat, "Обновляю донатики…");
-
-        await UpdateDonationsAsync(chat);
-
-        await _bot.SendTextMessageAsync(chat, "…донатики обновлены.");
+        comfirmation.KeyboardProvider = CreateConfirmationKeyboard(name, email, telegram, productIds, slips);
+        await comfirmation.SendAsync(_bot, _itemVendorChat);
     }
 
-    public async Task<IEnumerable<MailAddress>> LoadGoogleTransactionsAsync(Chat? chat, int? productIdForMails = null)
+    public async Task<List<Transaction>> AddTransactionsAsync(Chat chat, DateOnly date, List<byte> productIds,
+        MailAddress email)
     {
         List<Transaction> transactions = new();
-
-        StatusMessage? statusMessage = chat is null
-            ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из таблицы");
-
-        SheetData<Transaction> oldTransactions =
-            await _allTransactions.LoadAsync<Transaction>(_bot.Config.GoogleAllTransactionsFinalRange);
-        transactions.AddRange(oldTransactions.Instances);
-
-        SheetData<Transaction> newCustomTransactions =
-            await _customTransactions.LoadAsync<Transaction>(_bot.Config.GoogleCustomTransactionsRange);
-        transactions.AddRange(newCustomTransactions.Instances);
-
-        if (statusMessage is not null)
+        foreach (byte id in productIds)
         {
-            await statusMessage.DisposeAsync();
-        }
-
-        statusMessage = chat is null
-            ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Загружаю покупки из Digiseller");
-
-        DateOnly dateStart = transactions.Select(o => o.Date).Min().AddDays(-1);
-        DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
-
-        List<int> productIds = _bot.Shares.Keys.Where(k => k != "None").Select(int.Parse).ToList();
-
-        List<Transaction> newSells =
-            await FinanceHelper.Digiseller.Manager.GetNewSellsAsync(_bot.Config.DigisellerLogin,
-                _bot.Config.DigisellerPassword, _bot.Config.DigisellerId, productIds, dateStart, dateEnd,
-                _bot.Config.DigisellerApiGuid, oldTransactions.Instances, _bot.TimeManager,
-                _bot.JsonSerializerOptionsProvider.SnakeCaseOptions);
-
-        transactions.AddRange(newSells);
-
-        if (statusMessage is not null)
-        {
-            await statusMessage.DisposeAsync();
-        }
-
-        statusMessage = chat is null
-            ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Считаю доли");
-
-        Calculator.CalculateShares(transactions, _bot.Config.TaxFeePercent, _bot.Config.DigisellerFeePercent,
-            _bot.Config.PayMasterFeePercents, _bot.Shares);
-
-        if (statusMessage is not null)
-        {
-            await statusMessage.DisposeAsync();
-        }
-
-        List<Transaction> needPayment = transactions.Where(t => t.NeedPaynemt).ToList();
-        if (needPayment.Any())
-        {
-            statusMessage = chat is null
-                ? null
-                : await StatusMessage.CreateAsync(_bot, chat, "Загружаю платежи");
-
-            dateStart = needPayment.Select(o => o.Date).Min();
-            dateEnd = needPayment.Select(o => o.Date).Max().AddDays(1);
-            List<PaymentsResult.Item> payments =
-                await FinanceHelper.PayMaster.Manager.GetPaymentsAsync(_bot.Config.PayMasterMerchantIdDigiseller,
-                    dateStart, dateEnd, _bot.Config.PayMasterToken,
-                    _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
-
-            foreach (Transaction transaction in needPayment)
+            Product product = _bot.Config.Products[id];
+            Transaction t = new()
             {
-                FinanceHelper.PayMaster.Manager.FindPayment(transaction, payments,
-                    _bot.Config.PayMasterPurposesFormats);
-            }
-
-            if (statusMessage is not null)
-            {
-                await statusMessage.DisposeAsync();
-            }
+                Name = product.Name,
+                Date = date,
+                Amount = product.Price,
+                ProductId = id,
+                Email = email
+            };
+            transactions.Add(t);
         }
 
-        statusMessage = chat is null
-            ? null
-            : await StatusMessage.CreateAsync(_bot, chat, "Заношу покупки в таблицу");
+        Calculator.CalculateShares(transactions, _bot.Config.Products, _bot.Config.FallbackAgent);
 
-        SheetData<Transaction> data = new(transactions.OrderBy(t => t.Date).ToList(), oldTransactions.Titles);
-        await _allTransactions.SaveAsync(_bot.Config.GoogleAllTransactionsFinalRange, data, AdditionalSavers);
-
-        await _customTransactions.ClearAsync(_bot.Config.GoogleCustomTransactionsRangeToClear);
-
-        if (statusMessage is not null)
+        await using (await StatusMessage.CreateAsync(_bot, chat, _bot.Config.Texts.AddingPurchases))
         {
-            await statusMessage.DisposeAsync();
+            transactions = transactions.OrderBy(t => t.Date).ToList();
+            await _transactions.AddAsync(_bot.Config.GoogleRange, transactions, additionalSavers: AdditionalSavers);
         }
 
-        return productIdForMails is null
-            ? Enumerable.Empty<MailAddress>()
-            : transactions.Where(t => t.DigisellerProductId == productIdForMails).Select(t => t.Email).RemoveNulls();
+        return transactions;
     }
 
-    private async Task UpdateDonationsAsync(Chat chat)
+    public async Task GenerateClientMessagesAsync(Chat chat, string name, string telegram, List<byte> productIds)
     {
-        List<Donation> donations = new();
+        MessageTemplateText namePart = _bot.Config.Texts.CopyableFormat.Format(name);
+        MessageTemplateText telegramPart = GetUsernamePresentation(telegram);
+        MessageTemplateText formatted = _bot.Config.Texts.MessageForClientFormat.Format(namePart, telegramPart);
+        await formatted.SendAsync(_bot, chat);
 
-        SheetData<Donation> oldDonations;
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю донаты из таблицы"))
+        foreach (byte id in productIds)
         {
-            oldDonations = await _allDonations.LoadAsync<Donation>(_bot.Config.GoogleAllDonationsRange);
-            donations.AddRange(oldDonations.Instances);
-
-            SheetData<Donation> newCustomDonations =
-                await _customDonations.LoadAsync<Donation>(_bot.Config.GoogleCustomDonationsRange);
-            donations.AddRange(newCustomDonations.Instances);
+            await _bot.Config.Texts.ProductMessages[id].SendAsync(_bot, chat);
         }
 
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю платежи"))
+        await _bot.Config.Texts.ThankYou.SendAsync(_bot, chat);
+    }
+
+    public Task<RestResponse> SendPurchaseAsync(string clientName, DateOnly date, IEnumerable<Transaction> transactions)
+    {
+        Purchase purchase = new()
         {
-            DateOnly dateStart = donations.Select(o => o.Date).Min().AddDays(-1);
-            DateOnly dateEnd = _bot.TimeManager.Now().DateOnly.AddDays(1);
+            ClientName = clientName,
+            Date = date
+        };
+        purchase.Items.AddRange(transactions.Select(t => new Item(t, _bot.Config.FallbackAgent)));
+        return RestManager.PostAsync(_bot.Config.PostPurchaseUri.AbsoluteUri, _bot.Config.PostPurchaseResource,
+            obj: purchase);
+    }
 
-            List<Donation> newDonations =
-                await FinanceHelper.PayMaster.Manager.GetNewPaymentsAsync(_bot.Config.PayMasterMerchantIdDonations,
-                    dateStart, dateEnd, _bot.Config.PayMasterToken, oldDonations.Instances,
-                    _bot.JsonSerializerOptionsProvider.CamelCaseOptions);
-
-            donations.AddRange(newDonations);
+    private MessageTemplateText GetUsernamePresentation(string telegram)
+    {
+        if (telegram.StartsWith("@", StringComparison.Ordinal))
+        {
+            telegram = TelegramPrefix + telegram[1..];
+        }
+        if (telegram.StartsWith($"{TelegramPrefix}", StringComparison.Ordinal)
+            || Protocols.Any(p => telegram.StartsWith($"{TelegramPrefix}{p}", StringComparison.Ordinal)))
+        {
+            return new MessageTemplateText(telegram);
         }
 
-        DateOnly firstThursday = Week.GetNextThursday(donations.Min(d => d.Date));
+        return _bot.Config.Texts.CopyableFormat.Format(telegram);
+    }
 
-        Calculator.CalculateTotalsAndWeeks(donations, _bot.Config.PayMasterFeePercents, firstThursday);
+    public async Task<IEnumerable<MailAddress>> LoadEmailsWithAsync(byte productIdForMails)
+    {
+        List<Transaction> transactions = await _transactions.LoadAsync<Transaction>(_bot.Config.GoogleRange);
 
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Заношу донаты в таблицу"))
+        return transactions.Where(t => t.ProductId == productIdForMails).Select(t => t.Email).SkipNulls();
+    }
+
+    private KeyboardProvider CreateConfirmationKeyboard(string name, MailAddress email, string telegram,
+        IEnumerable<byte> productIds, IReadOnlyList<Uri> slips)
+    {
+        List<List<InlineKeyboardButton>> rows = new();
+
+        if (slips.Count == 1)
         {
-            SheetData<Donation> data = new(donations.OrderByDescending(d => d.Date).ToList(), oldDonations.Titles);
-            await _allDonations.SaveAsync(_bot.Config.GoogleAllDonationsRange, data);
-            await _customDonations.ClearAsync(_bot.Config.GoogleCustomDonationsRangeToClear);
+            InlineKeyboardButton button = CreateUriButton(_bot.Config.Texts.PaymentSlipButtonCaption, slips.Single());
+            rows.Add(button.WrapWithList());
+        }
+        else
+        {
+            for (int i = 0; i < slips.Count; ++i)
+            {
+                string caption = string.Format(_bot.Config.Texts.PaymentSlipButtonFormat,
+                    _bot.Config.Texts.PaymentSlipButtonCaption, i + 1);
+                InlineKeyboardButton button = CreateUriButton(caption, slips[i]);
+                rows.Add(button.WrapWithList());
+            }
         }
 
-        await using (await StatusMessage.CreateAsync(_bot, chat, "Считаю и заношу недельные суммы"))
+        InlineKeyboardButton confirm =
+            CreateCallbackButton<AcceptPurchase>(_bot.Config.Texts.PaymentConfirmationButton, name, email, telegram,
+                string.Join(BytesSeparator, productIds));
+        rows.Add(confirm.WrapWithList());
+
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    private static InlineKeyboardButton CreateUriButton(string caption, Uri uri)
+    {
+        return new InlineKeyboardButton(caption)
         {
-            List<DonationsSum> sums = donations.GroupBy(d => d.Week)
-                                               .Select(g => new DonationsSum(firstThursday, g.Key, g.Sum(d => d.Total)))
-                                               .ToList();
-            List<string> titles = await _donationSums.LoadTitlesAsync(_bot.Config.GoogleDonationSumsRange);
-            SheetData<DonationsSum> sumsData = new(sums.OrderByDescending(s => s.Date).ToList(), titles);
-            await _donationSums.SaveAsync(_bot.Config.GoogleDonationSumsRange, sumsData);
+            Url = uri.AbsoluteUri
+        };
+    }
+
+    private static InlineKeyboardButton CreateCallbackButton<TCallback>(string caption, params object[]? args)
+    {
+        string data = typeof(TCallback).Name;
+        if (args is not null)
+        {
+            data += string.Join(QuerySeparator, args.Select(o => o.ToString()!));
         }
+        return new InlineKeyboardButton(caption)
+        {
+            CallbackData = data
+        };
     }
 
     private static readonly List<Action<Transaction, IDictionary<string, object?>>> AdditionalSavers =
         WrapExtensions.WrapWithList(Transaction.Save);
 
     private readonly Bot _bot;
+    private readonly Chat _itemVendorChat;
+    private readonly Sheet _transactions;
 
-    private readonly Sheet _allTransactions;
-    private readonly Sheet _customTransactions;
+    private const string TelegramPrefix = "t.me/";
+    private static readonly string[] Protocols = {
+        "http://",
+        "https://"
+    };
 
-    private readonly Sheet _allDonations;
-    private readonly Sheet _customDonations;
-    private readonly Sheet _donationSums;
+    public const string QuerySeparator = "_";
+    public const string BytesSeparator = ";";
 }

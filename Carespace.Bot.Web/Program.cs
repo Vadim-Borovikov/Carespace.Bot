@@ -2,6 +2,7 @@
 using System.Globalization;
 using Carespace.Bot.Web.Models;
 using GryphonUtilities;
+using GryphonUtilities.Time;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,20 +16,20 @@ internal static class Program
     public static void Main(string[] args)
     {
         Logger.DeleteExceptionLog();
-        TimeManager timeManager = new();
-        Logger logger = new(timeManager);
+        Clock clock = new();
+        Logger logger = new(clock);
         try
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            Models.Config? config = Configure(builder);
+            Config? config = Configure(builder);
             if (config is null)
             {
                 throw new NullReferenceException("Can't load config.");
             }
 
-            timeManager = new TimeManager(config.SystemTimeZoneIdLogs);
-            logger = new Logger(timeManager);
+            clock = new Clock(config.SystemTimeZoneIdLogs);
+            logger = new Logger(clock);
             logger.LogStartup();
 
             IServiceCollection services = builder.Services;
@@ -56,17 +57,17 @@ internal static class Program
         }
     }
 
-    private static Models.Config? Configure(WebApplicationBuilder builder)
+    private static Config? Configure(WebApplicationBuilder builder)
     {
         ConfigurationManager configuration = builder.Configuration;
-        Models.Config? config = configuration.Get<Models.Config>();
+        Config? config = configuration.Get<Config>();
         if (config is null)
         {
             return null;
         }
 
-        builder.Services.AddOptions<Models.Config>().Bind(configuration).ValidateDataAnnotations();
-        builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<Models.Config>>().Value);
+        builder.Services.AddOptions<Config>().Bind(configuration).ValidateDataAnnotations();
+        builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<Config>>().Value);
 
         CultureInfo.DefaultThreadCurrentCulture = new CultureInfo(config.CultureInfoName);
 

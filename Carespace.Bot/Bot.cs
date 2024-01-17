@@ -1,68 +1,53 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AbstractBot.Bots;
+using AbstractBot.Operations.Data;
+using Carespace.Bot.Configs;
 using Carespace.Bot.Operations.Commands;
-using Carespace.Bot.Config;
 using Carespace.Bot.Save;
-using Carespace.FinanceHelper;
-using GryphonUtilities;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Carespace.Bot.Operations;
-using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
+using JetBrains.Annotations;
+using System.Net.Mail;
+using System.Linq;
+using Carespace.Bot.Extensions;
 
 namespace Carespace.Bot;
 
-public sealed class Bot : BotWithSheets<Config.Config>
+public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 {
-    internal readonly Dictionary<string, List<Share>> Shares = new();
-
-    public Bot(Config.Config config) : base(config)
+    [Flags]
+    internal enum AccessType
     {
-        if (config.Shares is not null)
-        {
-            Shares = config.Shares;
-        }
-        else if (config.SharesJson is not null)
-        {
-            Dictionary<string, List<Share>>? deserialized =
-                JsonSerializer.Deserialize<Dictionary<string, List<Share>>>(config.SharesJson,
-                    JsonSerializerOptionsProvider.PascalCaseOptions);
-            if (deserialized is not null)
-            {
-                Shares = deserialized;
-            }
-        }
+        [UsedImplicitly]
+        Default = 1,
+        Admin = 2,
+        Finance = 4
+    }
 
+    public Bot(Config config) : base(config)
+    {
         Dictionary<Type, Func<object?, object?>> additionalConverters = new()
         {
             { typeof(Uri), o => o.ToUri() }
         };
-        additionalConverters[typeof(DateOnly)] = additionalConverters[typeof(DateOnly?)] =
-            o => o.ToDateOnly(TimeManager);
-        additionalConverters[typeof(TimeOnly)] = additionalConverters[typeof(TimeOnly?)] =
-            o => o.ToTimeOnly(TimeManager);
-        additionalConverters[typeof(TimeSpan)] = additionalConverters[typeof(TimeSpan?)] =
-            o => o.ToTimeSpan(TimeManager);
 
-        SaveManager<Data> saveManager = new(Config.SavePath, TimeManager);
-        FinanceManager financeManager = new(this, DocumentsManager, additionalConverters);
-        EmailChecker emailChecker = new(this, financeManager);
+        _financeManager = new FinanceManager(this, DocumentsManager, additionalConverters);
+        EmailChecker emailChecker = new(this, _financeManager);
 
-        RestrictionsManager antiSpam = new(this, saveManager);
+        RestrictionsManager antiSpam = new(this, SaveManager);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
-        Operations.Add(new ExercisesCommand(this, config));
+        Operations.Add(new ExercisesCommand(this));
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
 
-        Operations.Add(new FinanceCommand(this, financeManager));
         Operations.Add(new CheckEmailOperation(this, emailChecker));
+        Operations.Add(new AcceptPurchase(this, _financeManager));
 
         WarningCommand warningCommand = new(this, antiSpam);
         SpamCommand spamCommand = new(this, antiSpam);
@@ -71,8 +56,8 @@ public sealed class Bot : BotWithSheets<Config.Config>
 
         _restrictCommands = new List<BotCommand>
         {
-            warningCommand.Command,
-            spamCommand.Command
+            warningCommand.BotCommand,
+            spamCommand.BotCommand
         };
     }
 
@@ -87,23 +72,13 @@ public sealed class Bot : BotWithSheets<Config.Config>
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
     }
 
-    internal Task SendMessageAsync(Link link, Chat chat)
+    public Task OnSubmissionReceivedAsync(string name, MailAddress email, string telegram, List<string> items,
+        List<Uri> slips)
     {
-        if (string.IsNullOrWhiteSpace(link.PhotoPath))
-        {
-            string text = $"[{EscapeCharacters(link.Name)}]({link.Uri.AbsoluteUri})";
-            return SendTextMessageAsync(chat, text, ParseMode.MarkdownV2);
-        }
-
-        InlineKeyboardMarkup keyboard = GetReplyMarkup(link);
-        return PhotoRepository.SendPhotoAsync(this, chat, link.PhotoPath, replyMarkup: keyboard);
-    }
-
-    private static InlineKeyboardMarkup GetReplyMarkup(Link link)
-    {
-        InlineKeyboardButton button = new(link.Name) { Url = link.Uri.AbsoluteUri };
-        return new InlineKeyboardMarkup(button);
+        List<byte> productIds = Config.Products.Where(p => items.Contains(p.Value.Name)).Select(p => p.Key).ToList();
+        return _financeManager.ProcessSubmissionAsync(name, email, telegram, productIds, slips);
     }
 
     private readonly List<BotCommand> _restrictCommands;
+    private readonly FinanceManager _financeManager;
 }

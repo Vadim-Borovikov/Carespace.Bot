@@ -7,32 +7,28 @@ using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot.Operations;
 
-internal sealed class CheckEmailOperation : Operation
+internal sealed class CheckEmailOperation : Operation<MailAddress>
 {
-    protected override byte MenuOrder => 12;
+    protected override byte Order => 12;
 
     public CheckEmailOperation(Bot bot, EmailChecker checker) : base(bot) => _checker = checker;
 
-    protected override async Task<ExecutionResult> TryExecuteAsync(Message message, long senderId)
+    protected override bool IsInvokingBy(Message message, User sender, out MailAddress? data)
     {
+        data = null;
+
         if ((message.Type != MessageType.Text) || string.IsNullOrWhiteSpace(message.Text))
         {
-            return ExecutionResult.UnsuitableOperation;
+            return false;
         }
 
-        MailAddress? email = message.Text.ToEmail();
-        if (email is null)
-        {
-            return ExecutionResult.UnsuitableOperation;
-        }
+        data = message.Text.ToEmail();
+        return data is not null;
+    }
 
-        if (!IsAccessSuffice(senderId))
-        {
-            return ExecutionResult.InsufficentAccess;
-        }
-
-        await _checker.CheckEmailAsync(message.Chat, email);
-        return ExecutionResult.Success;
+    protected override Task ExecuteAsync(MailAddress data, Message message, User sender)
+    {
+        return _checker.CheckEmailAsync(message.Chat, data);
     }
 
     private readonly EmailChecker _checker;

@@ -2,8 +2,6 @@
 using System.ComponentModel.DataAnnotations;
 using JetBrains.Annotations;
 
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 namespace Carespace.FinanceHelper;
 
 [PublicAPI]
@@ -15,54 +13,16 @@ public sealed class Share
 
     public string? Promo { get; init; }
 
-    public bool? PromoForNet { get; init; }
-
-    public decimal? Limit { get; init; }
-
     [Required]
     public decimal Value { get; init; }
 
-    public decimal? ValueAfterLimit { get; init; }
-
-    public decimal Calculate(decimal amount, decimal? net, decimal total, string? promo)
+    public decimal Calculate(decimal amount, string? promo)
     {
-        if (!string.IsNullOrWhiteSpace(Promo))
+        if (!string.IsNullOrWhiteSpace(Promo) && !string.Equals(promo, Promo, StringComparison.OrdinalIgnoreCase))
         {
-            if (promo != Promo)
-            {
-                return 0;
-            }
-            if (PromoForNet is null || PromoForNet.Value)
-            {
-                if (net is null)
-                {
-                    return 0;
-                }
-                amount = net.Value;
-            }
+            return 0;
         }
 
-        decimal value = amount * Value;
-
-        if (Limit is null)
-        {
-            return value;
-        }
-
-        decimal beforeLimit = Math.Max(0, Limit.Value - total);
-        decimal valueAfterLimit = ValueAfterLimit ?? 0;
-        if (beforeLimit == 0)
-        {
-            return amount * valueAfterLimit;
-        }
-
-        if (value < 0)
-        {
-            return value;
-        }
-
-        decimal beforeLimitPart = Math.Min(value, beforeLimit);
-        decimal afterLimitPart = valueAfterLimit * Math.Max(0, value - beforeLimitPart);
-        return beforeLimitPart + afterLimitPart;
+        return amount * Value;
     }
 }
