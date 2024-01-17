@@ -7,8 +7,6 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types;
 
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 namespace Carespace.Bot.Configs;
 
 [PublicAPI]

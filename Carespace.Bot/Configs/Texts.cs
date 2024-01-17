@@ -1,5 +1,3 @@
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;

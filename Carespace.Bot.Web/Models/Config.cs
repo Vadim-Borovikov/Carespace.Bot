@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using JetBrains.Annotations;
 
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 namespace Carespace.Bot.Web.Models;
 
 [PublicAPI]

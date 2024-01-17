@@ -4,8 +4,6 @@ using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using JetBrains.Annotations;
 
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 namespace Carespace.Bot.Configs;
 
 [PublicAPI]

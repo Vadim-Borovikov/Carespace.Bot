@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 
-// ReSharper disable NullableWarningSuppressionIsUsed
-
 namespace Carespace.FinanceHelper.Tests;
 
 internal sealed class Config

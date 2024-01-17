@@ -96,7 +96,5 @@ public class CalculatorTests
     private const string Agent2 = "Agent2";
     private static readonly DateOnly Date = new(2022, 1, 1);
 
-    // ReSharper disable once NullableWarningSuppressionIsUsed
-    //   _config initializes in ClassInitialize
     private static Config _config = null!;
 }
