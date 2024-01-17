@@ -5,7 +5,8 @@ namespace Carespace.FinanceHelper;
 
 public static class Calculator
 {
-    public static void CalculateShares(IEnumerable<Transaction> transactions, Dictionary<byte, Product> products)
+    public static void CalculateShares(IEnumerable<Transaction> transactions, Dictionary<byte, Product> products,
+        string? fallbackAgent = null)
     {
         foreach (Transaction transaction in transactions)
         {
@@ -22,6 +23,11 @@ public static class Calculator
 
                 transaction.Shares[share.Agent] += value;
                 amount -= value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(fallbackAgent))
+            {
+                transaction.Shares[fallbackAgent] = amount;
             }
         }
     }

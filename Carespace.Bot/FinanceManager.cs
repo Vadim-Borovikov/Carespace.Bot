@@ -8,7 +8,9 @@ using AbstractBot.Configs.MessageTemplates;
 using Carespace.Bot.Operations;
 using Carespace.FinanceHelper;
 using GoogleSheetsManager.Documents;
+using GryphonUtilities;
 using GryphonUtilities.Extensions;
+using RestSharp;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -48,7 +50,8 @@ internal sealed class FinanceManager
         await comfirmation.SendAsync(_bot, _itemVendorChat);
     }
 
-    public async Task AddTransactionsAsync(Chat chat, DateOnly date, List<byte> productIds, MailAddress email)
+    public async Task<List<Transaction>> AddTransactionsAsync(Chat chat, DateOnly date, List<byte> productIds,
+        MailAddress email)
     {
         List<Transaction> transactions = new();
         foreach (byte id in productIds)
@@ -65,13 +68,15 @@ internal sealed class FinanceManager
             transactions.Add(t);
         }
 
-        Calculator.CalculateShares(transactions, _bot.Config.Products);
+        Calculator.CalculateShares(transactions, _bot.Config.Products, _bot.Config.FallbackAgent);
 
         await using (await StatusMessage.CreateAsync(_bot, chat, _bot.Config.Texts.AddingPurchases))
         {
             transactions = transactions.OrderBy(t => t.Date).ToList();
             await _transactions.AddAsync(_bot.Config.GoogleRange, transactions, additionalSavers: AdditionalSavers);
         }
+
+        return transactions;
     }
 
     public async Task GenerateClientMessagesAsync(Chat chat, string name, string telegram, List<byte> productIds)
@@ -87,6 +92,18 @@ internal sealed class FinanceManager
         }
 
         await _bot.Config.Texts.ThankYou.SendAsync(_bot, chat);
+    }
+
+    public Task<RestResponse> SendPurchaseAsync(string clientName, DateOnly date, IEnumerable<Transaction> transactions)
+    {
+        Purchase purchase = new()
+        {
+            ClientName = clientName,
+            Date = date
+        };
+        purchase.Items.AddRange(transactions.Select(t => new Item(t, _bot.Config.FallbackAgent)));
+        return RestManager.PostAsync(_bot.Config.PostPurchaseUri.AbsoluteUri, _bot.Config.PostPurchaseResource,
+            obj: purchase);
     }
 
     private MessageTemplateText GetUsernamePresentation(string telegram)

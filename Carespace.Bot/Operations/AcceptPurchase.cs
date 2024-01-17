@@ -3,6 +3,9 @@ using AbstractBot.Operations;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Carespace.Bot.Operations.Info;
+using System.Collections.Generic;
+using Carespace.FinanceHelper;
+using RestSharp;
 
 namespace Carespace.Bot.Operations;
 
@@ -34,9 +37,15 @@ internal sealed class AcceptPurchase : Operation<PurchaseInfo>
     protected override async Task ExecuteAsync(PurchaseInfo data, Message message, User sender)
     {
         DateOnly date = _bot.Clock.GetDateTimeFull(message.Date).DateOnly;
-        await _manager.AddTransactionsAsync(message.Chat, date, data.ProductIds, data.Email);
-
+        List<Transaction> transactions =
+            await _manager.AddTransactionsAsync(message.Chat, date, data.ProductIds, data.Email);
         await _manager.GenerateClientMessagesAsync(message.Chat, data.Name, data.Telegram, data.ProductIds);
+
+        RestResponse response = await _manager.SendPurchaseAsync(data.Name, date, transactions);
+        if (!response.IsSuccessful)
+        {
+            _bot.Logger.LogError(response.ErrorMessage ?? $"Error in Send Purchase response. Status {response.StatusCode}");
+        }
     }
 
     private readonly Bot _bot;

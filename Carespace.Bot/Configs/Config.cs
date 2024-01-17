@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AbstractBot.Configs;
@@ -49,4 +50,13 @@ public class Config : ConfigWithSheets<Texts>
 
     [Required]
     public long ItemVendorId { get; init; }
+
+    [Required]
+    public string FallbackAgent { get; init; } = null!;
+
+    [Required]
+    public Uri PostPurchaseUri { get; init; } = null!;
+    [Required]
+    [MinLength(1)]
+    public string PostPurchaseResource { get; init; } = null!;
 }
