@@ -31,13 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Files\NNO-teoriya-i-praktika.zip">
+    <None Update="Files\ННО. Теория и практика.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Files\Плакаты самоподдержки.zip">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="NNO-teoriya-i-praktika.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Photos\CareSpace.png">
