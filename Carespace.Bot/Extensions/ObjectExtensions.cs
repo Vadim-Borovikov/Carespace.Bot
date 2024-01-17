@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Carespace.Bot;
+namespace Carespace.Bot.Extensions;
 
 internal static class ObjectExtensions
 {

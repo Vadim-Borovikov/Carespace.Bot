@@ -13,6 +13,7 @@ using Telegram.Bot;
 using JetBrains.Annotations;
 using System.Net.Mail;
 using System.Linq;
+using Carespace.Bot.Extensions;
 
 namespace Carespace.Bot;
 
