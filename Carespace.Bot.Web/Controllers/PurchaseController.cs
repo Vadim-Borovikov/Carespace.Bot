@@ -20,6 +20,20 @@ public class PurchaseController : ControllerBase
     public async Task<ActionResult> Post([FromServices] BotSingleton singleton, [FromForm] Submission model,
         [FromForm] IFormCollection form)
     {
+        try
+        {
+            // Must await here, otherwise exception will not be catch
+            return await Post(singleton.Bot, model, form);
+        }
+        catch (Exception e)
+        {
+            singleton.Bot.Logger.LogException(e);
+            throw;
+        }
+    }
+
+    private async Task<ActionResult> Post(Bot bot, Submission model, IFormCollection form)
+    {
         if (model.Test == TestString)
         {
             return Ok();
@@ -43,8 +57,7 @@ public class PurchaseController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        await singleton.Bot.OnSubmissionReceivedAsync(model.Name, new MailAddress(model.Email), model.Telegram, items,
-            slips);
+        await bot.OnSubmissionReceivedAsync(model.Name, new MailAddress(model.Email), model.Telegram, items, slips);
 
         return Ok();
     }
