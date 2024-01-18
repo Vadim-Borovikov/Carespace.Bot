@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Net.Mail;
+using JetBrains.Annotations;
 
 namespace Carespace.Bot.Web.Models;
 
@@ -11,4 +12,5 @@ public sealed class Submission
     public string? Telegram { get; set; }
     public string? Items { get; set; }
     public string? FormId { get; set; }
+    public string? TranId { get; set; }
 }

@@ -2,10 +2,11 @@
 using AbstractBot.Operations;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
-using Carespace.Bot.Operations.Info;
 using System.Collections.Generic;
+using System.Net.Mail;
 using Carespace.FinanceHelper;
 using RestSharp;
+using Carespace.Bot.Save;
 
 namespace Carespace.Bot.Operations;
 
@@ -30,15 +31,17 @@ internal sealed class AcceptPurchase : Operation<PurchaseInfo>
     protected override bool IsInvokingBy(Message message, User sender, string callbackQueryDataCore,
         out PurchaseInfo? data)
     {
-        data = PurchaseInfo.TryParse(callbackQueryDataCore);
+        data = _bot.TryGetPurchase(callbackQueryDataCore);
+        _bot.RemovePurchase(callbackQueryDataCore);
         return data is not null;
     }
 
     protected override async Task ExecuteAsync(PurchaseInfo data, Message message, User sender)
     {
         DateOnly date = _bot.Clock.GetDateTimeFull(message.Date).DateOnly;
+        MailAddress email = new(data.Email);
         List<Transaction> transactions =
-            await _manager.AddTransactionsAsync(message.Chat, date, data.ProductIds, data.Email);
+            await _manager.AddTransactionsAsync(message.Chat, date, data.ProductIds, email);
         await _manager.GenerateClientMessagesAsync(message.Chat, data.Name, data.Telegram, data.ProductIds);
 
         RestResponse response = await _manager.SendPurchaseAsync(data.Name, date, transactions);

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Configs.MessageTemplates;
 using Carespace.Bot.Operations;
+using Carespace.Bot.Save;
 using Carespace.FinanceHelper;
 using GoogleSheetsManager.Documents;
 using GryphonUtilities;
@@ -37,16 +38,16 @@ internal sealed class FinanceManager
         _transactions = transactions.GetOrAddSheet(_bot.Config.GoogleTitle, additionalConverters);
     }
 
-    public async Task ProcessSubmissionAsync(string name, MailAddress email, string telegram, IList<byte> productIds,
-        IReadOnlyList<Uri> slips)
+    public async Task ProcessSubmissionAsync(string id, PurchaseInfo info, IReadOnlyList<Uri> slips)
     {
         List<MessageTemplateText> productLines =
-            productIds.Select(p => _bot.Config.Texts.ListItemFormat.Format(_bot.Config.Products[p].Name)).ToList();
+            info.ProductIds.Select(p => _bot.Config.Texts.ListItemFormat.Format(_bot.Config.Products[p].Name))
+                .ToList();
         MessageTemplateText productMessages = MessageTemplateText.JoinTexts(productLines);
 
         MessageTemplateText comfirmation = _bot.Config.Texts.PaymentConfirmationFormat.Format(productMessages);
 
-        comfirmation.KeyboardProvider = CreateConfirmationKeyboard(name, email, telegram, productIds, slips);
+        comfirmation.KeyboardProvider = CreateConfirmationKeyboard(id, slips);
         await comfirmation.SendAsync(_bot, _itemVendorChat);
     }
 
@@ -128,8 +129,7 @@ internal sealed class FinanceManager
         return transactions.Where(t => t.ProductId == productIdForMails).Select(t => t.Email).SkipNulls();
     }
 
-    private KeyboardProvider CreateConfirmationKeyboard(string name, MailAddress email, string telegram,
-        IEnumerable<byte> productIds, IReadOnlyList<Uri> slips)
+    private KeyboardProvider CreateConfirmationKeyboard(string id, IReadOnlyList<Uri> slips)
     {
         List<List<InlineKeyboardButton>> rows = new();
 
@@ -150,8 +150,7 @@ internal sealed class FinanceManager
         }
 
         InlineKeyboardButton confirm =
-            CreateCallbackButton<AcceptPurchase>(_bot.Config.Texts.PaymentConfirmationButton, name, email, telegram,
-                string.Join(BytesSeparator, productIds));
+            CreateCallbackButton<AcceptPurchase>(_bot.Config.Texts.PaymentConfirmationButton, id);
         rows.Add(confirm.WrapWithList());
 
         return new InlineKeyboardMarkup(rows);
@@ -191,6 +190,5 @@ internal sealed class FinanceManager
         "https://"
     };
 
-    public const string QuerySeparator = "_";
-    public const string BytesSeparator = ";";
+    private const string QuerySeparator = "_";
 }

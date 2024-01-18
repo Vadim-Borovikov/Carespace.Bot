@@ -11,7 +11,6 @@ using Telegram.Bot.Types;
 using Carespace.Bot.Operations;
 using Telegram.Bot;
 using JetBrains.Annotations;
-using System.Net.Mail;
 using System.Linq;
 using Carespace.Bot.Extensions;
 
@@ -72,11 +71,21 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
     }
 
-    public Task OnSubmissionReceivedAsync(string name, MailAddress email, string telegram, List<string> items,
+    public Task OnSubmissionReceivedAsync(string id, string name, string email, string telegram, List<string> items,
         List<Uri> slips)
     {
-        List<byte> productIds = Config.Products.Where(p => items.Contains(p.Value.Name)).Select(p => p.Key).ToList();
-        return _financeManager.ProcessSubmissionAsync(name, email, telegram, productIds, slips);
+        PurchaseInfo info = new()
+        {
+            Name = name,
+            Email = email,
+            Telegram = telegram,
+            ProductIds = Config.Products.Where(p => items.Contains(p.Value.Name)).Select(p => p.Key).ToList()
+        };
+
+        SaveManager.SaveData.Purchases[id] = info;
+        SaveManager.Save();
+
+        return _financeManager.ProcessSubmissionAsync(id, info, slips);
     }
 
     internal byte? TryGetStrikes(long userId) => SaveManager.SaveData.Strikes.GetValueOrDefault(userId);
@@ -86,6 +95,14 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         SaveManager.SaveData.Strikes[userId] = strikes;
         SaveManager.Save();
     }
+
+    internal void RemovePurchase(string key)
+    {
+        SaveManager.SaveData.Purchases.Remove(key);
+        SaveManager.Save();
+    }
+
+    internal PurchaseInfo? TryGetPurchase(string key) => SaveManager.SaveData.Purchases.GetValueOrDefault(key);
 
     private readonly List<BotCommand> _restrictCommands;
     private readonly FinanceManager _financeManager;

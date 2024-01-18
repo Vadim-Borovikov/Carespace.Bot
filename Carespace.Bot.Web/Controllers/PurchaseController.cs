@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
+using System.Text;
 using System.Threading.Tasks;
 using Carespace.Bot.Web.Models;
+using GryphonUtilities;
 using GryphonUtilities.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,13 +35,18 @@ public class PurchaseController : ControllerBase
 
     private async Task<ActionResult> Post(Bot bot, Submission model, IFormCollection form)
     {
+        LogForm(bot.Logger, form);
+
         if (model.Test == TestString)
         {
             return Ok();
         }
 
-        if ((model.FormId != _config.TildaFormId) || string.IsNullOrWhiteSpace(model.Name) || model.Email is null
-            || string.IsNullOrWhiteSpace(model.Telegram) || string.IsNullOrWhiteSpace(model.Items))
+        if ((model.FormId != _config.TildaFormId) || string.IsNullOrWhiteSpace(model.TranId)
+                                                  || string.IsNullOrWhiteSpace(model.Name)
+                                                  || string.IsNullOrWhiteSpace(model.Email)
+                                                  || string.IsNullOrWhiteSpace(model.Telegram)
+                                                  || string.IsNullOrWhiteSpace(model.Items))
         {
             return BadRequest(ModelState);
         }
@@ -57,9 +63,20 @@ public class PurchaseController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        await bot.OnSubmissionReceivedAsync(model.Name, new MailAddress(model.Email), model.Telegram, items, slips);
+        await bot.OnSubmissionReceivedAsync(model.TranId, model.Name, model.Email, model.Telegram, items, slips);
 
         return Ok();
+    }
+
+    private static void LogForm(Logger logger, IFormCollection form)
+    {
+        StringBuilder sb = new();
+        sb.AppendLine("Webhook form received:");
+        foreach (string key in form.Keys)
+        {
+            sb.AppendLine($"\t{key}: {form[key]}");
+        }
+        logger.LogTimedMessage(sb.ToString());
     }
 
     private const string TestString = "test";
