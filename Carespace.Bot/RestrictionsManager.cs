@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Configs.MessageTemplates;
 using AbstractBot.Extensions;
-using Carespace.Bot.Save;
-using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -15,10 +13,9 @@ internal sealed class RestrictionsManager
 {
     public readonly Chat Chat;
 
-    public RestrictionsManager(Bot bot, SaveManager<Data> saveManager)
+    public RestrictionsManager(Bot bot)
     {
         _bot = bot;
-        _saveManager = saveManager;
 
         Chat = new Chat
         {
@@ -78,15 +75,11 @@ internal sealed class RestrictionsManager
 
     private byte UpdateStrikes(byte initialStrikes, long userId)
     {
-        _saveManager.Load();
-
-        _saveManager.SaveData.Strikes[userId] = _saveManager.SaveData.Strikes.ContainsKey(userId)
-            ? Math.Max(initialStrikes, GetNextStrikes(_saveManager.SaveData.Strikes[userId]))
-            : initialStrikes;
-
-        _saveManager.Save();
-
-        return _saveManager.SaveData.Strikes[userId];
+        byte? oldStrikes = _bot.TryGetStrikes(userId);
+        byte strikes =
+            oldStrikes.HasValue ? Math.Max(initialStrikes, GetNextStrikes(oldStrikes.Value)) : initialStrikes;
+        _bot.UpdateStrikes(userId, strikes);
+        return strikes;
     }
 
     private byte GetNextStrikes(byte strikes)
@@ -106,6 +99,5 @@ internal sealed class RestrictionsManager
     }
 
     private readonly Bot _bot;
-    private readonly SaveManager<Data> _saveManager;
     private readonly ChatPermissions _permissions;
 }

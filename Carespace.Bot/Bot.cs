@@ -38,7 +38,7 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         _financeManager = new FinanceManager(this, DocumentsManager, additionalConverters);
         EmailChecker emailChecker = new(this, _financeManager);
 
-        RestrictionsManager antiSpam = new(this, SaveManager);
+        RestrictionsManager antiSpam = new(this);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
@@ -77,6 +77,14 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
     {
         List<byte> productIds = Config.Products.Where(p => items.Contains(p.Value.Name)).Select(p => p.Key).ToList();
         return _financeManager.ProcessSubmissionAsync(name, email, telegram, productIds, slips);
+    }
+
+    internal byte? TryGetStrikes(long userId) => SaveManager.SaveData.Strikes.GetValueOrDefault(userId);
+
+    internal void UpdateStrikes(long userId, byte strikes)
+    {
+        SaveManager.SaveData.Strikes[userId] = strikes;
+        SaveManager.Save();
     }
 
     private readonly List<BotCommand> _restrictCommands;
