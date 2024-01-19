@@ -1,6 +1,5 @@
 ﻿using JetBrains.Annotations;
 using System.Collections.Generic;
-using System.Net.Mail;
 
 namespace Carespace.Bot.Save;
 
