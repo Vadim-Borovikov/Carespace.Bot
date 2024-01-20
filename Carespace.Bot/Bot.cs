@@ -88,7 +88,10 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         return _financeManager.ProcessSubmissionAsync(id, info, slips);
     }
 
-    internal byte? TryGetStrikes(long userId) => SaveManager.SaveData.Strikes.GetValueOrDefault(userId);
+    internal byte? TryGetStrikes(long userId)
+    {
+        return SaveManager.SaveData.Strikes.ContainsKey(userId) ? SaveManager.SaveData.Strikes[userId] : null;
+    }
 
     internal void UpdateStrikes(long userId, byte strikes)
     {

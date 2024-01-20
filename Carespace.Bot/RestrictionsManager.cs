@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Configs.MessageTemplates;
-using AbstractBot.Extensions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -66,10 +65,8 @@ internal sealed class RestrictionsManager
         ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
         string comingNext = _bot.Config.Texts.Day.FormatWithNumeric(_bot.Config.Texts.DaysFormat, nextDays);
 
-        MessageTemplateText messageTemplate =
-               _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor.Escape(),
-                   restrictionPart.Escape(), comingNext.Escape(),
-                    _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri.Escape());
+        MessageTemplateText messageTemplate = _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor,
+            restrictionPart, comingNext, _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri);
         await messageTemplate.SendAsync(_bot, Chat);
     }
 
