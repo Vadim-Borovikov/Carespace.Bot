@@ -1,5 +1,4 @@
-﻿using System.Net.Mail;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 
 namespace Carespace.Bot.Web.Models;
 
