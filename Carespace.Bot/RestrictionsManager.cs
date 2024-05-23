@@ -2,13 +2,14 @@
 using System.Threading.Tasks;
 using AbstractBot;
 using AbstractBot.Configs.MessageTemplates;
+using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot;
 
-internal sealed class RestrictionsManager
+internal sealed class RestrictionsManager : IDisposable
 {
     public readonly Chat Chat;
 
@@ -33,7 +34,11 @@ internal sealed class RestrictionsManager
             CanSendVideoNotes = false,
             CanSendVoiceNotes = false
         };
+
+        _invoker = new Invoker(bot.Logger);
     }
+
+    public void Dispose() => _invoker.Dispose();
 
     public Task Strike(TelegramUser user, TelegramUser admin) => Restrict(1, user, admin);
     public Task Destroy(TelegramUser user, TelegramUser admin)
@@ -67,7 +72,9 @@ internal sealed class RestrictionsManager
 
         MessageTemplateText messageTemplate = _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor,
             restrictionPart, comingNext, _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri);
-        await messageTemplate.SendAsync(_bot, Chat);
+        Message restrictionMessage = await messageTemplate.SendAsync(_bot, Chat);
+        TimeSpan delay = TimeSpan.FromMinutes(_bot.Config.RestrictionMessagesLifetimeMinutes);
+        _invoker.DoAfterDelay(token => _bot.DeleteMessageAsync(Chat, restrictionMessage.MessageId, token), delay);
     }
 
     private byte UpdateStrikes(byte initialStrikes, long userId)
@@ -97,4 +104,5 @@ internal sealed class RestrictionsManager
 
     private readonly Bot _bot;
     private readonly ChatPermissions _permissions;
+    private readonly Invoker _invoker;
 }

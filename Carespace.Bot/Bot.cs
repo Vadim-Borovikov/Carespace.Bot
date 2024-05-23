@@ -37,7 +37,7 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         _financeManager = new FinanceManager(this, DocumentsManager, additionalConverters);
         EmailChecker emailChecker = new(this, _financeManager);
 
-        RestrictionsManager antiSpam = new(this);
+        _antiSpam = new RestrictionsManager(this);
 
         Operations.Add(new IntroCommand(this));
         Operations.Add(new ScheduleCommand(this));
@@ -48,8 +48,8 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         Operations.Add(new CheckEmailOperation(this, emailChecker));
         Operations.Add(new AcceptPurchase(this, _financeManager));
 
-        WarningCommand warningCommand = new(this, antiSpam);
-        SpamCommand spamCommand = new(this, antiSpam);
+        WarningCommand warningCommand = new(this, _antiSpam);
+        SpamCommand spamCommand = new(this, _antiSpam);
         Operations.Add(warningCommand);
         Operations.Add(spamCommand);
 
@@ -58,6 +58,16 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
             warningCommand.BotCommand,
             spamCommand.BotCommand
         };
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (!disposing)
+        {
+            _antiSpam.Dispose();
+        }
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
@@ -109,4 +119,5 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 
     private readonly List<BotCommand> _restrictCommands;
     private readonly FinanceManager _financeManager;
+    private readonly RestrictionsManager _antiSpam;
 }

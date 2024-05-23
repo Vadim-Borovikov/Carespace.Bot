@@ -59,4 +59,7 @@ public class Config : ConfigWithSheets<Texts>
     [Required]
     [MinLength(1)]
     public string PostPurchaseResource { get; init; } = null!;
+
+    [Required]
+    public double RestrictionMessagesLifetimeMinutes { get; init; }
 }
