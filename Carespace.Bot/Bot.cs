@@ -12,6 +12,9 @@ using Carespace.Bot.Operations;
 using Telegram.Bot;
 using JetBrains.Annotations;
 using System.Linq;
+using AbstractBot.Extensions;
+using AbstractBot.Operations;
+using AbstractBot.Operations.Commands;
 using Carespace.Bot.Extensions;
 
 namespace Carespace.Bot;
@@ -79,6 +82,19 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 
         await Client.SetMyCommandsAsync(_restrictCommands,
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
+    }
+
+    protected override async Task<OperationBasic?> UpdateAsync(Message message, User sender,
+        string? callbackQueryData = null)
+    {
+        OperationBasic? operation = await base.UpdateAsync(message, sender, callbackQueryData);
+
+        if (operation is ICommand && message.Chat.IsGroup())
+        {
+            await DeleteMessageAsync(message.Chat, message.MessageId);
+        }
+
+        return operation;
     }
 
     public Task OnSubmissionReceivedAsync(string id, string name, string email, string telegram, List<string> items,
