@@ -42,9 +42,6 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 
         _antiSpam = new RestrictionsManager(this);
 
-        Operations.Add(new IntroCommand(this));
-        Operations.Add(new ScheduleCommand(this));
-        Operations.Add(new ExercisesCommand(this));
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
 

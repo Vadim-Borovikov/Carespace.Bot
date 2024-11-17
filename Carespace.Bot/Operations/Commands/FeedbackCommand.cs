@@ -6,7 +6,7 @@ namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class FeedbackCommand : CommandSimple
 {
-    protected override byte Order => 6;
+    protected override byte Order => 3;
 
     public FeedbackCommand(Bot bot) : base(bot, "feedback", bot.Config.Texts.FeedbackCommandDescription) => _bot = bot;
 

@@ -12,22 +12,9 @@ public class Texts : AbstractBot.Configs.Texts
 {
     [Required]
     [MinLength(1)]
-    public string ExercisesCommandDescription { get; init; } = null!;
-    [Required]
-    [MinLength(1)]
-    public List<Uri> ExerciseUris { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
     public string FeedbackCommandDescription { get; init; } = null!;
     [Required]
     public Link FeedbackLink { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string IntroCommandDescription { get; init; } = null!;
-    [Required]
-    public MessageTemplateText PracticeIntroduction { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
@@ -35,12 +22,6 @@ public class Texts : AbstractBot.Configs.Texts
     [Required]
     [MinLength(1)]
     public List<Link> Links { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
-    public string ScheduleCommandDescription { get; init; } = null!;
-    [Required]
-    public MessageTemplateText PracticeSchedule { get; init; } = null!;
 
     [Required]
     [MinLength(1)]
