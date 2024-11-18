@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AbstractBot.Configs;
@@ -10,6 +9,15 @@ namespace Carespace.Bot.Configs;
 [PublicAPI]
 public class Texts : AbstractBot.Configs.Texts
 {
+    [Required]
+    [MinLength(1)]
+    public string AdminCommandDescription { get; init; } = null!;
+
+    [Required]
+    public MessageTemplateText AdminCommandReaction { get; init; } = null!;
+    [Required]
+    public MessageTemplateText AdminCommandPingFormat { get; init; } = null!;
+
     [Required]
     [MinLength(1)]
     public string FeedbackCommandDescription { get; init; } = null!;
@@ -30,9 +38,6 @@ public class Texts : AbstractBot.Configs.Texts
     [Required]
     [MinLength(1)]
     public string WarningCommandDescription { get; init; } = null!;
-
-    [Required]
-    public Uri ChatGuidelinesUri { get; init; } = null!;
 
     [Required]
     [MinLength(1)]

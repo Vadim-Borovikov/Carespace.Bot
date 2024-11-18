@@ -5,7 +5,6 @@ using AbstractBot.Configs.MessageTemplates;
 using GryphonUtilities;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot;
 
@@ -13,15 +12,11 @@ internal sealed class RestrictionsManager : IDisposable
 {
     public readonly Chat Chat;
 
-    public RestrictionsManager(Bot bot)
+    public RestrictionsManager(Bot bot, Chat chat)
     {
         _bot = bot;
 
-        Chat = new Chat
-        {
-            Id = _bot.Config.DiscussGroupId,
-            Type = ChatType.Supergroup
-        };
+        Chat = chat;
 
         _permissions = new ChatPermissions
         {
@@ -69,8 +64,10 @@ internal sealed class RestrictionsManager : IDisposable
         ushort nextDays = GetDaysFor(GetNextStrikes(strikes));
         string comingNext = _bot.Config.Texts.Day.FormatWithNumeric(_bot.Config.Texts.DaysFormat, nextDays);
 
+        Uri chatGuidelinesUri = _bot.GetMessageUri(Chat, _bot.Config.ChatGuidelinesMessageId);
+
         MessageTemplateText messageTemplate = _bot.Config.Texts.RestrictionMessageFormat.Format(admin.ShortDescriptor,
-            restrictionPart, comingNext, _bot.Config.Texts.ChatGuidelinesUri.AbsoluteUri);
+            restrictionPart, comingNext, chatGuidelinesUri.AbsoluteUri);
         Message restrictionMessage = await messageTemplate.SendAsync(_bot, Chat);
         TimeSpan delay = TimeSpan.FromMinutes(_bot.Config.RestrictionMessagesLifetimeMinutes);
         _invoker.DoAfterDelay(token => _bot.DeleteMessageAsync(Chat, restrictionMessage.MessageId, token), delay);

@@ -5,7 +5,7 @@ namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class WarningCommand : RestrictCommand
 {
-    protected override byte Order => 6;
+    protected override byte Order => 7;
 
     public WarningCommand(Bot bot, RestrictionsManager antiSpam)
         : base(bot, antiSpam, "warning", bot.Config.Texts.WarningCommandDescription)

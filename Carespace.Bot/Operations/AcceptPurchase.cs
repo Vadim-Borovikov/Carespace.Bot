@@ -12,7 +12,7 @@ namespace Carespace.Bot.Operations;
 
 internal sealed class AcceptPurchase : Operation<PurchaseInfo>
 {
-    protected override byte Order => 10;
+    protected override byte Order => 11;
 
     public override Enum AccessRequired => Carespace.Bot.Bot.AccessType.Finance;
 

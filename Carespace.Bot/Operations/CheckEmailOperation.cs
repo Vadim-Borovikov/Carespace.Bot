@@ -9,7 +9,7 @@ namespace Carespace.Bot.Operations;
 
 internal sealed class CheckEmailOperation : Operation<MailAddress>
 {
-    protected override byte Order => 9;
+    protected override byte Order => 10;
 
     public CheckEmailOperation(Bot bot, EmailChecker checker) : base(bot) => _checker = checker;
 

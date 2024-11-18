@@ -16,6 +16,7 @@ using AbstractBot.Extensions;
 using AbstractBot.Operations;
 using AbstractBot.Operations.Commands;
 using Carespace.Bot.Extensions;
+using Telegram.Bot.Types.Enums;
 
 namespace Carespace.Bot;
 
@@ -40,7 +41,14 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         _financeManager = new FinanceManager(this, DocumentsManager, additionalConverters);
         EmailChecker emailChecker = new(this, _financeManager);
 
-        _antiSpam = new RestrictionsManager(this);
+        Chat protectedChat = new()
+        {
+            Id = Config.DiscussGroupId,
+            Type = ChatType.Supergroup
+        };
+
+        AdminCommand adminCommand = new(this, protectedChat);
+        Operations.Add(adminCommand);
 
         Operations.Add(new LinksCommand(this));
         Operations.Add(new FeedbackCommand(this));
@@ -48,13 +56,15 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         Operations.Add(new CheckEmailOperation(this, emailChecker));
         Operations.Add(new AcceptPurchase(this, _financeManager));
 
+        _antiSpam = new RestrictionsManager(this, protectedChat);
         WarningCommand warningCommand = new(this, _antiSpam);
         SpamCommand spamCommand = new(this, _antiSpam);
         Operations.Add(warningCommand);
         Operations.Add(spamCommand);
 
-        _restrictCommands = new List<BotCommand>
+        _chatMenuCommands = new List<BotCommand>
         {
+            adminCommand.BotCommand,
             warningCommand.BotCommand,
             spamCommand.BotCommand
         };
@@ -77,7 +87,7 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         await Client.DeleteMyCommandsAsync(BotCommandScope.ChatAdministrators(Config.DiscussGroupId),
             cancellationToken: cancellationToken);
 
-        await Client.SetMyCommandsAsync(_restrictCommands,
+        await Client.SetMyCommandsAsync(_chatMenuCommands,
             BotCommandScope.ChatAdministrators(Config.DiscussGroupId), cancellationToken: cancellationToken);
     }
 
@@ -86,7 +96,7 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
     {
         OperationBasic? operation = await base.UpdateAsync(message, sender, callbackQueryData);
 
-        if (operation is ICommand && message.Chat.IsGroup())
+        if (operation is ICommand && message.Chat.IsGroup() && operation is not AdminCommand)
         {
             await DeleteMessageAsync(message.Chat, message.MessageId);
         }
@@ -130,7 +140,18 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 
     internal PurchaseInfo? TryGetPurchase(string key) => SaveManager.SaveData.Purchases.GetValueOrDefault(key);
 
-    private readonly List<BotCommand> _restrictCommands;
+    internal List<long> GetAdminIds()
+    {
+        return Accesses.Where(p => p.Value.IsSufficientAgainst(AccessType.Admin)).Select(p => p.Key).ToList();
+    }
+
+    internal Uri GetMessageUri(Chat chat, int messageId)
+    {
+        string id = chat.Id.ToString().Replace("-100", "");
+        return new Uri(string.Format(Config.ChatMessegeUriFormat, id, messageId));
+    }
+
+    private readonly List<BotCommand> _chatMenuCommands;
     private readonly FinanceManager _financeManager;
     private readonly RestrictionsManager _antiSpam;
 }

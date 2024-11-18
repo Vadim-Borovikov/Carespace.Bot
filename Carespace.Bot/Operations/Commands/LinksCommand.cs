@@ -7,7 +7,7 @@ namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class LinksCommand : CommandSimple
 {
-    protected override byte Order => 2;
+    protected override byte Order => 3;
 
     public LinksCommand(Bot bot) : base(bot, "links", bot.Config.Texts.LinksCommandDescription) => _bot = bot;
 

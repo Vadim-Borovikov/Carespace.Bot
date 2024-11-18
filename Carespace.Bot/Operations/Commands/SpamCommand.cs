@@ -5,7 +5,7 @@ namespace Carespace.Bot.Operations.Commands;
 
 internal sealed class SpamCommand : RestrictCommand
 {
-    protected override byte Order => 7;
+    protected override byte Order => 8;
 
     public SpamCommand(Bot bot, RestrictionsManager antiSpam)
         : base(bot, antiSpam, "spam", bot.Config.Texts.SpamCommandDescription)

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using JetBrains.Annotations;
+using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Configs;
 
@@ -30,7 +31,16 @@ public class Config : ConfigWithSheets<Texts>
     public string GoogleRange { get; init; } = null!;
 
     [Required]
+    public long AdminGroupId { get; init; }
+
+    [Required]
     public long DiscussGroupId { get; init; }
+
+    [Required]
+    public string ChatMessegeUriFormat { get; init; } = null!;
+
+    [Required]
+    public int ChatGuidelinesMessageId { get; init; }
 
     [Required]
     [MinLength(1)]
