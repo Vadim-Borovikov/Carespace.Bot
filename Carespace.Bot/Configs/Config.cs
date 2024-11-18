@@ -34,10 +34,6 @@ public class Config : ConfigWithSheets<Texts>
 
     [Required]
     [MinLength(1)]
-    public string DiscussGroupLogin { get; init; } = null!;
-
-    [Required]
-    [MinLength(1)]
     public string BookPromo { get; init; } = null!;
 
     [Required]

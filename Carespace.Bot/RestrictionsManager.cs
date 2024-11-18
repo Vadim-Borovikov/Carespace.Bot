@@ -20,8 +20,7 @@ internal sealed class RestrictionsManager : IDisposable
         Chat = new Chat
         {
             Id = _bot.Config.DiscussGroupId,
-            Username = $"@{_bot.Config.DiscussGroupLogin}",
-            Type = ChatType.Channel
+            Type = ChatType.Supergroup
         };
 
         _permissions = new ChatPermissions
