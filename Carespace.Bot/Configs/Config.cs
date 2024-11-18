@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations;
 using AbstractBot.Configs;
 using Carespace.FinanceHelper;
 using JetBrains.Annotations;
-using Telegram.Bot.Types;
 
 namespace Carespace.Bot.Configs;
 

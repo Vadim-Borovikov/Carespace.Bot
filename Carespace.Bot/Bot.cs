@@ -28,7 +28,11 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
         [UsedImplicitly]
         Default = 1,
         Admin = 2,
-        Finance = 4
+        Duty = 4,
+
+        AdminOnDuty =  Admin | Duty,
+
+        Finance = 8
     }
 
     public Bot(Config config) : base(config)
@@ -140,9 +144,9 @@ public sealed class Bot : BotWithSheets<Config, Texts, Data, CommandDataSimple>
 
     internal PurchaseInfo? TryGetPurchase(string key) => SaveManager.SaveData.Purchases.GetValueOrDefault(key);
 
-    internal List<long> GetAdminIds()
+    internal List<long> GetAdminOnDutyIds()
     {
-        return Accesses.Where(p => p.Value.IsSufficientAgainst(AccessType.Admin)).Select(p => p.Key).ToList();
+        return Accesses.Where(p => p.Value.IsSufficientAgainst(AccessType.AdminOnDuty)).Select(p => p.Key).ToList();
     }
 
     internal Uri GetMessageUri(Chat chat, int messageId)

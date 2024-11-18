@@ -41,17 +41,17 @@ internal sealed class AdminCommand : CommandSimple
 
         Uri messageUri = _bot.GetMessageUri(message.Chat, message.MessageId);
 
-        List<User> admins = await GetAdminsAsync();
+        List<User> admins = await GetAdminsOnDutyAsync();
         string adminsLine = string.Join(' ', admins.Select(a => $"@{a.Username}"));
         MessageTemplateText messageTemplate = _bot.Config.Texts.AdminCommandPingFormat.Format(messageUri, adminsLine);
 
         await messageTemplate.SendAsync(_bot, _adminChat);
     }
 
-    private async Task<List<User>> GetAdminsAsync()
+    private async Task<List<User>> GetAdminsOnDutyAsync()
     {
         List<User> admins = new();
-        foreach (long id in _bot.GetAdminIds())
+        foreach (long id in _bot.GetAdminOnDutyIds())
         {
             Chat chat = await _bot.Client.GetChatAsync(id);
             User user = new()
