@@ -12,17 +12,20 @@ public static class Calculator
         {
             decimal amount = transaction.Amount;
             Product product = products[transaction.ProductId];
-            foreach (Share share in product.Shares)
+            if (product.Shares is not null)
             {
-                if (!transaction.Shares.ContainsKey(share.Agent))
+                foreach (Share share in product.Shares)
                 {
-                    transaction.Shares.Add(share.Agent, 0);
+                    if (!transaction.Shares.ContainsKey(share.Agent))
+                    {
+                        transaction.Shares.Add(share.Agent, 0);
+                    }
+
+                    decimal value = Round(share.Calculate(amount, transaction.PromoCode));
+
+                    transaction.Shares[share.Agent] += value;
+                    amount -= value;
                 }
-
-                decimal value = Round(share.Calculate(amount, transaction.PromoCode));
-
-                transaction.Shares[share.Agent] += value;
-                amount -= value;
             }
 
             if (!string.IsNullOrWhiteSpace(fallbackAgent))

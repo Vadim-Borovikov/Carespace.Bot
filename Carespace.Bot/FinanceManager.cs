@@ -83,8 +83,8 @@ internal sealed class FinanceManager
     public async Task GenerateClientMessagesAsync(Chat chat, string name, string telegram, List<byte> productIds)
     {
         MessageTemplateText namePart = _bot.Config.Texts.CopyableFormat.Format(name);
-        MessageTemplateText telegramPart = GetUsernamePresentation(telegram);
-        MessageTemplateText formatted = _bot.Config.Texts.MessageForClientFormat.Format(namePart, telegramPart);
+        telegram = telegram.Replace(" ", "");
+        MessageTemplateText formatted = _bot.Config.Texts.MessageForClientFormat.Format(namePart, telegram);
         await formatted.SendAsync(_bot, chat);
 
         foreach (byte id in productIds)
@@ -105,21 +105,6 @@ internal sealed class FinanceManager
         purchase.Items.AddRange(transactions.Select(t => new Item(t, _bot.Config.FallbackAgent)));
         return RestManager.PostAsync(_bot.Config.PostPurchaseUri.AbsoluteUri, _bot.Config.PostPurchaseResource,
             obj: purchase);
-    }
-
-    private MessageTemplateText GetUsernamePresentation(string telegram)
-    {
-        if (telegram.StartsWith("@", StringComparison.Ordinal))
-        {
-            telegram = TelegramPrefix + telegram[1..];
-        }
-        if (telegram.StartsWith($"{TelegramPrefix}", StringComparison.Ordinal)
-            || Protocols.Any(p => telegram.StartsWith($"{TelegramPrefix}{p}", StringComparison.Ordinal)))
-        {
-            return new MessageTemplateText(telegram);
-        }
-
-        return _bot.Config.Texts.CopyableFormat.Format(telegram);
     }
 
     public async Task<IEnumerable<MailAddress>> LoadEmailsWithAsync(byte productIdForMails)
@@ -183,12 +168,6 @@ internal sealed class FinanceManager
     private readonly Bot _bot;
     private readonly Chat _itemVendorChat;
     private readonly Sheet _transactions;
-
-    private const string TelegramPrefix = "t.me/";
-    private static readonly string[] Protocols = {
-        "http://",
-        "https://"
-    };
 
     private const string QuerySeparator = "_";
 }

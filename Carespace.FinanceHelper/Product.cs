@@ -15,7 +15,5 @@ public sealed class Product
     [MinLength(1)]
     public decimal Price { get; init; }
 
-    [Required]
-    [MinLength(1)]
-    public List<Share> Shares { get; init; } = null!;
+    public List<Share>? Shares { get; init; }
 }
